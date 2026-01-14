@@ -1,0 +1,119 @@
+{
+    "crop_diseases": {
+        "tomato": {
+            "early_blight": {
+                "description": "Fungal disease causing dark spots with concentric rings",
+                "treatments": {
+                    "chemical": [
+                        "Chlorothalonil",
+                        "Mancozeb",
+                        "Azoxystrobin"
+                    ],
+                    "organic": [
+                        "Neem Oil",
+                        "Copper Fungicide",
+                        "Potassium Bicarbonate"
+                    ]
+                },
+                "severity_indicators": {
+                    "mild": "Few spots on lower leaves",
+                    "moderate": "Spots spreading to upper leaves",
+                    "severe": "Defoliation, fruit affected"
+                }
+            },
+            "late_blight": {
+                "description": "Severe fungal disease causing water-soaked lesions",
+                "treatments": {
+                    "chemical": [
+                        "Metalaxyl + Mancozeb",
+                        "Cymoxanil"
+                    ],
+                    "organic": [
+                        "Copper Hydroxide"
+                    ]
+                },
+                "severity_indicators": {
+                    "mild": "Small water-soaked spots",
+                    "moderate": "Spreading lesions with white mold",
+                    "severe": "Rapid defoliation, fruit rot"
+                }
+            }
+        },
+        "potato": {
+            "early_blight": {
+                "description": "Target-spot lesions on leaves",
+                "treatments": {
+                    "chemical": [
+                        "Chlorothalonil",
+                        "Mancozeb"
+                    ],
+                    "organic": [
+                        "Copper-based fungicides"
+                    ]
+                }
+            },
+            "late_blight": {
+                "description": "Water-soaked lesions leading to tuber rot",
+                "treatments": {
+                    "chemical": [
+                        "Metalaxyl",
+                        "Cymoxanil + Mancozeb"
+                    ],
+                    "organic": [
+                        "Copper Hydroxide"
+                    ]
+                }
+            }
+        },
+        "rice": {
+            "bacterial_blight": {
+                "description": "Yellow to white lesions on leaves",
+                "treatments": {
+                    "chemical": [
+                        "Streptomycin",
+                        "Copper compounds"
+                    ],
+                    "organic": [
+                        "Pseudomonas fluorescens"
+                    ]
+                }
+            },
+            "leaf_blast": {
+                "description": "Diamond-shaped lesions on leaves",
+                "treatments": {
+                    "chemical": [
+                        "Tricyclazole",
+                        "Isoprothiolane"
+                    ],
+                    "organic": [
+                        "Trichoderma",
+                        "Neem cake application"
+                    ]
+                }
+            }
+        }
+    },
+    "safety_warnings": {
+        "general": [
+            "Always wear protective equipment when applying chemicals",
+            "Follow recommended dosage strictly",
+            "Do not apply during flowering if bees are active",
+            "Observe pre-harvest interval before consumption"
+        ],
+        "severe_cases": [
+            "Seek expert consultation immediately",
+            "Consider removing severely affected plants",
+            "Monitor neighboring plants for spread"
+        ]
+    },
+    "prevention_guidelines": {
+        "general": [
+            "Use disease-resistant varieties",
+            "Practice crop rotation",
+            "Maintain proper plant spacing",
+            "Avoid overhead irrigation",
+            "Remove and destroy infected plant material",
+            "Apply balanced fertilization"
+        ]
+    }
+}
