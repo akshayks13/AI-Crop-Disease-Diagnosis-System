@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { LayoutDashboard, Users, UserCheck, ScrollText, LogOut, Bell, Search, Shield, ChevronRight } from 'lucide-react';
@@ -64,8 +65,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {/* Logo */}
                 <div className="p-6">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-600 text-white rounded-lg">
-                            <Shield size={20} />
+                        <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0">
+                            <Image src="/logo.png" alt="Logo" fill className="object-contain" />
                         </div>
                         <div>
                             <h1 className="text-base font-bold text-white">Crop Admin</h1>

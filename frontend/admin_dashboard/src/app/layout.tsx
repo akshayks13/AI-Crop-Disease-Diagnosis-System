@@ -10,6 +10,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Crop Admin - Management Portal",
   description: "AI Crop Disease Diagnosis System - Admin Dashboard",
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({
