@@ -76,12 +76,12 @@ class User(Base):
         nullable=True,
     )
     role: Mapped[UserRole] = mapped_column(
-        SQLEnum(UserRole),
+        SQLEnum(UserRole, native_enum=False),
         nullable=False,
         default=UserRole.FARMER,
     )
     status: Mapped[UserStatus] = mapped_column(
-        SQLEnum(UserStatus),
+        SQLEnum(UserStatus, native_enum=False),
         nullable=False,
         default=UserStatus.ACTIVE,
     )

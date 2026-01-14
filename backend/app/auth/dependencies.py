@@ -3,6 +3,7 @@ Authentication Dependencies - FastAPI dependency injection for auth
 """
 from typing import Optional
 import uuid
+import logging
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -12,6 +13,9 @@ from sqlalchemy import select
 from app.database import get_db
 from app.auth.jwt_handler import decode_token
 from app.models.user import User, UserRole, UserStatus
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 # HTTP Bearer token scheme
 security = HTTPBearer()

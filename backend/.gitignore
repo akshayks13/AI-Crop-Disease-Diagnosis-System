@@ -1,0 +1,23 @@
+# Virtual Environment
+.venv/
+venv/
+
+# Environment (keep .env.example)
+.env
+.env.local
+
+# Logs
+logs/
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Uploads
+uploads/
+
+# IDE
+.vscode/
+.idea/

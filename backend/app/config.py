@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> List[str]:
         """Parse CORS origins from comma-separated string."""
+        # In debug mode, allow all origins (for Flutter web dev on random ports)
+        if self.debug:
+            return ["*"]
         return [origin.strip() for origin in self.allowed_origins.split(",")]
     
     class Config:

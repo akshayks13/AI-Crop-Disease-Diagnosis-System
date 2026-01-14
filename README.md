@@ -2,7 +2,7 @@
 
 An AI-powered agricultural solution that helps farmers diagnose crop diseases using image analysis and provides treatment recommendations with expert consultation.
 
-## 🌾 Features
+## Features
 
 ### For Farmers
 - **AI Diagnosis**: Upload crop images for instant disease detection
@@ -22,18 +22,18 @@ An AI-powered agricultural solution that helps farmers diagnose crop diseases us
 - **User Management**: Manage all system users
 - **System Logs**: Monitor system activity
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
 | Mobile App | Flutter + Riverpod |
-| Admin Dashboard | Next.js + TypeScript |
+| Admin Dashboard | Next.js + TypeScript + Tailwind |
 | Backend API | FastAPI + SQLAlchemy |
 | Database | PostgreSQL |
 | ML Pipeline | PyTorch + OpenCV |
 | Auth | JWT + RBAC |
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ├── backend/                 # FastAPI Backend
@@ -59,9 +59,49 @@ An AI-powered agricultural solution that helps farmers diagnose crop diseases us
 └── ml_models/              # ML models
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
-### Backend
+### Prerequisites
+- Python 3.9+
+- Node.js 18+
+- Flutter 3.10+
+- PostgreSQL 14+
+
+---
+
+### 1. PostgreSQL Setup
+
+#### Install PostgreSQL (macOS)
+```bash
+# Install via Homebrew
+brew install postgresql@16
+
+# Start PostgreSQL service
+brew services start postgresql@16
+```
+
+#### Install PostgreSQL (Ubuntu/Debian)
+```bash
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+sudo systemctl start postgresql
+```
+
+#### Create Database
+```bash
+# Create the database
+createdb crop_diagnosis
+
+# Initialize tables (from backend directory)
+cd backend
+psql -d crop_diagnosis -f ../database/init.sql
+```
+
+> **Note**: On macOS with Homebrew, the default PostgreSQL user is your system username (no password). On Linux, you may need to use `sudo -u postgres` prefix.
+
+---
+
+### 2. Backend Setup
 
 ```bash
 cd backend
@@ -73,16 +113,20 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Set up database
-psql -U postgres -f ../database/init.sql
+# Configure environment
+cp .env.example .env
+# Edit .env with your database credentials:
+# DATABASE_URL=postgresql+asyncpg://your_username@localhost:5432/crop_diagnosis
 
 # Run server
-uvicorn app.main:app --reload
+./venv/bin/python -m uvicorn app.main:app --reload --port 8000
 ```
 
 API docs available at: http://localhost:8000/docs
 
-### Flutter App
+---
+
+### 3. Flutter App
 
 ```bash
 cd frontend/flutter_app
@@ -94,7 +138,9 @@ flutter pub get
 flutter run
 ```
 
-### Admin Dashboard
+---
+
+### 4. Admin Dashboard
 
 ```bash
 cd frontend/admin_dashboard
@@ -108,15 +154,19 @@ npm run dev
 
 Dashboard available at: http://localhost:3000
 
-## 🔐 Default Credentials
+---
+
+## Default Credentials
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | admin@cropdiagnosis.com | admin123 |
+| Admin | admin@cropdiagnosis.com | admin_password |
 
-> ⚠️ Change these credentials in production!
+> Change these credentials in production!
 
-## 📡 API Endpoints
+---
+
+## API Endpoints
 
 ### Authentication
 - `POST /auth/register` - Register user
@@ -138,7 +188,20 @@ Dashboard available at: http://localhost:3000
 - `GET /admin/experts/pending` - Pending experts
 - `POST /admin/experts/approve/{id}` - Approve expert
 
-## 🤖 ML Model
+---
+
+## Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://user:pass@localhost:5432/crop_diagnosis` |
+| `JWT_SECRET_KEY` | Secret for JWT tokens | `your-secret-key-here` |
+| `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:3000` |
+| `DEBUG` | Enable debug mode | `true` or `false` |
+
+---
+
+## ML Model
 
 The system uses a simulated ML model for development. To integrate a real model:
 
@@ -146,13 +209,13 @@ The system uses a simulated ML model for development. To integrate a real model:
 2. Update `backend/app/services/ml_service.py`
 3. Replace the `predict()` method with actual inference
 
-## 📱 App Screens
+---
+
+## App Screens
 
 - **Auth**: Splash, Login, Register
 - **Farmer**: Home, Diagnosis, Results, History, Ask Expert
 - **Expert**: Dashboard, Questions, Answer
 - **Common**: Profile
 
-## 📄 License
-
-MIT License
+---

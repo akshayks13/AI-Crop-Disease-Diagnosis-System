@@ -22,7 +22,7 @@ class SystemLog(Base):
         message: Log message
         source: Source of the log (e.g., 'diagnosis', 'auth')
         user_id: Optional user associated with the log
-        metadata: Additional JSON metadata
+        log_metadata: Additional JSON metadata
         created_at: Log timestamp
     """
     __tablename__ = "system_logs"
@@ -51,7 +51,7 @@ class SystemLog(Base):
         nullable=True,
         index=True,
     )
-    metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+    log_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(
         JSON,
         nullable=True,
     )

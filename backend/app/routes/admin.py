@@ -239,7 +239,7 @@ async def approve_expert(
         message=f"Expert approved: {expert.email}",
         source="admin",
         user_id=current_user.id,
-        metadata={"expert_id": str(expert.id)},
+        log_metadata={"expert_id": str(expert.id)},
     )
     db.add(log)
     
@@ -289,7 +289,7 @@ async def reject_expert(
         message=f"Expert rejected: {expert.email}",
         source="admin",
         user_id=current_user.id,
-        metadata={"expert_id": str(expert.id), "reason": reason},
+        log_metadata={"expert_id": str(expert.id), "reason": reason},
     )
     db.add(log)
     
@@ -423,7 +423,7 @@ async def suspend_user(
         message=f"User suspended: {user.email}",
         source="admin",
         user_id=current_user.id,
-        metadata={"target_user_id": str(user.id)},
+        log_metadata={"target_user_id": str(user.id)},
     )
     db.add(log)
     
@@ -499,7 +499,7 @@ async def get_system_logs(
                 "message": log.message,
                 "source": log.source,
                 "user_id": str(log.user_id) if log.user_id else None,
-                "metadata": log.metadata,
+                "metadata": log.log_metadata,
                 "created_at": log.created_at.isoformat(),
             }
             for log in logs

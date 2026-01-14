@@ -67,7 +67,7 @@ class Question(Base):
     )
     
     status: Mapped[QuestionStatus] = mapped_column(
-        SQLEnum(QuestionStatus),
+        SQLEnum(QuestionStatus, native_enum=False),
         nullable=False,
         default=QuestionStatus.OPEN,
     )
