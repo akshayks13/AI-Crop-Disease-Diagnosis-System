@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,7 +18,7 @@ class DiagnosisScreen extends ConsumerStatefulWidget {
 }
 
 class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
-  File? _selectedImage;
+  XFile? _selectedImage;
   String? _cropType;
   bool _isProcessing = false;
   final ImagePicker _picker = ImagePicker();
@@ -43,7 +44,7 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
 
       if (image != null) {
         setState(() {
-          _selectedImage = File(image.path);
+          _selectedImage = image;
         });
       }
     } catch (e) {
@@ -62,7 +63,7 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.uploadFile(
         ApiConfig.predict,
-        file: _selectedImage!,
+        file: File(_selectedImage!.path),
         fields: {
           if (_cropType != null) 'crop_type': _cropType,
         },
@@ -155,10 +156,15 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxHeight: 400),
-                              child: Image.file(
-                                _selectedImage!,
-                                fit: BoxFit.contain,
-                              ),
+                              child: kIsWeb 
+                                  ? Image.network(
+                                      _selectedImage!.path,
+                                      fit: BoxFit.contain,
+                                    )
+                                  : Image.file(
+                                      File(_selectedImage!.path),
+                                      fit: BoxFit.contain,
+                                    ),
                             ),
                           ),
                           Container(

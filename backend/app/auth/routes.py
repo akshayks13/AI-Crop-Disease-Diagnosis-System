@@ -27,7 +27,6 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 from app.auth.utils import generate_and_send_otp
 
 
-
 # ============== Schemas ==============
 
 class UserRegisterRequest(BaseModel):

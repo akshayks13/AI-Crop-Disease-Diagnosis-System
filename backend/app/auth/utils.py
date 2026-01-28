@@ -11,8 +11,10 @@ def generate_and_send_otp(email: str) -> str:
     otp = "".join([str(random.randint(0, 9)) for _ in range(6)])
     
     # Send OTP (Print to console)
-    logger.info(f"============================================")
+    print(f"\n{'='*44}")
+    print(f"OTP for {email}: {otp}")
+    print(f"{'='*44}\n")
+    
     logger.info(f"OTP for {email}: {otp}")
-    logger.info(f"============================================")
     
     return otp

@@ -221,7 +221,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         data: {'email': email},
       );
       return true;
-    } on DioException {
+    } on DioException catch (e) {
+      print('Forgot Password Error: ${e.response?.statusCode} - ${e.response?.data}');
       return false;
     }
   }
@@ -241,7 +242,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         },
       );
       return true;
-    } on DioException {
+    } on DioException catch (e) {
+      print('Reset Password Error: ${e.response?.statusCode} - ${e.response?.data}');
       return false;
     }
   }
