@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
-from app.database import init_db, close_db
+from app.database import init_db, close_db, init_data
 from app.auth.routes import router as auth_router
 from app.routes.farmer import router as farmer_router, questions_router
 from app.routes.expert import router as expert_router
@@ -47,6 +47,9 @@ async def lifespan(app: FastAPI):
     # Initialize database
     await init_db()
     logger.info("Database initialized")
+    
+    # Initialize default data
+    await init_data()
     
     yield
     
