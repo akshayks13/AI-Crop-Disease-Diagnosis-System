@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
+import '../features/auth/presentation/screens/otp_screen.dart';
+import '../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../features/auth/presentation/screens/reset_password_screen.dart';
 import '../features/auth/presentation/screens/splash_screen.dart';
 import '../features/diagnosis/presentation/screens/diagnosis_screen.dart';
 import '../features/diagnosis/presentation/screens/diagnosis_result_screen.dart';
@@ -19,6 +22,9 @@ class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
   static const String register = '/register';
+  static const String otp = '/otp';
+  static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
   
   // Main routes
   static const String home = '/home';
@@ -47,6 +53,14 @@ class AppRoutes {
         return _slideRoute(const LoginScreen(), settings);
       case register:
         return _slideRoute(const RegisterScreen(), settings);
+      case otp:
+        final email = settings.arguments as String;
+        return _slideRoute(OtpScreen(email: email), settings);
+      case forgotPassword:
+        return _slideRoute(const ForgotPasswordScreen(), settings);
+      case resetPassword:
+        final email = settings.arguments as String;
+        return _slideRoute(ResetPasswordScreen(email: email), settings);
       
       // Main
       case home:

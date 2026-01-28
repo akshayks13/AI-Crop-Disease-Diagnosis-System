@@ -86,6 +86,20 @@ class User(Base):
         default=UserStatus.ACTIVE,
     )
     
+    # Verification
+    is_verified: Mapped[bool] = mapped_column(
+        default=False,
+        nullable=False,
+    )
+    otp_code: Mapped[Optional[str]] = mapped_column(
+        String(6),
+        nullable=True,
+    )
+    otp_created_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+    
     # Expert-specific fields
     expertise_domain: Mapped[Optional[str]] = mapped_column(
         String(255),

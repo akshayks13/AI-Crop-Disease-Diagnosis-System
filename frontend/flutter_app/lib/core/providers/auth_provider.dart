@@ -112,7 +112,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
   
-  Future<void> register({
+  Future<bool> register({
     required String email,
     required String password,
     required String fullName,
@@ -126,7 +126,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     try {
       state = const AsyncValue.loading();
       
-      final response = await _apiClient.post(
+      await _apiClient.post(
         ApiConfig.register,
         data: {
           'email': email,
@@ -141,6 +141,28 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         },
       );
       
+      // Do not auto-login, just return success
+      state = const AsyncValue.data(null);
+      return true;
+    } on DioException catch (e) {
+      final message = e.response?.data?['detail'] ?? 'Registration failed';
+      state = AsyncValue.error(message, StackTrace.current);
+      return false;
+    }
+  }
+
+  Future<void> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      state = const AsyncValue.loading();
+      
+      final response = await _apiClient.post(
+        ApiConfig.verify,
+        data: {'email': email, 'otp': otp},
+      );
+      
       await SecureStorage.saveTokens(
         accessToken: response.data['access_token'],
         refreshToken: response.data['refresh_token'],
@@ -151,8 +173,76 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       
       state = AsyncValue.data(user);
     } on DioException catch (e) {
-      final message = e.response?.data?['detail'] ?? 'Registration failed';
+      final message = e.response?.data?['detail'] ?? 'Verification failed';
       state = AsyncValue.error(message, StackTrace.current);
+    }
+  }
+
+  Future<bool> updateProfile({
+    String? fullName,
+    String? phone,
+    String? location,
+    String? expertiseDomain,
+    String? qualification,
+    int? experienceYears,
+  }) async {
+    try {
+      state = const AsyncValue.loading();
+      
+      final response = await _apiClient.put(
+        ApiConfig.updateProfile,
+        data: {
+          if (fullName != null) 'full_name': fullName,
+          if (phone != null) 'phone': phone,
+          if (location != null) 'location': location,
+          if (expertiseDomain != null) 'expertise_domain': expertiseDomain,
+          if (qualification != null) 'qualification': qualification,
+          if (experienceYears != null) 'experience_years': experienceYears,
+        },
+      );
+      
+      final user = User.fromJson(response.data);
+      // We don't need to update token probably, but we should update stored user info
+      await SecureStorage.saveUserInfo(userId: user.id, role: user.role);
+      
+      state = AsyncValue.data(user);
+      return true;
+    } on DioException catch (e) {
+      final message = e.response?.data?['detail'] ?? 'Profile update failed';
+      state = AsyncValue.error(message, StackTrace.current);
+      return false;
+    }
+  }
+  
+  Future<bool> forgotPassword(String email) async {
+    try {
+      await _apiClient.post(
+        ApiConfig.forgotPassword,
+        data: {'email': email},
+      );
+      return true;
+    } on DioException {
+      return false;
+    }
+  }
+
+  Future<bool> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    try {
+      await _apiClient.post(
+        ApiConfig.resetPassword,
+        data: {
+          'email': email,
+          'otp': otp,
+          'new_password': newPassword,
+        },
+      );
+      return true;
+    } on DioException {
+      return false;
     }
   }
   

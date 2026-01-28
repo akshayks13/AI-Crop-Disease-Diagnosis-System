@@ -44,8 +44,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     setState(() => _isLoading = true);
 
-    await ref.read(authStateProvider.notifier).register(
-      email: _emailController.text.trim(),
+    final email = _emailController.text.trim();
+    final success = await ref.read(authStateProvider.notifier).register(
+      email: email,
       password: _passwordController.text,
       fullName: _fullNameController.text.trim(),
       phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
@@ -58,29 +59,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (mounted) {
       setState(() => _isLoading = false);
 
-      final authState = ref.read(authStateProvider);
-      authState.when(
-        data: (user) {
-          if (user != null) {
-            if (user.isPendingExpert) {
-              _showPendingDialog();
-            } else if (user.isExpert) {
-              Navigator.pushReplacementNamed(context, AppRoutes.expertDashboard);
-            } else {
-              Navigator.pushReplacementNamed(context, AppRoutes.home);
-            }
-          }
-        },
-        loading: () {},
-        error: (error, _) {
+      if (success) {
+        // Navigate to OTP screen
+        Navigator.pushNamed(
+          context, 
+          AppRoutes.otp,
+          arguments: email,
+        );
+      } else {
+        // Error handling is done by the provider triggering state change, 
+        // but we can also use ref.listen in build, or just rely on the return value for now.
+        // Since we updated provider to return bool, we rely on that.
+        // We can show error from provider state if needed.
+        final authState = ref.read(authStateProvider);
+        if (authState.hasError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(error.toString()),
+              content: Text(authState.error.toString()),
               backgroundColor: Colors.red,
             ),
           );
-        },
-      );
+        }
+      }
     }
   }
 

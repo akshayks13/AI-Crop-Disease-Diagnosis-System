@@ -75,7 +75,15 @@ class _AskExpertScreenState extends ConsumerState<AskExpertScreen> {
                   hintText: 'Describe your crop issue in detail...',
                   alignLabelWithHint: true,
                 ),
-                validator: (value) => value == null || value.length < 10 ? 'Please provide more details (min 10 characters)' : null,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter your question';
+                  }
+                  if (value.trim().length < 10) {
+                    return 'Please provide more details (at least 10 characters)';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 24),
               SizedBox(

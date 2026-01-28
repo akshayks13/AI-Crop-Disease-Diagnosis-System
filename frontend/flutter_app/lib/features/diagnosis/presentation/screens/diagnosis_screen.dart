@@ -131,7 +131,7 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
             GestureDetector(
               onTap: () => _showImagePickerOptions(),
               child: Container(
-                height: 280,
+                constraints: const BoxConstraints(minHeight: 280),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(20),
@@ -149,48 +149,60 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
                   ],
                 ),
                 child: _selectedImage != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(18),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.file(
-                              _selectedImage!,
-                              fit: BoxFit.cover,
+                    ? Column(
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 400),
+                              child: Image.file(
+                                _selectedImage!,
+                                fit: BoxFit.contain,
+                              ),
                             ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: IconButton(
-                                onPressed: () {
-                                  setState(() => _selectedImage = null);
-                                },
-                                icon: const Icon(Icons.close),
-                                style: IconButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: Colors.red,
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.delete_outline, color: Colors.red.shade700),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Remove Image',
+                                  style: TextStyle(
+                                    color: Colors.red.shade700,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    : SizedBox(
+                        height: 280,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.add_a_photo_outlined,
+                              size: 64,
+                              color: theme.colorScheme.onSurface.withOpacity(0.4),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Tap to capture or select image',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.6),
                               ),
                             ),
                           ],
                         ),
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add_a_photo_outlined,
-                            size: 64,
-                            color: theme.colorScheme.onSurface.withOpacity(0.4),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Tap to capture or select image',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.6),
-                            ),
-                          ),
-                        ],
                       ),
               ),
             ),

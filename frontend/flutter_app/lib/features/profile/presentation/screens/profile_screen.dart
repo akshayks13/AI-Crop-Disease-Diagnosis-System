@@ -9,13 +9,109 @@ import '../../../../core/providers/auth_provider.dart';
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
+  void _showEditProfileDialog(BuildContext context, WidgetRef ref, User user) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: user.fullName);
+    final phoneController = TextEditingController(text: user.phone);
+    final locationController = TextEditingController(text: user.location);
+    final expertiseController = TextEditingController(text: user.expertiseDomain);
+    final qualificationController = TextEditingController(text: user.qualification);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Profile'),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Full Name'),
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(labelText: 'Phone'),
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: locationController,
+                  decoration: const InputDecoration(labelText: 'Location'),
+                ),
+                if (user.isExpert) ...[
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: expertiseController,
+                    decoration: const InputDecoration(labelText: 'Expertise'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: qualificationController,
+                    decoration: const InputDecoration(labelText: 'Qualification'),
+                  ),
+                ]
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                final success = await ref.read(authStateProvider.notifier).updateProfile(
+                  fullName: nameController.text.trim(),
+                  phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
+                  location: locationController.text.trim().isEmpty ? null : locationController.text.trim(),
+                  expertiseDomain: user.isExpert ? expertiseController.text.trim() : null,
+                  qualification: user.isExpert ? qualificationController.text.trim() : null,
+                );
+                
+                if (context.mounted) {
+                   Navigator.pop(context);
+                   if (success) {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                       const SnackBar(content: Text('Profile updated successfully'), backgroundColor: AppTheme.primaryGreen),
+                     );
+                   } else {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                       const SnackBar(content: Text('Failed to update profile'), backgroundColor: Colors.red),
+                     );
+                   }
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        title: const Text('Profile'),
+        actions: [
+          if (user != null)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => _showEditProfileDialog(context, ref, user),
+            ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
