@@ -87,52 +87,69 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // Main action cards
-              Row(
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.1,
                 children: [
-                  Expanded(
-                    child: _ActionCard(
-                      title: 'Diagnose\nCrop',
-                      subtitle: 'Take a photo',
-                      icon: Icons.camera_alt,
-                      color: AppTheme.primaryGreen,
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.diagnosis),
-                    ),
+                  _ActionCard(
+                    title: 'Diagnose\nCrop',
+                    subtitle: 'Take a photo',
+                    icon: Icons.camera_alt,
+                    color: AppTheme.primaryGreen,
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.diagnosis),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _ActionCard(
-                      title: 'Ask\nExpert',
-                      subtitle: 'Get advice',
-                      icon: Icons.support_agent,
-                      color: AppTheme.accentOrange,
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.askExpert),
-                    ),
+                  _ActionCard(
+                    title: 'Ask\nExpert',
+                    subtitle: 'Get advice',
+                    icon: Icons.support_agent,
+                    color: AppTheme.accentOrange,
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.askExpert),
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _ActionCard(
-                      title: 'View\nHistory',
-                      subtitle: 'Past diagnoses',
-                      icon: Icons.history,
-                      color: Colors.blue,
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.history),
-                    ),
+                  _ActionCard(
+                    title: 'Weather\nForecast',
+                    subtitle: 'Track rain & sun',
+                    icon: Icons.wb_sunny,
+                    color: Colors.orange,
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.weather),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _ActionCard(
-                      title: 'My\nQuestions',
-                      subtitle: 'Check answers',
-                      icon: Icons.question_answer,
-                      color: Colors.purple,
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.myQuestions),
-                    ),
+                  _ActionCard(
+                    title: 'Market\nPrices',
+                    subtitle: 'Live rates',
+                    icon: Icons.currency_rupee,
+                    color: Colors.green.shade700,
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.market),
+                  ),
+                  _ActionCard(
+                    title: 'Farming\nCommunity',
+                    subtitle: 'Connect & share',
+                    icon: Icons.people,
+                    color: Colors.blue,
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.community),
+                  ),
+                  _ActionCard(
+                    title: 'Crop\nHealth',
+                    subtitle: 'Encyclopedia',
+                    icon: Icons.menu_book,
+                    color: Colors.purple,
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.encyclopedia),
+                  ),
+                  _ActionCard(
+                    title: 'My\nFarm',
+                    subtitle: 'Manage crops',
+                    icon: Icons.agriculture,
+                    color: Colors.brown,
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.farm),
+                  ),
+                  _ActionCard(
+                    title: 'View\nHistory',
+                    subtitle: 'Past diagnoses',
+                    icon: Icons.history,
+                    color: Colors.teal,
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.history),
                   ),
                 ],
               ),

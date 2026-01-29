@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 
-import '../features/auth/presentation/screens/login_screen.dart';
-import '../features/auth/presentation/screens/register_screen.dart';
-import '../features/auth/presentation/screens/otp_screen.dart';
-import '../features/auth/presentation/screens/forgot_password_screen.dart';
-import '../features/auth/presentation/screens/reset_password_screen.dart';
-import '../features/auth/presentation/screens/splash_screen.dart';
-import '../features/diagnosis/presentation/screens/diagnosis_screen.dart';
-import '../features/diagnosis/presentation/screens/diagnosis_result_screen.dart';
-import '../features/history/presentation/screens/history_screen.dart';
-import '../features/expert/presentation/screens/expert_dashboard_screen.dart';
-import '../features/expert/presentation/screens/questions_screen.dart';
-import '../features/expert/presentation/screens/answer_screen.dart';
-import '../features/home/presentation/screens/home_screen.dart';
-import '../features/profile/presentation/screens/profile_screen.dart';
-import '../features/questions/presentation/screens/ask_expert_screen.dart';
-import '../features/questions/presentation/screens/my_questions_screen.dart';
+import '../features/auth/screens/login_screen.dart';
+import '../features/auth/screens/register_screen.dart';
+import '../features/auth/screens/otp_screen.dart';
+import '../features/auth/screens/forgot_password_screen.dart';
+import '../features/auth/screens/reset_password_screen.dart';
+import '../features/auth/screens/splash_screen.dart';
+import '../features/diagnosis/screens/diagnosis_screen.dart';
+import '../features/diagnosis/screens/diagnosis_result_screen.dart';
+import '../features/history/screens/history_screen.dart';
+import '../features/expert/screens/expert_dashboard_screen.dart';
+import '../features/expert/screens/questions_screen.dart';
+import '../features/expert/screens/answer_screen.dart';
+import '../features/home/screens/home_screen.dart';
+import '../features/profile/screens/profile_screen.dart';
+import '../features/questions/screens/ask_expert_screen.dart';
+import '../features/questions/screens/my_questions_screen.dart';
+import '../features/weather/screens/weather_screen.dart';
+import '../features/market/screens/market_screen.dart';
+import '../features/community/screens/community_screen.dart';
+import '../features/encyclopedia/screens/encyclopedia_screen.dart';
+import '../features/farm/screens/farm_screen.dart';
 
 class AppRoutes {
   // Auth routes
@@ -38,6 +43,13 @@ class AppRoutes {
   // Question routes
   static const String askExpert = '/ask-expert';
   static const String myQuestions = '/my-questions';
+
+  // New Features routes
+  static const String weather = '/weather';
+  static const String market = '/market';
+  static const String community = '/community';
+  static const String encyclopedia = '/encyclopedia';
+  static const String farm = '/farm';
   
   // Expert routes
   static const String expertDashboard = '/expert/dashboard';
@@ -82,6 +94,18 @@ class AppRoutes {
         return _slideRoute(const AskExpertScreen(), settings);
       case myQuestions:
         return _slideRoute(const MyQuestionsScreen(), settings);
+      
+      // New Features
+      case weather:
+        return _slideRoute(const WeatherScreen(), settings);
+      case market:
+        return _slideRoute(const MarketScreen(), settings);
+      case community:
+        return _slideRoute(const CommunityScreen(), settings);
+      case encyclopedia:
+        return _slideRoute(const EncyclopediaScreen(), settings);
+      case farm:
+        return _slideRoute(const FarmScreen(), settings);
       
       // Expert
       case expertDashboard:
