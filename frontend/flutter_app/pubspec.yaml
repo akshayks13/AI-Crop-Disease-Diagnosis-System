@@ -56,6 +56,9 @@ dependencies:
   # Utilities
   uuid: ^4.4.0
   equatable: ^2.0.5
+  http: ^1.6.0
+  geolocator: ^14.0.2
+  flutter_dotenv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -69,3 +72,4 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/animations/
+    - assets/.env
