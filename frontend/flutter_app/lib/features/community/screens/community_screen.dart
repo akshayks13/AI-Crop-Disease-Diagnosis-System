@@ -1,216 +1,383 @@
 import 'package:flutter/material.dart';
-import '../../../../config/theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/community_provider.dart';
 
-class CommunityScreen extends StatelessWidget {
+class CommunityScreen extends ConsumerStatefulWidget {
   const CommunityScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  ConsumerState<CommunityScreen> createState() => _CommunityScreenState();
+}
 
-    // Mock data
-    final posts = [
-      {
-        'name': 'Ramesh Kumar', 'time': '2 hrs ago',
-        'title': 'Yellowing leaves in Tomato plants',
-        'desc': 'My tomato plants are showing yellow leaves at the bottom. I have watered them regularly. Is this a fungus or nutrient deficiency?',
-        'likes': '12', 'comments': '4', 'hasImage': false
-      },
-      {
-        'name': 'Suresh Patel', 'time': '5 hrs ago',
-        'title': 'Best fertilizer for Potato in winter?',
-        'desc': 'I am planning to sow potatoes next week. Can someone suggest the best NPK ratio for this season?',
-        'likes': '8', 'comments': '2', 'hasImage': false
-      },
-      {
-        'name': 'Lakshmi Devi', 'time': '1 day ago',
-        'title': 'Successfully harvested 50 quintals of Rice!',
-        'desc': 'Thanks to the expert advice here, I had a bumper harvest this season. Sharing some pics!',
-        'likes': '45', 'comments': '12', 'hasImage': true
-      },
-      {
-        'name': 'Anil Singh', 'time': '2 days ago',
-        'title': 'Market price for Cotton dropping',
-        'desc': 'Traders are offering very low prices today. Better to hold the stock for a week if possible.',
-        'likes': '15', 'comments': '5', 'hasImage': false
-      },
-    ];
+class _CommunityScreenState extends ConsumerState<CommunityScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final communityState = ref.watch(communityProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Community Forum'),
+        title: const Text('Farming Community'),
+        backgroundColor: Colors.green.shade700,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.smart_toy_outlined),
-            onPressed: () => Navigator.pushNamed(context, '/chat'),
-            tooltip: 'Ask AI',
+            icon: const Icon(Icons.refresh),
+            onPressed: () => ref.read(communityProvider.notifier).refresh(),
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: posts.length,
-        itemBuilder: (context, index) {
-          final post = posts[index];
-          return _buildPostCard(context, post, theme, index);
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Create Post feature coming soon!')),
-          );
-        },
-        backgroundColor: AppTheme.primaryGreen,
-        icon: const Icon(Icons.edit, color: Colors.white),
-        label: const Text('Post Query', style: TextStyle(color: Colors.white)),
+      body: communityState.isLoading && communityState.posts.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : communityState.error != null && communityState.posts.isEmpty
+              ? _buildErrorWidget(communityState.error!)
+              : communityState.posts.isEmpty
+                  ? _buildEmptyWidget()
+                  : RefreshIndicator(
+                      onRefresh: () => ref.read(communityProvider.notifier).refresh(),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: communityState.posts.length,
+                        itemBuilder: (context, index) {
+                          final post = communityState.posts[index];
+                          return _buildPostCard(post);
+                        },
+                      ),
+                    ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showCreatePostDialog(),
+        backgroundColor: Colors.green.shade700,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
-  Widget _buildPostCard(BuildContext context, Map<String, dynamic> post, ThemeData theme, int index) {
-    // Generate avatar color based on name length to be deterministic
-    final avatarColors = [
-      AppTheme.primaryGreen,
-      AppTheme.accentOrange,
-      AppTheme.secondaryGreen,
-      Colors.blue,
-      Colors.purple,
-    ];
-    final avatarColor = avatarColors[post['name'].length % avatarColors.length];
-
-    return Container(
+  Widget _buildPostCard(CommunityPost post) {
+    return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: avatarColor.withOpacity(0.1),
-                child: Text(
-                  post['name'][0], 
-                  style: TextStyle(color: avatarColor, fontWeight: FontWeight.bold)
+          // Author Header
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Colors.green.shade100,
+              child: Text(
+                post.author.fullName.isNotEmpty 
+                    ? post.author.fullName[0].toUpperCase() 
+                    : 'U',
+                style: TextStyle(
+                  color: Colors.green.shade700,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    post['name'],
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    post['time'],
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Icon(Icons.more_horiz, color: Colors.grey.shade600),
-            ],
-          ),
-          const SizedBox(height: 12),
-          
-          // Content
-          Text(
-            post['title'],
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+            ),
+            title: Text(
+              post.author.fullName,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(post.timeAgo),
+            trailing: IconButton(
+              icon: const Icon(Icons.more_vert),
+              onPressed: () {},
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            post['desc'],
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade700,
-              height: 1.4,
-            ),
-          ),
-          
-          // Optional Image Placeholder
-          if (post['hasImage'] == true) ...[
-            const SizedBox(height: 16),
-            Container(
-              height: 180,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.image_outlined, size: 48, color: Colors.grey.shade400),
-                    const SizedBox(height: 8),
-                    Text('Image Placeholder', style: TextStyle(color: Colors.grey.shade400)),
-                  ],
+
+          // Post Title & Content
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  post.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  post.content,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
+                    height: 1.4,
+                  ),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+
+          // Post Image (if any)
+          if (post.imagePath != null) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              child: Image.network(
+                'http://localhost:8000${post.imagePath}',
+                height: 200,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
               ),
             ),
           ],
-          
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 8),
-          
+
           // Actions
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _actionButton(Icons.thumb_up_alt_outlined, '${post['likes']} Likes', theme),
-              _actionButton(Icons.comment_outlined, '${post['comments']} Comments', theme),
-              _actionButton(Icons.share_outlined, 'Share', theme),
-            ],
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                // Like Button
+                TextButton.icon(
+                  onPressed: () {
+                    ref.read(communityProvider.notifier).toggleLike(post.id);
+                  },
+                  icon: Icon(
+                    post.isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: post.isLiked ? Colors.red : Colors.grey,
+                    size: 20,
+                  ),
+                  label: Text(
+                    '${post.likesCount}',
+                    style: TextStyle(
+                      color: post.isLiked ? Colors.red : Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+
+                // Comment Button
+                TextButton.icon(
+                  onPressed: () => _showCommentsDialog(post),
+                  icon: Icon(Icons.comment_outlined, size: 20, color: Colors.grey.shade600),
+                  label: Text(
+                    '${post.commentsCount}',
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
+                ),
+
+                const Spacer(),
+
+                // Share Button
+                IconButton(
+                  icon: Icon(Icons.share_outlined, color: Colors.grey.shade600),
+                  onPressed: () {},
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _actionButton(IconData icon, String label, ThemeData theme) {
-    return InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: Colors.grey.shade600),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w500,
+  void _showCreatePostDialog() {
+    final titleController = TextEditingController();
+    final contentController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Post'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  hintText: 'Enter a catchy title...',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              TextField(
+                controller: contentController,
+                decoration: const InputDecoration(
+                  labelText: 'Content',
+                  hintText: 'Share your thoughts with the community...',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 5,
+              ),
+            ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (titleController.text.isNotEmpty && contentController.text.isNotEmpty) {
+                final success = await ref.read(communityProvider.notifier).createPost(
+                  titleController.text,
+                  contentController.text,
+                );
+                if (mounted) {
+                  Navigator.pop(context);
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Post created!')),
+                    );
+                  }
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green.shade700,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Post'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCommentsDialog(CommunityPost post) {
+    final commentController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Comments (${post.commentsCount})',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Comment list would go here
+              if (post.comments.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  child: Center(
+                    child: Text(
+                      'No comments yet',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  ),
+                )
+              else
+                ...post.comments.map((comment) => ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.green.shade100,
+                    radius: 16,
+                    child: Text(
+                      comment.author.fullName[0].toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ),
+                  title: Text(comment.author.fullName),
+                  subtitle: Text(comment.content),
+                )),
+
+              const SizedBox(height: 16),
+
+              // Add comment
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: commentController,
+                      decoration: InputDecoration(
+                        hintText: 'Write a comment...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () async {
+                      if (commentController.text.isNotEmpty) {
+                        await ref.read(communityProvider.notifier).addComment(
+                          post.id,
+                          commentController.text,
+                        );
+                        if (mounted) Navigator.pop(context);
+                      }
+                    },
+                    icon: Icon(Icons.send, color: Colors.green.shade700),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildErrorWidget(String error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+          const SizedBox(height: 16),
+          Text(
+            'Failed to load posts',
+            style: TextStyle(fontSize: 18, color: Colors.grey.shade700),
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () => ref.read(communityProvider.notifier).refresh(),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.forum_outlined, size: 64, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          Text(
+            'No posts yet',
+            style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Be the first to share something!',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+          ),
+        ],
       ),
     );
   }

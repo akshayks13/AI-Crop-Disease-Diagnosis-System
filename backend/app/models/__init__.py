@@ -5,6 +5,10 @@ from app.models.user import User, UserRole, UserStatus
 from app.models.diagnosis import Diagnosis
 from app.models.question import Question, Answer, QuestionStatus
 from app.models.system import SystemLog, SystemMetric
+from app.models.market import MarketPrice, TrendType
+from app.models.community import CommunityPost, CommunityComment, PostLike
+from app.models.farm import FarmCrop, FarmTask, GrowthStage, TaskPriority
+from app.models.encyclopedia import CropInfo, DiseaseInfo
 
 __all__ = [
     "User",
@@ -16,4 +20,16 @@ __all__ = [
     "QuestionStatus",
     "SystemLog",
     "SystemMetric",
+    "MarketPrice",
+    "TrendType",
+    "CommunityPost",
+    "CommunityComment",
+    "PostLike",
+    "FarmCrop",
+    "FarmTask",
+    "GrowthStage",
+    "TaskPriority",
+    "CropInfo",
+    "DiseaseInfo",
 ]
+
