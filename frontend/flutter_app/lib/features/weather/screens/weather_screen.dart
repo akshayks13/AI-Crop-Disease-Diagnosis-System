@@ -115,6 +115,11 @@ class _WeatherScreenState extends State<WeatherScreen> with SingleTickerProvider
             icon: const Icon(Icons.my_location),
             onPressed: () => _loadWeather(),
           ),
+          IconButton(
+            icon: const Icon(Icons.smart_toy_outlined),
+            onPressed: () => Navigator.pushNamed(context, '/chat'),
+            tooltip: 'Ask AI',
+          ),
         ],
         bottom: TabBar(
           controller: _tabController,

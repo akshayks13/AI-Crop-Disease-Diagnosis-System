@@ -44,6 +44,11 @@ class CommunityScreen extends StatelessWidget {
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {},
           ),
+          IconButton(
+            icon: const Icon(Icons.smart_toy_outlined),
+            onPressed: () => Navigator.pushNamed(context, '/chat'),
+            tooltip: 'Ask AI',
+          ),
         ],
       ),
       body: ListView.builder(

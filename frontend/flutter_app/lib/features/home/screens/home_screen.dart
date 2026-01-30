@@ -180,6 +180,12 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.pushNamed(context, AppRoutes.chat),
+        backgroundColor: AppTheme.primaryGreen,
+        child: const Icon(Icons.smart_toy, color: Colors.white),
+        tooltip: 'Chat with Assistant',
+      ),
     );
   }
 }

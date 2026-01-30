@@ -20,6 +20,13 @@ class EncyclopediaScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Crop Guides'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.smart_toy_outlined),
+            onPressed: () => Navigator.pushNamed(context, '/chat'),
+            tooltip: 'Ask AI',
+          ),
+        ],
       ),
       body: GridView.builder(
         padding: const EdgeInsets.all(20),

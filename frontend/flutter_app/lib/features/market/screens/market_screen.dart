@@ -56,6 +56,13 @@ class _MarketScreenState extends State<MarketScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Market Prices'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.smart_toy_outlined),
+            onPressed: () => Navigator.pushNamed(context, '/chat'),
+            tooltip: 'Ask AI',
+          ),
+        ],
       ),
       body: Column(
         children: [

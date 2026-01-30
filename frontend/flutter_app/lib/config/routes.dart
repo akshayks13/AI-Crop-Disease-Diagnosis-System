@@ -21,6 +21,7 @@ import '../features/market/screens/market_screen.dart';
 import '../features/community/screens/community_screen.dart';
 import '../features/encyclopedia/screens/encyclopedia_screen.dart';
 import '../features/farm/screens/farm_screen.dart';
+import '../features/bot/screens/chat_screen.dart';
 
 class AppRoutes {
   // Auth routes
@@ -50,6 +51,7 @@ class AppRoutes {
   static const String community = '/community';
   static const String encyclopedia = '/encyclopedia';
   static const String farm = '/farm';
+  static const String chat = '/chat';
   
   // Expert routes
   static const String expertDashboard = '/expert/dashboard';
@@ -106,6 +108,8 @@ class AppRoutes {
         return _slideRoute(const EncyclopediaScreen(), settings);
       case farm:
         return _slideRoute(const FarmScreen(), settings);
+      case chat:
+        return _slideRoute(const ChatScreen(), settings);
       
       // Expert
       case expertDashboard:

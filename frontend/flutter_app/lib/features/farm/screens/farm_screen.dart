@@ -11,6 +11,13 @@ class FarmScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Farm Management'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.smart_toy_outlined),
+            onPressed: () => Navigator.pushNamed(context, '/chat'),
+            tooltip: 'Ask AI',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
