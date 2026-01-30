@@ -1,221 +1,236 @@
-# AI-Based Crop Disease Diagnosis System
+# 🌾 AI-Based Crop Disease Diagnosis System
 
 An AI-powered agricultural solution that helps farmers diagnose crop diseases using image analysis and provides treatment recommendations with expert consultation.
 
-## Features
+---
 
-### For Farmers
+## ✨ Features
+
+### 👨🌾 For Farmers
 - **AI Diagnosis**: Upload crop images for instant disease detection
-- **Treatment Plans**: Get detailed chemical and organic treatment options
-- **Voice Narration**: TTS support for accessibility
+- **Treatment Plans**: Chemical and organic treatment recommendations
+- **Voice Narration**: Text-to-Speech (TTS) for accessibility
 - **Expert Consultation**: Ask verified agricultural experts
-- **Offline Support**: Works without internet connection
+- **Offline Support**: Works without continuous internet
 
-### For Experts
-- **Question Dashboard**: View and answer farmer questions
+### 🧑🔬 For Experts
+- **Question Dashboard**: View and respond to farmer queries
 - **Profile Management**: Manage expertise and qualifications
 - **Approval System**: Admin verification before access
 
-### For Admins
+### 🛠️ For Admins
 - **Dashboard Analytics**: Real-time metrics and trends
 - **Expert Approval**: Review and approve expert applications
 - **User Management**: Manage all system users
 - **System Logs**: Monitor system activity
 
-## Tech Stack
+---
+
+## 🧰 Tech Stack
 
 | Component | Technology |
-|-----------|------------|
+|---------|------------|
 | Mobile App | Flutter + Riverpod |
 | Admin Dashboard | Next.js + TypeScript + Tailwind |
 | Backend API | FastAPI + SQLAlchemy |
 | Database | PostgreSQL |
 | ML Pipeline | PyTorch + OpenCV |
-| Auth | JWT + RBAC |
-
-## Project Structure
-
-```
-├── backend/                 # FastAPI Backend
-│   ├── app/
-│   │   ├── auth/           # JWT authentication
-│   │   ├── models/         # SQLAlchemy models
-│   │   ├── routes/         # API endpoints
-│   │   ├── schemas/        # Pydantic schemas
-│   │   ├── services/       # Business logic
-│   │   └── main.py         # App entry
-│   └── requirements.txt
-├── frontend/
-│   ├── flutter_app/        # Mobile App
-│   │   ├── lib/
-│   │   │   ├── config/     # Theme & routes
-│   │   │   ├── core/       # API, storage
-│   │   │   └── features/   # Feature modules
-│   │   └── pubspec.yaml
-│   └── admin_dashboard/    # Next.js Admin
-│       └── src/app/        # App pages
-├── database/
-│   └── init.sql            # Schema initialization
-└── ml_models/              # ML models
-```
-
-## Quick Start
-
-### Prerequisites
-- Python 3.9+
-- Node.js 18+
-- Flutter 3.10+
-- PostgreSQL 14+
+| Authentication | JWT + RBAC |
 
 ---
 
-### 1. PostgreSQL Setup
+## 📁 Project Structure
 
-#### Install PostgreSQL (macOS)
+```
+├── backend/ # FastAPI Backend
+│ ├── app/
+│ │ ├── auth/ # JWT authentication
+│ │ ├── models/ # SQLAlchemy models
+│ │ ├── routes/ # API endpoints
+│ │ ├── schemas/ # Pydantic schemas
+│ │ ├── services/ # Business logic
+│ │ └── main.py # App entry
+│ └── requirements.txt
+├── frontend/
+│ ├── flutter_app/ # Mobile App
+│ └── admin_dashboard/ # Next.js Admin Dashboard
+├── database/
+│ └── init.sql # Database schema
+└── ml_models/ # ML models
+```
+
+---
+
+## ⚡ Quick Start (Windows + macOS)
+
+### 🔧 Prerequisites
+
+| Tool | Version |
+|----|---------|
+| Python | 3.9+ |
+| Node.js | 18+ |
+| Flutter | 3.10+ |
+| PostgreSQL | 14+ |
+
+---
+
+## 🗄️ PostgreSQL Setup
+
+### 🪟 Windows
+
+1. Download PostgreSQL:  
+   https://www.postgresql.org/download/windows/
+
+2. During installation:
+   - Set a password for user `postgres`
+   - Default port: `5432`
+
+3. Create database:
+```sql
+CREATE DATABASE crop_diagnosis;
+```
+Initialize schema:
+
 ```bash
-# Install via Homebrew
+cd backend
+psql -U postgres -d crop_diagnosis -f ../database/init.sql
+```
+
+### 🍎 macOS
+
+```bash
 brew install postgresql@16
-
-# Start PostgreSQL service
 brew services start postgresql@16
-```
 
-#### Install PostgreSQL (Ubuntu/Debian)
-```bash
-sudo apt update
-sudo apt install postgresql postgresql-contrib
-sudo systemctl start postgresql
-```
-
-#### Create Database
-```bash
-# Create the database
 createdb crop_diagnosis
 
-# Initialize tables (from backend directory)
 cd backend
 psql -d crop_diagnosis -f ../database/init.sql
 ```
-
-> **Note**: On macOS with Homebrew, the default PostgreSQL user is your system username (no password). On Linux, you may need to use `sudo -u postgres` prefix.
+Homebrew PostgreSQL uses your macOS username by default.
 
 ---
 
-### 2. Backend Setup
+## 🧠 Backend Setup (FastAPI)
 
+### 🪟 Windows
 ```bash
 cd backend
 
-# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+venv\Scripts\activate
 
-# Install dependencies
 pip install -r requirements.txt
+copy .env.example .env
+```
+Run server:
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your database credentials:
-# DATABASE_URL=postgresql+asyncpg://your_username@localhost:5432/crop_diagnosis
-
-# Run server
-./venv/bin/python -m uvicorn app.main:app --reload --port 8000
+```bash
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
-API docs available at: http://localhost:8000/docs
+### 🍎 macOS
+```bash
+cd backend
+
+python3 -m venv venv
+source venv/bin/activate
+
+pip install -r requirements.txt
+cp .env.example .env
+```
+Run server:
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+API Documentation:
+http://localhost:8000/docs
 
 ---
 
-### 3. Flutter App
-
+## 📱 Flutter Mobile App
 ```bash
 cd frontend/flutter_app
-
-# Get dependencies
 flutter pub get
-
-# Run app
 flutter run
 ```
 
 ---
 
-### 4. Admin Dashboard
-
+## 🖥️ Admin Dashboard (Next.js)
 ```bash
 cd frontend/admin_dashboard
-
-# Install dependencies
 npm install
-
-# Run dev server
 npm run dev
 ```
-
-Dashboard available at: http://localhost:3000
+Dashboard URL:
+http://localhost:3000
 
 ---
 
-## Default Credentials
-
+## 🔐 Default Credentials
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | admin@cropdiagnosis.com | admin_password |
 
-> Change these credentials in production!
+⚠️ Change credentials in production.
 
 ---
 
-## API Endpoints
+## 🌐 API Endpoints
 
-### Authentication
-- `POST /auth/register` - Register user
-- `POST /auth/login` - Login
-- `POST /auth/refresh` - Refresh token
-- `GET /auth/me` - Current user
+### 🔑 Authentication
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/refresh`
+- `GET /auth/me`
 
-### Farmer
-- `POST /diagnosis/predict` - Upload image for diagnosis
-- `GET /diagnosis/history` - Diagnosis history
-- `POST /questions` - Ask expert
+### 🌾 Farmer
+- `POST /diagnosis/predict`
+- `GET /diagnosis/history`
+- `POST /questions`
 
-### Expert
-- `GET /expert/questions` - View questions
-- `POST /expert/answer` - Submit answer
+### 🧑🔬 Expert
+- `GET /expert/questions`
+- `POST /expert/answer`
 
-### Admin
-- `GET /admin/dashboard` - Dashboard metrics
-- `GET /admin/experts/pending` - Pending experts
-- `POST /admin/experts/approve/{id}` - Approve expert
+### 🛠️ Admin
+- `GET /admin/dashboard`
+- `GET /admin/experts/pending`
+- `POST /admin/experts/approve/{id}`
 
 ---
 
-## Environment Variables
+## 🌱 Environment Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://user:pass@localhost:5432/crop_diagnosis` |
-| `JWT_SECRET_KEY` | Secret for JWT tokens | `your-secret-key-here` |
-| `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:3000` |
-| `DEBUG` | Enable debug mode | `true` or `false` |
+| `DATABASE_URL` | PostgreSQL connection | `postgresql+asyncpg://user:pass@localhost:5432/crop_diagnosis` |
+| `JWT_SECRET_KEY` | JWT secret key | `your-secret-key` |
+| `ALLOWED_ORIGINS` | CORS origins | `http://localhost:3000` |
+| `DEBUG` | Debug mode | `true` |
 
 ---
 
-## ML Model
+## 🤖 ML Model
+The system currently uses a mock ML model.
 
-The system uses a simulated ML model for development. To integrate a real model:
+To integrate a real model:
 
-1. Train a PyTorch model on crop disease dataset
+1. Train a PyTorch model on a crop disease dataset
 2. Update `backend/app/services/ml_service.py`
-3. Replace the `predict()` method with actual inference
+3. Replace the `predict()` method with real inference logic
 
 ---
 
-## App Screens
-
+## 📱 App Screens
 - **Auth**: Splash, Login, Register
 - **Farmer**: Home, Diagnosis, Results, History, Ask Expert
 - **Expert**: Dashboard, Questions, Answer
 - **Common**: Profile
 
 ---
+
+## 📄 License
+This project is intended for academic and research purposes.
