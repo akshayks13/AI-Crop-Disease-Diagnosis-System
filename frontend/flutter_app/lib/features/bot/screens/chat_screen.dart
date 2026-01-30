@@ -72,7 +72,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               itemCount: chatState.messages.length,
               itemBuilder: (context, index) {
                 final msg = chatState.messages[index];
-                return _buildMessageBubble(msg);
+                return _buildMessageBubble(msg, chatState.playingMessageId);
               },
             ),
           ),
@@ -114,8 +114,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Widget _buildMessageBubble(Message msg) {
+  Widget _buildMessageBubble(Message msg, String? playingId) {
     final isUser = msg.isUser;
+    final isPlaying = playingId == msg.id;
+
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -137,7 +139,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             Text(
               msg.text,
               style: TextStyle(
-                color: Colors.white, // White text for both (since bot bubble is dark now)
+                color: Colors.white, // White text for both
                 fontSize: 16,
                 height: 1.3,
               ),
@@ -158,9 +160,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   const SizedBox(width: 8),
                   InkWell(
                     onTap: () {
-                       ref.read(chatProvider.notifier).speak(msg.text);
+                       ref.read(chatProvider.notifier).speak(msg);
                     },
-                    child: const Icon(Icons.volume_up, size: 14, color: Colors.white54),
+                    child: Icon(
+                      isPlaying ? Icons.stop_circle : Icons.volume_up, 
+                      size: 16, 
+                      color: isPlaying ? AppTheme.accentOrange : Colors.white54
+                    ),
                   ),
                 ],
               ],
