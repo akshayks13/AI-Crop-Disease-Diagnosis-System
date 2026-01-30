@@ -38,16 +38,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
 
     return Scaffold(
+      backgroundColor: const Color(0xFF121212), // Dark background
       appBar: AppBar(
         title: const Text('Farm Assistant'),
+        backgroundColor: const Color(0xFF1E1E1E), // Dark app bar
+        foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               itemCount: chatState.messages.length,
               itemBuilder: (context, index) {
                 final msg = chatState.messages[index];
@@ -56,9 +60,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ),
           if (chatState.isLoading)
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: LinearProgressIndicator(color: AppTheme.primaryGreen),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E1E), // Dark loading bubble
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.primaryGreen,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           _buildInputArea(),
         ],
@@ -67,19 +90,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildMessageBubble(Message msg) {
+    final isUser = msg.isUser;
     return Align(
-      alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          color: msg.isUser ? AppTheme.primaryGreen : Colors.grey.shade200,
+          color: isUser ? AppTheme.primaryGreen : const Color(0xFF1E1E1E), // Dark bot bubble
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: msg.isUser ? const Radius.circular(16) : Radius.zero,
-            bottomRight: msg.isUser ? Radius.zero : const Radius.circular(16),
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
+            bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(4),
+            bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(20),
           ),
         ),
         child: Column(
@@ -88,16 +112,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             Text(
               msg.text,
               style: TextStyle(
-                color: msg.isUser ? Colors.white : Colors.black87,
+                color: Colors.white, // White text for both (since bot bubble is dark now)
                 fontSize: 16,
+                height: 1.3,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               DateFormat('h:mm a').format(msg.time),
               style: TextStyle(
-                color: msg.isUser ? Colors.white70 : Colors.black54,
+                color: Colors.white.withOpacity(0.5),
                 fontSize: 10,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -108,43 +134,53 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Widget _buildInputArea() {
     return Container(
-      padding: const EdgeInsets.all(16).copyWith(bottom: 24), // Extra bottom padding for safe area
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
+      padding: const EdgeInsets.all(16).copyWith(top: 12, bottom: 32),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1E1E1E), // Dark input container background
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Row(
         children: [
           Expanded(
-            child: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                hintText: 'Ask about crops, diseases...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2C2C), // Slightly lighter dark for input field
+                borderRadius: BorderRadius.circular(28),
               ),
-              textCapitalization: TextCapitalization.sentences,
-              onSubmitted: (_) => _sendMessage(),
+              child: TextField(
+                controller: _controller,
+                cursorColor: AppTheme.primaryGreen,
+                style: const TextStyle(color: Colors.white), // White input text
+                decoration: InputDecoration(
+                  hintText: 'Type your question...',
+                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  prefixIcon: const Icon(Icons.flash_on, color: AppTheme.accentOrange, size: 20),
+                  filled: false, 
+                ),
+                textCapitalization: TextCapitalization.sentences,
+                onSubmitted: (_) => _sendMessage(),
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            backgroundColor: AppTheme.primaryGreen,
-            radius: 24,
+          const SizedBox(width: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryGreen.withOpacity(0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 20),
+              icon: const Icon(Icons.send_rounded, color: Colors.white, size: 24),
               onPressed: _sendMessage,
+              padding: const EdgeInsets.all(12),
             ),
           ),
         ],
