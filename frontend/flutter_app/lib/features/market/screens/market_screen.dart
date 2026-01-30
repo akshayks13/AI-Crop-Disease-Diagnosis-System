@@ -61,30 +61,38 @@ class _MarketScreenState extends State<MarketScreen> {
         children: [
           // Search Bar Area
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
-            decoration: const BoxDecoration(
-              color: AppTheme.primaryGreen, // Changed to Green for high visibility
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26, 
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+            color: theme.scaffoldBackgroundColor,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.08), 
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+                // Add a distinct border so corners are visible against light background
+                border: Border.all(color: Colors.grey.shade300, width: 1.2),
+              ),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search crop or mandi...',
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  prefixIcon: const Icon(Icons.search, color: AppTheme.primaryGreen),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  // Ensure fill color is transparent so the container decoration shows
+                  fillColor: Colors.transparent, 
                 ),
-              ],
-            ),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search crop or mandi...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                filled: true,
-                fillColor: Colors.white, // White box on Green background
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500, 
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               ),
             ),
           ),
