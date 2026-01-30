@@ -45,6 +45,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          // Language Selector
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.language, color: Colors.white),
+            onSelected: (String language) {
+              ref.read(chatProvider.notifier).setLanguage(language);
+            },
+            itemBuilder: (BuildContext context) {
+              return ref.read(chatProvider.notifier).supportedLanguages.map((String language) {
+                return PopupMenuItem<String>(
+                  value: language,
+                  child: Text(language),
+                );
+              }).toList();
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -83,7 +100,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ],
               ),
             ),
-          _buildInputArea(),
+          if (chatState.errorMsg != null)
+             Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                chatState.errorMsg!,
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
+          _buildInputArea(chatState.isListening),
         ],
       ),
     );
@@ -118,13 +143,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
             const SizedBox(height: 6),
-            Text(
-              DateFormat('h:mm a').format(msg.time),
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  DateFormat('h:mm a').format(msg.time),
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (!isUser) ...[
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () {
+                       ref.read(chatProvider.notifier).speak(msg.text);
+                    },
+                    child: const Icon(Icons.volume_up, size: 14, color: Colors.white54),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
@@ -132,7 +171,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Widget _buildInputArea() {
+  Widget _buildInputArea(bool isListening) {
     return Container(
       padding: const EdgeInsets.all(16).copyWith(top: 12, bottom: 32),
       decoration: const BoxDecoration(
@@ -152,8 +191,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 cursorColor: AppTheme.primaryGreen,
                 style: const TextStyle(color: Colors.white), // White input text
                 decoration: InputDecoration(
-                  hintText: 'Type your question...',
-                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  hintText: isListening ? 'Listening...' : 'Type your question...',
+                  hintStyle: TextStyle(color: isListening ? AppTheme.primaryGreen : Colors.grey.shade500),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   prefixIcon: const Icon(Icons.flash_on, color: AppTheme.accentOrange, size: 20),
@@ -165,6 +204,35 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ),
           const SizedBox(width: 12),
+          // Mic Button
+          GestureDetector(
+            onLongPress: () {
+               ref.read(chatProvider.notifier).startListening();
+            },
+            onLongPressUp: () {
+               ref.read(chatProvider.notifier).stopListening();
+            },
+            onTap: () {
+                if (isListening) {
+                   ref.read(chatProvider.notifier).stopListening();
+                } else {
+                   ref.read(chatProvider.notifier).startListening();
+                }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isListening ? Colors.redAccent : const Color(0xFF2C2C2C),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isListening ? Icons.mic : Icons.mic_none, 
+                color: Colors.white, 
+                size: 24
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           Container(
             decoration: BoxDecoration(
               color: AppTheme.primaryGreen,

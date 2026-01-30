@@ -7,13 +7,19 @@ class GeminiService {
   static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent';
 
   /// Sends a prompt to the Gemini API and returns the generated text.
-  Future<String> getAIResponse(String prompt) async {
+  /// [language]: The target language for the response (default: 'English').
+  Future<String> getAIResponse(String prompt, {String language = 'English'}) async {
     final apiKey = dotenv.env['GEMINI_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
       return "Error: GEMINI_API_KEY is not set in .env";
     }
 
     final uri = Uri.parse("$_baseUrl?key=$apiKey");
+
+    // Construct the prompt with language instruction
+    final effectivePrompt = "You are a helpful farm assistant. Please reply in $language. "
+        "Keep the language simple and easy to understand for a farmer.\n\n"
+        "User: $prompt";
 
     try {
       final response = await http.post(
@@ -23,7 +29,7 @@ class GeminiService {
           "contents": [
             {
               "parts": [
-                {"text": prompt}
+                {"text": effectivePrompt}
               ]
             }
           ]
@@ -52,11 +58,11 @@ class GeminiService {
   /// Refines the raw output from the ML model into a user-friendly diagnosis.
   /// [rawDiseaseName]: The label predicted by the ML model (e.g., "Tomato___Target_Spot").
   /// [confidence]: The probability score (0.0 to 1.0).
-  Future<String> explainDiseaseDiagnosis(String rawDiseaseName, double confidence) async {
+  Future<String> explainDiseaseDiagnosis(String rawDiseaseName, double confidence, {String language = 'English'}) async {
     final prompt = "A crop disease detection model identified '$rawDiseaseName' with ${(confidence * 100).toStringAsFixed(1)}% confidence. "
         "Please explain what this disease is, its symptoms, and provide 3 practical treatment steps for a farmer. "
         "Keep the language simple and encouraging.";
     
-    return await getAIResponse(prompt);
+    return await getAIResponse(prompt, language: language);
   }
 }

@@ -50,7 +50,7 @@ dependencies:
   fluttertoast: ^9.0.0
   
   # TTS & Localization
-  flutter_tts: ^3.8.5
+  flutter_tts: ^4.2.5
   intl: ^0.19.0
   
   # Utilities
@@ -59,6 +59,8 @@ dependencies:
   http: ^1.6.0
   geolocator: ^14.0.2
   flutter_dotenv: ^6.0.0
+  speech_to_text: ^7.3.0
+  permission_handler: ^12.0.1
 
 dev_dependencies:
   flutter_test:
