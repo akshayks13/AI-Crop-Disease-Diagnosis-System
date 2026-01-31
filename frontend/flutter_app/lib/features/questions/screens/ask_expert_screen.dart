@@ -1,11 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart';
 
 import '../../../../config/theme.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_config.dart';
 
-/// Ask Expert screen for submitting questions
+/// Ask Expert screen for submitting questions with optional image/video
 class AskExpertScreen extends ConsumerStatefulWidget {
   const AskExpertScreen({super.key});
 
@@ -17,11 +21,50 @@ class _AskExpertScreenState extends ConsumerState<AskExpertScreen> {
   final _formKey = GlobalKey<FormState>();
   final _questionController = TextEditingController();
   bool _isSubmitting = false;
+  XFile? _selectedMedia;
+  String? _mediaType; // 'image' or 'video'
+
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
     _questionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1920,
+      maxHeight: 1080,
+      imageQuality: 85,
+    );
+    if (image != null) {
+      setState(() {
+        _selectedMedia = image;
+        _mediaType = 'image';
+      });
+    }
+  }
+
+  Future<void> _pickVideo() async {
+    final XFile? video = await _picker.pickVideo(
+      source: ImageSource.gallery,
+      maxDuration: const Duration(minutes: 2),
+    );
+    if (video != null) {
+      setState(() {
+        _selectedMedia = video;
+        _mediaType = 'video';
+      });
+    }
+  }
+
+  void _clearMedia() {
+    setState(() {
+      _selectedMedia = null;
+      _mediaType = null;
+    });
   }
 
   Future<void> _submitQuestion() async {
@@ -30,7 +73,22 @@ class _AskExpertScreenState extends ConsumerState<AskExpertScreen> {
 
     try {
       final api = ref.read(apiClientProvider);
-      await api.post(ApiConfig.questions, data: {'question_text': _questionController.text.trim()});
+      
+      if (_selectedMedia != null) {
+        // Use multipart form for file upload
+        final formData = FormData.fromMap({
+          'question_text': _questionController.text.trim(),
+          'file': await MultipartFile.fromFile(
+            _selectedMedia!.path,
+            filename: _selectedMedia!.name,
+          ),
+        });
+        await api.post('${ApiConfig.questions}/with-file', data: formData);
+      } else {
+        // Text-only question
+        await api.post(ApiConfig.questions, data: {'question_text': _questionController.text.trim()});
+      }
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Question submitted! An expert will respond soon.'), backgroundColor: AppTheme.primaryGreen),
@@ -85,6 +143,72 @@ class _AskExpertScreenState extends ConsumerState<AskExpertScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 20),
+              
+              // Media attachment section
+              Text('Attach Photo/Video (Optional)', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+              const SizedBox(height: 12),
+              
+              if (_selectedMedia == null)
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _pickImage,
+                        icon: const Icon(Icons.photo_camera),
+                        label: const Text('Add Image'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _pickVideo,
+                        icon: const Icon(Icons.videocam),
+                        label: const Text('Add Video'),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _mediaType == 'video' ? Icons.videocam : Icons.image,
+                        color: AppTheme.primaryGreen,
+                        size: 32,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _mediaType == 'video' ? 'Video attached' : 'Image attached',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              _selectedMedia!.name,
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _clearMedia,
+                        icon: const Icon(Icons.close, color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ),
+              
               const SizedBox(height: 24),
               SizedBox(
                 height: 56,
