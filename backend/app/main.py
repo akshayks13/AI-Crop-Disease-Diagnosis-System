@@ -14,10 +14,22 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
 from app.database import init_db, close_db, init_data
+
+# Import all models to ensure they are registered with Base before create_all
+from app.models import (
+    User, Diagnosis, Question, Answer, SystemLog, SystemMetric,
+    MarketPrice, CommunityPost, CommunityComment, PostLike,
+    FarmCrop, FarmTask, CropInfo, DiseaseInfo
+)
+
 from app.auth.routes import router as auth_router
 from app.routes.farmer import router as farmer_router, questions_router
 from app.routes.expert import router as expert_router
 from app.routes.admin import router as admin_router
+from app.routes.market import router as market_router
+from app.routes.community import router as community_router
+from app.routes.farm import router as farm_router
+from app.routes.encyclopedia import router as encyclopedia_router
 
 # Configure logging
 logging.basicConfig(
@@ -124,6 +136,10 @@ app.include_router(farmer_router)
 app.include_router(questions_router)
 app.include_router(expert_router)
 app.include_router(admin_router)
+app.include_router(market_router)
+app.include_router(community_router)
+app.include_router(farm_router)
+app.include_router(encyclopedia_router)
 
 # Mount static files for uploads (if needed for direct access)
 # In production, use CDN or S3

@@ -127,6 +127,45 @@ questions_router = APIRouter(prefix="/questions", tags=["Farmer - Questions"])
 
 @questions_router.post("", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_question(
+    question_data: QuestionCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Submit a question to agricultural experts (JSON body, no file).
+    """
+    # Parse diagnosis ID if provided
+    diag_uuid = None
+    if question_data.diagnosis_id:
+        try:
+            diag_uuid = uuid.UUID(question_data.diagnosis_id)
+        except ValueError:
+            pass
+    
+    # Create question
+    question = Question(
+        farmer_id=current_user.id,
+        question_text=question_data.question_text,
+        media_path=None,
+        diagnosis_id=diag_uuid,
+        status=QuestionStatus.OPEN,
+    )
+    
+    db.add(question)
+    await db.flush()
+    await db.refresh(question)
+    
+    return {
+        "id": str(question.id),
+        "question_text": question.question_text,
+        "status": question.status.value,
+        "created_at": question.created_at.isoformat(),
+        "message": "Question submitted successfully. An expert will respond soon."
+    }
+
+
+@questions_router.post("/with-file", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def create_question_with_file(
     question_text: str = Form(..., min_length=10),
     file: Optional[UploadFile] = File(None),
     diagnosis_id: Optional[str] = Form(None),
@@ -134,10 +173,7 @@ async def create_question(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Submit a question to agricultural experts.
-    
-    - Optional image attachment
-    - Optional link to a previous diagnosis
+    Submit a question to agricultural experts with optional file attachment.
     """
     media_path = None
     

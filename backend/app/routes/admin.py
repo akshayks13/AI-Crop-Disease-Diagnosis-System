@@ -147,6 +147,83 @@ async def get_daily_metrics(
     return {"metrics": list(reversed(metrics))}
 
 
+# ============== Questions Management ==============
+
+@router.get("/questions", response_model=dict)
+async def get_all_questions(
+    page: int = 1,
+    page_size: int = 20,
+    status_filter: Optional[str] = None,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get all farmer questions for admin review (includes media attachments)."""
+    query = select(Question)
+    count_query = select(func.count(Question.id))
+    
+    if status_filter:
+        try:
+            status_enum = QuestionStatus(status_filter.upper())
+            query = query.where(Question.status == status_enum)
+            count_query = count_query.where(Question.status == status_enum)
+        except ValueError:
+            pass
+    
+    total = (await db.execute(count_query)).scalar()
+    
+    offset = (page - 1) * page_size
+    query = query.order_by(Question.created_at.desc()).offset(offset).limit(page_size)
+    
+    result = await db.execute(query)
+    questions = result.scalars().all()
+    
+    questions_data = []
+    for q in questions:
+        # Get farmer info
+        farmer_result = await db.execute(select(User).where(User.id == q.farmer_id))
+        farmer = farmer_result.scalar_one_or_none()
+        
+        # Get answers
+        answers_result = await db.execute(
+            select(Answer, User)
+            .join(User, Answer.expert_id == User.id)
+            .where(Answer.question_id == q.id)
+            .order_by(Answer.created_at.asc())
+        )
+        answers = answers_result.all()
+        
+        questions_data.append({
+            "id": str(q.id),
+            "question_text": q.question_text,
+            "status": q.status.value,
+            "media_path": q.media_path,
+            "created_at": q.created_at.isoformat(),
+            "farmer": {
+                "id": str(farmer.id) if farmer else None,
+                "name": farmer.full_name if farmer else "Unknown",
+                "email": farmer.email if farmer else None,
+            },
+            "answers": [
+                {
+                    "id": str(a.id),
+                    "expert_name": u.full_name,
+                    "answer_text": a.answer_text,
+                    "rating": a.rating,
+                    "created_at": a.created_at.isoformat(),
+                }
+                for a, u in answers
+            ],
+            "answer_count": len(answers),
+        })
+    
+    return {
+        "questions": questions_data,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
 # ============== Expert Approval ==============
 
 @router.get("/experts/pending", response_model=dict)

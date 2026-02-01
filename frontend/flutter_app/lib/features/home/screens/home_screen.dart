@@ -151,6 +151,13 @@ class HomeScreen extends ConsumerWidget {
                     color: const Color(0xFF607D8B), // Blue Grey 500
                     onTap: () => Navigator.pushNamed(context, AppRoutes.history),
                   ),
+                  _ActionCard(
+                    title: 'My\nQuestions',
+                    subtitle: 'Expert answers',
+                    icon: Icons.question_answer,
+                    color: const Color(0xFF3F51B5), // Indigo 500
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.myQuestions),
+                  ),
                 ],
               ),
 

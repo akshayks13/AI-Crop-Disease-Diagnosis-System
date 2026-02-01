@@ -43,28 +43,23 @@ async def get_expert_status(
 
 @router.put("/profile", response_model=dict)
 async def update_expert_profile(
-    full_name: Optional[str] = Form(None),
-    phone: Optional[str] = Form(None),
-    expertise_domain: Optional[str] = Form(None),
-    qualification: Optional[str] = Form(None),
-    experience_years: Optional[int] = Form(None),
-    location: Optional[str] = Form(None),
+    profile_data: dict,
     current_user: User = Depends(require_expert),
     db: AsyncSession = Depends(get_db),
 ):
     """Update expert profile information."""
-    if full_name:
-        current_user.full_name = full_name
-    if phone:
-        current_user.phone = phone
-    if expertise_domain:
-        current_user.expertise_domain = expertise_domain
-    if qualification:
-        current_user.qualification = qualification
-    if experience_years is not None:
-        current_user.experience_years = experience_years
-    if location:
-        current_user.location = location
+    if profile_data.get("full_name"):
+        current_user.full_name = profile_data["full_name"]
+    if profile_data.get("phone"):
+        current_user.phone = profile_data["phone"]
+    if profile_data.get("expertise_domain"):
+        current_user.expertise_domain = profile_data["expertise_domain"]
+    if profile_data.get("qualification"):
+        current_user.qualification = profile_data["qualification"]
+    if profile_data.get("experience_years") is not None:
+        current_user.experience_years = profile_data["experience_years"]
+    if profile_data.get("location"):
+        current_user.location = profile_data["location"]
     
     current_user.updated_at = datetime.utcnow()
     
@@ -213,8 +208,7 @@ async def get_question_detail(
 
 @router.post("/answer", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def submit_answer(
-    question_id: str = Form(...),
-    answer_text: str = Form(..., min_length=10),
+    answer_data: dict,
     current_user: User = Depends(require_approved_expert),
     db: AsyncSession = Depends(get_db),
 ):
@@ -224,6 +218,21 @@ async def submit_answer(
     - Marks question as RESOLVED after first answer
     - Multiple experts can answer the same question
     """
+    question_id = answer_data.get("question_id")
+    answer_text = answer_data.get("answer_text", "")
+    
+    if not question_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="question_id is required"
+        )
+    
+    if len(answer_text) < 10:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="answer_text must be at least 10 characters"
+        )
+    
     try:
         q_uuid = uuid.UUID(question_id)
     except ValueError:

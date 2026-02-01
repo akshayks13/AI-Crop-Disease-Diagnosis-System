@@ -160,9 +160,13 @@ Dashboard available at: http://localhost:3000
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | admin@cropdiagnosis.com | admin_password |
+| Admin | admin@cropdiagnosis.com | admin123 |
+| Farmer | farmer1@example.com | farmer123 |
+| Farmer | farmer2@example.com | farmer123 |
+| Expert (Approved) | expert1@example.com | expert123 |
+| Expert (Pending) | expert2@example.com | expert123 |
 
-> Change these credentials in production!
+> ⚠️ Change these credentials in production!
 
 ---
 
@@ -214,8 +218,71 @@ The system uses a simulated ML model for development. To integrate a real model:
 ## App Screens
 
 - **Auth**: Splash, Login, Register
-- **Farmer**: Home, Diagnosis, Results, History, Ask Expert
-- **Expert**: Dashboard, Questions, Answer
+- **Farmer**: Home, Diagnosis, Results, History, Ask Expert, My Questions
+- **Expert**: Dashboard, Questions, Answer, Statistics
+- **Admin**: Dashboard, User Management, Expert Approval
 - **Common**: Profile
+
+---
+
+## Docker Deployment
+
+### Quick Start with Docker
+```bash
+# Build and start all services
+docker-compose up --build -d
+
+# Check container status
+docker ps
+```
+
+### Access Points
+| Service | URL |
+|---------|-----|
+| Flutter App | http://localhost:8080 |
+| Admin Dashboard | http://localhost:3000 |
+| Backend API | http://localhost:8000/docs |
+| Database | localhost:5432 |
+
+### Useful Commands
+```bash
+# View backend logs (includes OTP codes for development)
+docker logs crop_diagnosis_backend -f
+
+# Restart a specific service
+docker-compose restart backend
+
+# Stop all containers
+docker-compose down
+
+# Rebuild after code changes
+docker-compose up --build -d
+
+# Reset Database (Delete all data and re-seed)
+docker-compose down -v
+```
+
+### Database Access
+Connect using any PostgreSQL client (DBeaver, TablePlus, pgAdmin):
+- **Host**: localhost
+- **Port**: 5432
+- **Database**: crop_diagnosis
+- **User**: postgres
+- **Password**: postgres
+
+Query database directly:
+```bash
+docker exec crop_diagnosis_db psql -U postgres -d crop_diagnosis -c "SELECT email, role FROM users;"
+```
+
+### OTP Retrieval (Development)
+OTPs are logged to backend console. View them with:
+```bash
+docker logs crop_diagnosis_backend -f
+```
+Or query the database:
+```bash
+docker exec crop_diagnosis_db psql -U postgres -d crop_diagnosis -c "SELECT email, otp_code FROM users WHERE otp_code IS NOT NULL;"
+```
 
 ---

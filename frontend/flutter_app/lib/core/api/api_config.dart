@@ -29,8 +29,23 @@ class ApiConfig {
   static const String expertAnswer = '/expert/answer';
   static const String expertStats = '/expert/stats';
   
+  // Market endpoints
+  static const String marketPrices = '/market/prices';
+  
+  // Community endpoints
+  static const String communityPosts = '/community/posts';
+  
+  // Farm endpoints
+  static const String farmCrops = '/farm/crops';
+  static const String farmTasks = '/farm/tasks';
+  
+  // Encyclopedia endpoints
+  static const String encyclopediaCrops = '/encyclopedia/crops';
+  static const String encyclopediaDiseases = '/encyclopedia/diseases';
+  
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 60);
   static const Duration uploadTimeout = Duration(seconds: 120);
 }
+
