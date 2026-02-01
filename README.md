@@ -57,6 +57,8 @@ An AI-powered agricultural solution that helps farmers diagnose crop diseases us
 ├── database/
 │   └── init.sql            # Schema initialization
 └── ml_models/              # ML models
+│            
+└── Password Hashing/
 ```
 
 ## Quick Start
@@ -70,6 +72,28 @@ An AI-powered agricultural solution that helps farmers diagnose crop diseases us
 ---
 
 ### 1. PostgreSQL Setup
+
+### Windows
+
+1. Download PostgreSQL:  
+   https://www.postgresql.org/download/windows/
+
+2. During installation:
+   - Set a password for user `postgres`
+   - Default port: `5432`
+
+3. Create database:
+```sql
+CREATE DATABASE crop_diagnosis;
+```
+Initialize schema:
+
+```bash
+cd backend
+psql -U postgres -d crop_diagnosis -f ../database/init.sql
+```
+
+### macOS
 
 #### Install PostgreSQL (macOS)
 ```bash
@@ -102,6 +126,24 @@ psql -d crop_diagnosis -f ../database/init.sql
 ---
 
 ### 2. Backend Setup
+
+### Windows
+```bash
+cd backend
+
+python -m venv venv
+venv\Scripts\activate
+
+pip install -r requirements.txt
+copy .env.example .env
+```
+Run server:
+
+```bash
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+### macOS
 
 ```bash
 cd backend
