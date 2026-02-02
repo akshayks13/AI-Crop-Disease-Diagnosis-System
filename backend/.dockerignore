@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testing & Linting
+.pytest_cache
+.coverage
+htmlcov/
+tests/
+pytest.ini
+.ruff_cache/
+
+# Local Data & Secrets
+uploads/
+.env
+.env.local
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
