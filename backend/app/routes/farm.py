@@ -44,7 +44,7 @@ async def get_crops(
     query = select(FarmCrop).where(FarmCrop.user_id == current_user.id)
     
     if active_only:
-        query = query.where(FarmCrop.is_active == True)
+        query = query.where(FarmCrop.is_active.is_(True))
     
     query = query.order_by(FarmCrop.created_at.desc())
     

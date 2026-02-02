@@ -62,7 +62,7 @@ async def test_get_question_detail(auth_client: AsyncClient, test_db):
 async def test_question_unauthorized(client: AsyncClient):
     """Test question endpoints require authentication."""
     response = await client.get("/questions")
-    assert response.status_code == 401
+    assert response.status_code == 403  # FastAPI returns 403 for missing auth
 
 
 @pytest.mark.asyncio

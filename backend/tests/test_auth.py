@@ -81,12 +81,12 @@ async def test_login_nonexistent_user(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_protected_route_without_token(client: AsyncClient):
     """Test accessing protected route without token."""
-    response = await client.get("/farmer/profile")
-    assert response.status_code == 401
+    response = await client.get("/diagnosis/history")
+    assert response.status_code == 403  # FastAPI returns 403 for missing auth
 
 
 @pytest.mark.asyncio
 async def test_protected_route_with_token(auth_client: AsyncClient):
     """Test accessing protected route with valid token."""
-    response = await auth_client.get("/farmer/profile")
+    response = await auth_client.get("/diagnosis/history")
     assert response.status_code == 200

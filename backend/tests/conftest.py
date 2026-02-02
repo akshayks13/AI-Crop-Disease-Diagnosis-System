@@ -2,14 +2,12 @@
 Test Configuration and Fixtures
 """
 import asyncio
+import os
 import uuid
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.dialects import sqlite
-from sqlalchemy.types import TypeDecorator, CHAR
 
 from app.main import app
 from app.database import Base, get_db
@@ -17,41 +15,12 @@ from app.models import User, UserRole, UserStatus
 from app.auth.jwt_handler import hash_password, create_access_token
 
 
-# Custom UUID type that works with SQLite
-class GUID(TypeDecorator):
-    """Platform-independent GUID type.
-    Uses CHAR(32) for SQLite, storing as stringified hex values.
-    """
-    impl = CHAR
-    cache_ok = True
-
-    def load_dialect_impl(self, dialect):
-        return dialect.type_descriptor(CHAR(32))
-
-    def process_bind_param(self, value, dialect):
-        if value is not None:
-            if isinstance(value, uuid.UUID):
-                return value.hex
-            else:
-                return uuid.UUID(value).hex
-        return value
-
-    def process_result_value(self, value, dialect):
-        if value is not None:
-            return uuid.UUID(value)
-        return value
-
-
-# Patch UUID columns to use GUID for SQLite
-from sqlalchemy import UUID as SA_UUID
-from sqlalchemy.dialects.sqlite import base as sqlite_base
-
-# Register UUID handling for SQLite
-sqlite_base.ischema_names['UUID'] = GUID
-
-
-# Test database URL (in-memory SQLite for tests)
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# Use PostgreSQL from environment (CI) or fail if not set
+# Tests require PostgreSQL because the models use PostgreSQL-specific UUID type
+TEST_DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql+asyncpg://akshayks@localhost:5432/crop_diagnosis_test"
+)
 
 
 @pytest.fixture(scope="session")
@@ -65,22 +34,9 @@ def event_loop():
 @pytest_asyncio.fixture(scope="function")
 async def test_db():
     """Create test database and session."""
-    # Create engine with UUID support
-    engine = create_async_engine(
-        TEST_DATABASE_URL,
-        echo=False,
-        connect_args={"check_same_thread": False}
-    )
-    
-    # Render UUID as CHAR(32) for SQLite
-    @event.listens_for(engine.sync_engine, "connect")
-    def set_sqlite_pragma(dbapi_conn, connection_record):
-        cursor = dbapi_conn.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
     
     async with engine.begin() as conn:
-        # Create tables with SQLite-compatible UUID (as CHAR)
         await conn.run_sync(Base.metadata.create_all)
     
     session_maker = async_sessionmaker(
