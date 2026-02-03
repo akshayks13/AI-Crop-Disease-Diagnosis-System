@@ -154,6 +154,39 @@ npm run dev
 
 Dashboard available at: http://localhost:3000
 
+
+## Testing & Linting
+
+### Backend (FastAPI)
+```bash
+cd backend
+
+# Run Linter (Ruff)
+ruff check .
+
+# Run Tests
+pytest
+```
+
+### Mobile App (Flutter)
+```bash
+cd frontend/flutter_app
+
+# Run Linter
+flutter analyze --no-fatal-infos
+
+# Run Tests
+flutter test
+```
+
+### Admin Dashboard (Next.js)
+```bash
+cd frontend/admin_dashboard
+
+# Run Linter
+npm run lint
+```
+
 ---
 
 ## Default Credentials
