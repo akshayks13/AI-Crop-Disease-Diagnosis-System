@@ -57,7 +57,7 @@ class TestFarmAPI:
         assert response.status_code == 201
         data = response.json()
         assert data["title"] == task_data["title"]
-        assert data["is_completed"] == False
+        assert data["is_completed"] is False
 
     @pytest.mark.asyncio
     async def test_complete_task(self, auth_client: AsyncClient):
@@ -71,4 +71,4 @@ class TestFarmAPI:
         complete_response = await auth_client.put(f"/farm/tasks/{task_id}/complete")
         assert complete_response.status_code == 200
         data = complete_response.json()
-        assert data["is_completed"] == True
+        assert data["is_completed"] is True

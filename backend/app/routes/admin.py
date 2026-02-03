@@ -29,7 +29,6 @@ async def get_dashboard(
 ):
     """Get admin dashboard overview."""
     today = datetime.utcnow().date()
-    yesterday = today - timedelta(days=1)
     week_ago = today - timedelta(days=7)
     
     # User counts

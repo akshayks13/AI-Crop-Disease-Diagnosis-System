@@ -1,0 +1,22 @@
+# Git
+.git
+.gitignore
+
+# Flutter / Dart
+.dart_tool/
+.idea/
+.vscode/
+build/
+android/.gradle
+android/local.properties
+ios/.symlinks
+ios/Pods/
+
+# Keep assets/.env but ignore root .env
+/.env
+
+# Misc
+.DS_Store
+
+# Test files
+test/

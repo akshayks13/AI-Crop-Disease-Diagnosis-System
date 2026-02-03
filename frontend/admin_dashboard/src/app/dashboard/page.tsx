@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Leaf, HelpCircle, Clock, TrendingUp, ArrowUpRight, Database, Activity } from 'lucide-react';
+import { Users, Leaf, HelpCircle, Clock, TrendingUp, ArrowUpRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { adminApi } from '@/lib/api';
 import { DashboardData, DailyMetric } from '@/types';
@@ -21,6 +21,7 @@ export default function DashboardPage() {
                 ]);
                 setData(dashRes.data);
                 setDailyMetrics(metricsRes.data.metrics || []);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (e: any) {
                 setError(e.response?.data?.detail || 'Failed to load dashboard data');
             } finally {
@@ -58,11 +59,11 @@ export default function DashboardPage() {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-                    <p className="text-slate-500 text-sm mt-0.5">Welcome back! Here's what's happening today.</p>
+                    <p className="text-slate-500 text-sm mt-0.5">Welcome back! Here&apos;s what&apos;s happening today.</p>
                 </div>
                 <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${data.system_health === 'healthy'
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border border-amber-200'
                     }`}>
                     <div className={`w-2 h-2 rounded-full animate-pulse ${data.system_health === 'healthy' ? 'bg-emerald-500' : 'bg-amber-500'
                         }`} />
@@ -196,11 +197,13 @@ export default function DashboardPage() {
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function MetricCard({ title, value, subtitle, trend, icon: Icon, color }: {
     title: string;
     value: string;
     subtitle: string;
     trend: 'up' | 'down' | 'neutral';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     icon: any;
     color: 'indigo' | 'emerald' | 'amber' | 'purple';
 }) {

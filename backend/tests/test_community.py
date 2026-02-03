@@ -73,7 +73,7 @@ class TestCommunityAPI:
         like_response = await auth_client.post(f"/community/posts/{post_id}/like")
         assert like_response.status_code == 200
         data = like_response.json()
-        assert data["liked"] == True
+        assert data["liked"] is True
         assert data["likes_count"] == 1
 
     @pytest.mark.asyncio

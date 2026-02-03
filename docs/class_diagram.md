@@ -19,20 +19,18 @@ classDiagram
         +Integer experience_years
         +String location
         +DateTime created_at
-        +DateTime updated_at
-        +is_expert_approved() Boolean
-        +verify_password(password) Boolean
+        +verify_password() Boolean
     }
     
     class UserRole {
-        <<enumeration>>
+        <<enum>>
         FARMER
         EXPERT
         ADMIN
     }
     
     class UserStatus {
-        <<enumeration>>
+        <<enum>>
         PENDING
         ACTIVE
         SUSPENDED
@@ -43,7 +41,6 @@ classDiagram
         +UUID id
         +UUID user_id
         +String media_path
-        +String media_type
         +String crop_type
         +String disease_name
         +Float confidence
@@ -53,7 +50,6 @@ classDiagram
         +JSON prevention_tips
         +String location
         +DateTime created_at
-        +to_response_dict() Dict
     }
     
     %% ==================== Q&A SYSTEM ====================
@@ -65,7 +61,6 @@ classDiagram
         +String media_path
         +QuestionStatus status
         +DateTime created_at
-        +DateTime updated_at
     }
     
     class Answer {
@@ -78,7 +73,7 @@ classDiagram
     }
     
     class QuestionStatus {
-        <<enumeration>>
+        <<enum>>
         OPEN
         RESOLVED
         CLOSED
@@ -95,7 +90,6 @@ classDiagram
         +Integer comments_count
         +Boolean is_pinned
         +DateTime created_at
-        +DateTime updated_at
     }
     
     class CommunityComment {
@@ -113,30 +107,6 @@ classDiagram
         +DateTime created_at
     }
     
-    %% ==================== MARKET ====================
-    class MarketPrice {
-        +UUID id
-        +String commodity
-        +Float price
-        +String unit
-        +String location
-        +TrendType trend
-        +Float change_percent
-        +Float min_price
-        +Float max_price
-        +Float arrival_qty
-        +DateTime recorded_at
-        +DateTime created_at
-        +DateTime updated_at
-    }
-    
-    class TrendType {
-        <<enumeration>>
-        UP
-        DOWN
-        STABLE
-    }
-    
     %% ==================== FARM MANAGEMENT ====================
     class FarmCrop {
         +UUID id
@@ -151,8 +121,6 @@ classDiagram
         +Float progress
         +String notes
         +Boolean is_active
-        +DateTime created_at
-        +DateTime updated_at
     }
     
     class FarmTask {
@@ -164,15 +132,12 @@ classDiagram
         +DateTime due_date
         +TaskPriority priority
         +Boolean is_completed
-        +DateTime completed_at
         +Boolean is_recurring
         +Integer recurrence_days
-        +DateTime created_at
-        +DateTime updated_at
     }
     
     class GrowthStage {
-        <<enumeration>>
+        <<enum>>
         GERMINATION
         SEEDLING
         VEGETATIVE
@@ -183,10 +148,31 @@ classDiagram
     }
     
     class TaskPriority {
-        <<enumeration>>
+        <<enum>>
         LOW
         MEDIUM
         HIGH
+    }
+    
+    %% ==================== MARKET ====================
+    class MarketPrice {
+        +UUID id
+        +String commodity
+        +Float price
+        +String unit
+        +String location
+        +TrendType trend
+        +Float change_percent
+        +Float min_price
+        +Float max_price
+        +DateTime recorded_at
+    }
+    
+    class TrendType {
+        <<enum>>
+        UP
+        DOWN
+        STABLE
     }
     
     %% ==================== ENCYCLOPEDIA ====================
@@ -199,14 +185,9 @@ classDiagram
         +Float temp_min
         +Float temp_max
         +String water_requirement
-        +String soil_type
         +JSON growing_tips
-        +JSON nutritional_info
-        +JSON common_varieties
         +JSON common_diseases
         +String image_url
-        +DateTime created_at
-        +DateTime updated_at
     }
     
     class DiseaseInfo {
@@ -216,34 +197,10 @@ classDiagram
         +JSON affected_crops
         +String description
         +JSON symptoms
-        +JSON causes
         +JSON chemical_treatment
         +JSON organic_treatment
         +JSON prevention
         +String severity_level
-        +String image_url
-        +DateTime created_at
-        +DateTime updated_at
-    }
-    
-    %% ==================== SYSTEM ====================
-    class SystemLog {
-        +UUID id
-        +String level
-        +String message
-        +String module
-        +UUID user_id
-        +String ip_address
-        +JSON metadata
-        +DateTime created_at
-    }
-    
-    class SystemMetric {
-        +UUID id
-        +String metric_name
-        +Float value
-        +String unit
-        +DateTime recorded_at
     }
     
     %% ==================== RELATIONSHIPS ====================
@@ -255,7 +212,6 @@ classDiagram
     User "1" --> "*" PostLike : gives
     User "1" --> "*" FarmCrop : manages
     User "1" --> "*" FarmTask : owns
-    User "1" --> "*" SystemLog : generates
     
     Question "*" --> "0..1" Diagnosis : references
     Question "1" --> "*" Answer : receives
@@ -267,10 +223,10 @@ classDiagram
     
     CropInfo "1" --> "*" DiseaseInfo : affected_by
     
-    User ..> UserRole : has
-    User ..> UserStatus : has
-    Question ..> QuestionStatus : has
-    MarketPrice ..> TrendType : has
-    FarmCrop ..> GrowthStage : has
-    FarmTask ..> TaskPriority : has
+    User ..> UserRole
+    User ..> UserStatus
+    Question ..> QuestionStatus
+    FarmCrop ..> GrowthStage
+    FarmTask ..> TaskPriority
+    MarketPrice ..> TrendType
 ```

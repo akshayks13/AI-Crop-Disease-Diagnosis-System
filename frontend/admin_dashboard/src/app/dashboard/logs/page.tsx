@@ -12,21 +12,24 @@ export default function LogsPage() {
     const [error, setError] = useState('');
     const [levelFilter, setLevelFilter] = useState('');
 
-    const loadLogs = async () => {
-        setLoading(true);
-        try {
-            const res = await adminApi.getLogs(1, levelFilter || undefined);
-            setLogs(res.data.logs || []);
-            setError('');
-        } catch (e: any) {
-            setError(e.response?.data?.detail || 'Failed to load logs');
-        } finally {
-            setLoading(false);
-        }
-    };
+    useEffect(() => {
+        const loadLogs = async () => {
+            setLoading(true);
+            try {
+                const res = await adminApi.getLogs(1, levelFilter || undefined);
+                setLogs(res.data.logs || []);
+                setError('');
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } catch (e: any) {
+                setError(e.response?.data?.detail || 'Failed to load logs');
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadLogs();
+    }, [levelFilter]);
 
-    useEffect(() => { loadLogs(); }, [levelFilter]);
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const levelConfig: Record<string, { bg: string; text: string; icon: any; border: string }> = {
         INFO: { bg: 'bg-indigo-50', text: 'text-indigo-700', icon: Info, border: 'border-indigo-200' },
         WARNING: { bg: 'bg-amber-50', text: 'text-amber-700', icon: AlertTriangle, border: 'border-amber-200' },
