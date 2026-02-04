@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/theme.dart';
+import '../../../config/routes.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_config.dart';
 
@@ -93,125 +94,105 @@ class _AnsweredQuestionsScreenState extends ConsumerState<AnsweredQuestionsScree
     final hasImage = item['media_path'] != null;
     final rating = item['rating'];
 
+    final theme = Theme.of(context);
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: Farmer Info & Rating
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: AppTheme.primaryGreen.withOpacity(0.1),
-                  child: Text(
-                    (item['farmer_name'] ?? 'F')[0].toUpperCase(),
-                    style: const TextStyle(color: AppTheme.primaryGreen, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item['farmer_name'] ?? 'Unknown Farmer',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      Text(
-                        'Answered on ${_formatDate(item['answered_at'])}',
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                if (rating != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.amber.withOpacity(0.3)),
+      child: InkWell(
+        onTap: () => Navigator.pushNamed(context, AppRoutes.expertAnswerDetail, arguments: item),
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: Farmer Info & Rating
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                    child: Text(
+                      (item['farmer_name'] ?? 'F')[0].toUpperCase(),
+                      style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
                     ),
-                    child: Row(
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.star, size: 14, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text('$rating/5', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber)),
+                        Text(
+                          item['farmer_name'] ?? 'Unknown Farmer',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        Text(
+                          'Answered on ${_formatDate(item['answered_at'])}',
+                          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 12),
+                        ),
                       ],
                     ),
                   ),
-              ],
-            ),
-          ),
-          
-          const Divider(height: 1),
-
-          // Question Content
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                   const Text('Q: ', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
-                   Expanded(
-                     child: Text(
-                        item['question_text'] ?? '',
-                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+                  if (rating != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber.withOpacity(0.3)),
                       ),
-                   ),
-                  ],
-                ),
-                if (hasImage) ...[
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      '${ApiConfig.baseUrl}${item['media_path']}',
-                      height: 150,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (ctx, _, __) => Container(
-                        height: 150,
-                        color: Colors.grey.shade100,
-                        child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.star, size: 14, color: Colors.amber),
+                          const SizedBox(width: 4),
+                          Text('$rating/5', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber)),
+                        ],
                       ),
                     ),
-                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.chevron_right, color: theme.colorScheme.onSurface.withOpacity(0.4)),
                 ],
-              ],
+              ),
             ),
-          ),
-          
-          Container(
-             width: double.infinity,
-             padding: const EdgeInsets.all(16),
-             color: AppTheme.primaryGreen.withOpacity(0.05),
-             child: Column(
-               crossAxisAlignment: CrossAxisAlignment.start,
-               children: [
-                 const Row(
-                   children: [
-                     Icon(Icons.check_circle, size: 16, color: AppTheme.primaryGreen),
-                     SizedBox(width: 8),
-                     Text('Your Answer:', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryGreen)),
+            
+            const Divider(height: 1),
+
+            // Question Snippet
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Q: ', style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.error)),
+                      Expanded(
+                        child: Text(
+                            item['question_text'] ?? '',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                          ),
+                      ),
+                    ],
+                   ),
+                   if (hasImage) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.image, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                          const SizedBox(width: 4),
+                          Text('Contains Image', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 12)),
+                        ],
+                      ),
                    ],
-                 ),
-                 const SizedBox(height: 8),
-                 Text(
-                   item['answer_text'] ?? '',
-                   style: const TextStyle(color: Colors.black87, height: 1.4),
-                 ),
-               ],
-             ),
-          ),
-        ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
