@@ -13,6 +13,7 @@ import '../features/expert/screens/expert_dashboard_screen.dart';
 import '../features/expert/screens/questions_screen.dart';
 import '../features/expert/screens/answer_screen.dart';
 import '../features/expert/screens/expert_stats_screen.dart';
+import '../features/expert/screens/answered_questions_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 import '../features/questions/screens/ask_expert_screen.dart';
@@ -59,6 +60,7 @@ class AppRoutes {
   static const String expertQuestions = '/expert/questions';
   static const String expertAnswer = '/expert/answer';
   static const String expertStats = '/expert/stats';
+  static const String expertMyAnswers = '/expert/my-answers';
   
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -127,6 +129,8 @@ class AppRoutes {
         return _slideRoute(AnswerScreen(question: args), settings);
       case expertStats:
         return _slideRoute(const ExpertStatsScreen(), settings);
+      case expertMyAnswers:
+        return _slideRoute(const AnsweredQuestionsScreen(), settings);
       
       default:
         return MaterialPageRoute(

@@ -99,7 +99,7 @@ class _ApprovedExpertView extends StatelessWidget {
             title: 'My Answered Questions',
             subtitle: 'View questions you answered',
             color: Colors.teal,
-            onTap: () => Navigator.pushNamed(context, AppRoutes.expertStats),
+            onTap: () => Navigator.pushNamed(context, AppRoutes.expertMyAnswers),
           ),
         ],
       ),

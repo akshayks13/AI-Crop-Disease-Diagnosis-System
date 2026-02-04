@@ -52,6 +52,12 @@ class _ExpertStatsScreenState extends ConsumerState<ExpertStatsScreen> {
     }
   }
 
+  String _formatRating(dynamic rating) {
+    if (rating == null) return '--';
+    if (rating is num) return rating.toStringAsFixed(1);
+    return double.tryParse(rating.toString())?.toStringAsFixed(1) ?? '--';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,8 +77,6 @@ class _ExpertStatsScreenState extends ConsumerState<ExpertStatsScreen> {
                         _buildStatsOverview(),
                         const SizedBox(height: 24),
                         _buildRatingsBreakdown(),
-                        const SizedBox(height: 24),
-                        _buildAnsweredQuestions(),
                       ],
                     ),
                   ),
@@ -102,7 +106,7 @@ class _ExpertStatsScreenState extends ConsumerState<ExpertStatsScreen> {
           const Icon(Icons.star, color: Colors.white, size: 40),
           const SizedBox(height: 12),
           Text(
-            avgRating != null ? avgRating.toStringAsFixed(1) : '--',
+            _formatRating(avgRating),
             style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const Text('Average Rating', style: TextStyle(color: Colors.white70, fontSize: 16)),
@@ -136,8 +140,16 @@ class _ExpertStatsScreenState extends ConsumerState<ExpertStatsScreen> {
             const SizedBox(height: 16),
             ...List.generate(5, (index) {
               final rating = 5 - index;
-              final count = breakdown['$rating'] ?? 0;
-              final total = breakdown.values.fold<int>(0, (sum, v) => sum + (v as int));
+              // Handle potential int or string count
+              final dynamic rawCount = breakdown['$rating'];
+              final int count = rawCount is int ? rawCount : int.tryParse(rawCount.toString()) ?? 0;
+              
+              // Calculate total safely
+              final int total = breakdown.values.fold<int>(0, (sum, v) {
+                 final int val = v is int ? v : int.tryParse(v.toString()) ?? 0;
+                 return sum + val;
+              });
+              
               final percentage = total > 0 ? (count / total) : 0.0;
               
               return Padding(
