@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import '../../../../config/routes.dart';
 import '../../../../config/theme.dart';
 
 /// Diagnosis result screen with treatment recommendations
@@ -251,7 +252,11 @@ class _DiagnosisResultScreenState extends State<DiagnosisResultScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // TODO: Navigate to ask expert with this diagnosis
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.askExpert,
+                        arguments: widget.result,
+                      );
                     },
                     icon: const Icon(Icons.support_agent),
                     label: const Text('Ask Expert'),

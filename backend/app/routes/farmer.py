@@ -136,9 +136,15 @@ async def create_question(
     """
     # Parse diagnosis ID if provided
     diag_uuid = None
+    media_path = None
     if question_data.diagnosis_id:
         try:
             diag_uuid = uuid.UUID(question_data.diagnosis_id)
+            # If diagnosis ID provided, check for existing image to reuse
+            diag_result = await db.execute(select(Diagnosis).where(Diagnosis.id == diag_uuid))
+            diagnosis = diag_result.scalar_one_or_none()
+            if diagnosis and diagnosis.media_path:
+                media_path = diagnosis.media_path
         except ValueError:
             pass
     
@@ -146,7 +152,7 @@ async def create_question(
     question = Question(
         farmer_id=current_user.id,
         question_text=question_data.question_text,
-        media_path=None,
+        media_path=media_path,
         diagnosis_id=diag_uuid,
         status=QuestionStatus.OPEN,
     )
@@ -191,6 +197,12 @@ async def create_question_with_file(
     if diagnosis_id:
         try:
             diag_uuid = uuid.UUID(diagnosis_id)
+            # If no new file uploaded but diagnosis ID provided, check for existing image to reuse
+            if not media_path:
+                diag_result = await db.execute(select(Diagnosis).where(Diagnosis.id == diag_uuid))
+                diagnosis = diag_result.scalar_one_or_none()
+                if diagnosis and diagnosis.media_path:
+                    media_path = diagnosis.media_path
         except ValueError:
             pass
     

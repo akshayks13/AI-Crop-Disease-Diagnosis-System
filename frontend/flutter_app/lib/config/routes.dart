@@ -95,7 +95,11 @@ class AppRoutes {
       
       // Questions
       case askExpert:
-        return _slideRoute(const AskExpertScreen(), settings);
+        final args = settings.arguments as Map<String, dynamic>?;
+        return _slideRoute(AskExpertScreen(
+          diagnosisId: args?['id'], 
+          diagnosisInfo: args,
+        ), settings);
       case myQuestions:
         return _slideRoute(const MyQuestionsScreen(), settings);
       

@@ -9,7 +9,10 @@ import '../../../../core/api/api_config.dart';
 
 /// Ask Expert screen for submitting questions with optional image/video
 class AskExpertScreen extends ConsumerStatefulWidget {
-  const AskExpertScreen({super.key});
+  final String? diagnosisId;
+  final Map<String, dynamic>? diagnosisInfo;
+  
+  const AskExpertScreen({super.key, this.diagnosisId, this.diagnosisInfo});
 
   @override
   ConsumerState<AskExpertScreen> createState() => _AskExpertScreenState();
@@ -23,6 +26,16 @@ class _AskExpertScreenState extends ConsumerState<AskExpertScreen> {
   String? _mediaType; // 'image' or 'video'
 
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.diagnosisInfo != null) {
+      final disease = widget.diagnosisInfo!['disease'] ?? 'Unknown condition';
+      final crop = widget.diagnosisInfo!['crop_type'] ?? 'crop';
+      _questionController.text = "I have a problem with my $crop. Diagnosis suggests it's $disease. Can you help with treatment?";
+    }
+  }
 
   @override
   void dispose() {
@@ -77,6 +90,7 @@ class _AskExpertScreenState extends ConsumerState<AskExpertScreen> {
         final bytes = await _selectedMedia!.readAsBytes();
         final formData = FormData.fromMap({
           'question_text': _questionController.text.trim(),
+          if (widget.diagnosisId != null) 'diagnosis_id': widget.diagnosisId,
           'file': MultipartFile.fromBytes(
             bytes,
             filename: _selectedMedia!.name,
@@ -85,7 +99,11 @@ class _AskExpertScreenState extends ConsumerState<AskExpertScreen> {
         await api.post('${ApiConfig.questions}/with-file', data: formData);
       } else {
         // Text-only question
-        await api.post(ApiConfig.questions, data: {'question_text': _questionController.text.trim()});
+        final data = {
+          'question_text': _questionController.text.trim(),
+          if (widget.diagnosisId != null) 'diagnosis_id': widget.diagnosisId,
+        };
+        await api.post(ApiConfig.questions, data: data);
       }
       
       if (mounted) {
@@ -149,13 +167,60 @@ class _AskExpertScreenState extends ConsumerState<AskExpertScreen> {
               const SizedBox(height: 12),
               
               if (_selectedMedia == null)
+                if (widget.diagnosisInfo?['media_path'] != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            '${ApiConfig.baseUrl}${widget.diagnosisInfo!['media_path']}',
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => Container(
+                              width: 60, height: 60, 
+                              color: Colors.grey.shade300,
+                              child: const Icon(Icons.broken_image, size: 30),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Diagnosis Image Attached',
+                                style: TextStyle(fontWeight: FontWeight.w600, color: Colors.blue),
+                              ),
+                              Text(
+                                'Will be submitted with your question',
+                                style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Allow user to clear/replace if needed (conceptually replacing invalidates diagnosis link image-wise, but we just let them add NEW image which overrides)
+                      ],
+                    ),
+                  ),
+
+              if (_selectedMedia == null)
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: _pickImage,
                         icon: const Icon(Icons.photo_camera),
-                        label: const Text('Add Image'),
+                        label: Text(widget.diagnosisInfo?['media_path'] != null ? 'Replace Image' : 'Add Image'),
                       ),
                     ),
                     const SizedBox(width: 12),
