@@ -50,6 +50,12 @@ export const adminApi = {
         if (level) params.append('level', level);
         return api.get(`/admin/logs?${params}`);
     },
+    getDiagnoses: (page: number = 1, filters?: { disease?: string; crop?: string }) => {
+        const params = new URLSearchParams({ page: String(page) });
+        if (filters?.disease) params.append('disease', filters.disease);
+        if (filters?.crop) params.append('crop_type', filters.crop);
+        return api.get(`/admin/diagnoses?${params}`);
+    },
 };
 
 export default api;
