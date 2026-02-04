@@ -74,6 +74,7 @@ class _QuestionCard extends StatelessWidget {
     final status = question['status'] ?? 'OPEN';
     final isResolved = status == 'RESOLVED';
     final answers = question['answers'] as List? ?? [];
+    final mediaPath = question['media_path'] as String?;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -96,6 +97,34 @@ class _QuestionCard extends StatelessWidget {
                 if (answers.isNotEmpty) Text('${answers.length} answer(s)', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
               ],
             ),
+            // Display attached image if available
+            if (mediaPath != null && mediaPath.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  '${ApiConfig.baseUrl}$mediaPath',
+                  width: double.infinity,
+                  height: 180,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      height: 180,
+                      color: Colors.grey.shade200,
+                      child: const Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 100,
+                    color: Colors.grey.shade200,
+                    child: const Center(
+                      child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Text(question['question_text'] ?? '', style: const TextStyle(fontSize: 15)),
             if (answers.isNotEmpty) ...[

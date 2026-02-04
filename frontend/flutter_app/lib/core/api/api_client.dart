@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -119,18 +119,19 @@ class ApiClient {
     return _dio.delete(path);
   }
   
-  /// Upload file with multipart form data
-  Future<Response> uploadFile(
+  /// Upload file with multipart form data (cross-platform: web, mobile, desktop)
+  /// Uses bytes instead of dart:io File for web compatibility
+  Future<Response> uploadFileBytes(
     String path, {
-    required File file,
+    required Uint8List bytes,
+    required String filename,
+    String fieldName = 'file',
     Map<String, dynamic>? fields,
   }) async {
-    final fileName = file.path.split('/').last;
-    
     final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(
-        file.path,
-        filename: fileName,
+      fieldName: MultipartFile.fromBytes(
+        bytes,
+        filename: filename,
       ),
       if (fields != null) ...fields,
     });
@@ -145,3 +146,4 @@ class ApiClient {
     );
   }
 }
+

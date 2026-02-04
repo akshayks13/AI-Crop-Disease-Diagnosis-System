@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -75,11 +73,12 @@ class _AskExpertScreenState extends ConsumerState<AskExpertScreen> {
       final api = ref.read(apiClientProvider);
       
       if (_selectedMedia != null) {
-        // Use multipart form for file upload
+        // Read file bytes for cross-platform compatibility (web, mobile, desktop)
+        final bytes = await _selectedMedia!.readAsBytes();
         final formData = FormData.fromMap({
           'question_text': _questionController.text.trim(),
-          'file': await MultipartFile.fromFile(
-            _selectedMedia!.path,
+          'file': MultipartFile.fromBytes(
+            bytes,
             filename: _selectedMedia!.name,
           ),
         });

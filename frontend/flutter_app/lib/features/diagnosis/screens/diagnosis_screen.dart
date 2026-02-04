@@ -1,5 +1,4 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,6 +18,7 @@ class DiagnosisScreen extends ConsumerStatefulWidget {
 
 class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
   XFile? _selectedImage;
+  Uint8List? _imageBytes; // Store bytes for cross-platform display
   String? _cropType;
   bool _isProcessing = false;
   final ImagePicker _picker = ImagePicker();
@@ -43,8 +43,11 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
       );
 
       if (image != null) {
+        // Read bytes for cross-platform display and upload
+        final bytes = await image.readAsBytes();
         setState(() {
           _selectedImage = image;
+          _imageBytes = bytes;
         });
       }
     } catch (e) {
@@ -55,15 +58,18 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
   }
 
   Future<void> _analyzeCrop() async {
-    if (_selectedImage == null) return;
+    if (_selectedImage == null || _imageBytes == null) return;
 
     setState(() => _isProcessing = true);
 
     try {
       final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.uploadFile(
+      // Use bytes-based upload for cross-platform compatibility
+      final response = await apiClient.uploadFileBytes(
         ApiConfig.predict,
-        file: File(_selectedImage!.path),
+        bytes: _imageBytes!,
+        filename: _selectedImage!.name,
+        fieldName: 'file',
         fields: {
           if (_cropType != null) 'crop_type': _cropType,
         },
@@ -149,22 +155,18 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
                     ),
                   ],
                 ),
-                child: _selectedImage != null
+                child: _imageBytes != null
                     ? Column(
                         children: [
                           ClipRRect(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxHeight: 400),
-                              child: kIsWeb 
-                                  ? Image.network(
-                                      _selectedImage!.path,
-                                      fit: BoxFit.contain,
-                                    )
-                                  : Image.file(
-                                      File(_selectedImage!.path),
-                                      fit: BoxFit.contain,
-                                    ),
+                              // Use Image.memory for cross-platform (web, mobile, desktop)
+                              child: Image.memory(
+                                _imageBytes!,
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                           Container(
