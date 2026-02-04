@@ -1,27 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../../../config/routes.dart';
 import '../../../../config/theme.dart';
+import '../../../../core/api/api_client.dart';
 
 /// Diagnosis result screen with treatment recommendations
-class DiagnosisResultScreen extends StatefulWidget {
+class DiagnosisResultScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> result;
 
   const DiagnosisResultScreen({super.key, required this.result});
 
   @override
-  State<DiagnosisResultScreen> createState() => _DiagnosisResultScreenState();
+  ConsumerState<DiagnosisResultScreen> createState() => _DiagnosisResultScreenState();
 }
 
-class _DiagnosisResultScreenState extends State<DiagnosisResultScreen> {
+class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
   final FlutterTts _tts = FlutterTts();
   bool _isSpeaking = false;
+  int _userRating = 0;
+  bool _isRatingSubmitting = false;
 
   @override
   void initState() {
     super.initState();
     _initTts();
+    // Initialize rating if available given in result (from history)
+    if (widget.result['rating'] != null) {
+      _userRating = widget.result['rating'] is int ? widget.result['rating'] : int.tryParse(widget.result['rating'].toString()) ?? 0;
+    }
   }
 
   @override
@@ -65,6 +73,35 @@ class _DiagnosisResultScreenState extends State<DiagnosisResultScreen> {
     }
 
     return speech;
+  }
+
+  Future<void> _submitRating(int rating) async {
+    if (_isRatingSubmitting) return;
+
+    setState(() {
+      _isRatingSubmitting = true;
+      _userRating = rating;
+    });
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final diagnosisId = widget.result['id'];
+      await apiClient.post(
+        '/diagnosis/$diagnosisId/rate',
+        queryParameters: {'rating': rating, 'diagnosis_id': diagnosisId}, 
+      );
+      // Success feedback handled by UI update
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit rating: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRatingSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -236,6 +273,71 @@ class _DiagnosisResultScreenState extends State<DiagnosisResultScreen> {
               ),
             ],
 
+            const SizedBox(height: 16),
+            
+            // Rating Section
+            _SectionTitle(title: 'Rate Accuracy', icon: Icons.star_rate_rounded),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: Column(
+                children: [
+                  if (_userRating > 0)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Text('Thank you for your feedback! ⭐', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'Was this diagnosis helpful?',
+                        style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      final starIndex = index + 1;
+                      final isSelected = starIndex <= _userRating;
+                      return GestureDetector(
+                        onTap: () => _submitRating(starIndex),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Icon(
+                            isSelected ? Icons.star_rounded : Icons.star_border_rounded,
+                            color: isSelected ? Colors.amber : Colors.grey.shade300,
+                            size: 40,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  
+                  if (_isRatingSubmitting)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 12),
+                      child: SizedBox(
+                        height: 16, 
+                        width: 16, 
+                        child: CircularProgressIndicator(strokeWidth: 2)
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            
             const SizedBox(height: 32),
 
             // Action buttons

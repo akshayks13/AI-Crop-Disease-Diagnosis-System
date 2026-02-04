@@ -120,6 +120,49 @@ async def get_diagnosis_detail(
     return diagnosis.to_response_dict()
 
 
+@router.post("/{diagnosis_id}/rate", response_model=dict)
+async def rate_diagnosis(
+    diagnosis_id: str,
+    rating: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Rate a diagnosis result (1-5 stars)."""
+    if not 1 <= rating <= 5:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rating must be between 1 and 5"
+        )
+    
+    try:
+        diag_uuid = uuid.UUID(diagnosis_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid diagnosis ID format"
+        )
+    
+    # Fetch diagnosis
+    result = await db.execute(
+        select(Diagnosis).where(
+            Diagnosis.id == diag_uuid,
+            Diagnosis.user_id == current_user.id
+        )
+    )
+    diagnosis = result.scalar_one_or_none()
+    
+    if not diagnosis:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Diagnosis not found"
+        )
+    
+    diagnosis.rating = rating
+    await db.commit()
+    
+    return {"message": "Rating submitted", "rating": rating}
+
+
 # ============== Question Endpoints ==============
 
 questions_router = APIRouter(prefix="/questions", tags=["Farmer - Questions"])
