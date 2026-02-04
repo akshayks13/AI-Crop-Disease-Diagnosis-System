@@ -187,16 +187,32 @@ class CommunityNotifier extends StateNotifier<CommunityState> {
     }
   }
 
-  Future<bool> createPost(String title, String content) async {
+  Future<String?> createPost(String title, String content) async {
     try {
+      // Validate minimum lengths before sending
+      if (title.length < 5) {
+        return 'Title must be at least 5 characters';
+      }
+      if (content.length < 10) {
+        return 'Content must be at least 10 characters';
+      }
+      
       await _api.post(
         ApiConfig.communityPosts,
         data: {'title': title, 'content': content},
       );
       await loadPosts(refresh: true);
-      return true;
+      return null; // null means success
+    } on DioException catch (e) {
+      if (e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map && data['detail'] != null) {
+          return data['detail'].toString();
+        }
+      }
+      return 'Failed to create post. Please try again.';
     } catch (e) {
-      return false;
+      return 'Failed to create post: ${e.toString()}';
     }
   }
 
@@ -221,16 +237,27 @@ class CommunityNotifier extends StateNotifier<CommunityState> {
     }
   }
 
-  Future<bool> addComment(String postId, String content) async {
+  Future<String?> addComment(String postId, String content) async {
     try {
+      if (content.trim().isEmpty) {
+        return 'Comment cannot be empty';
+      }
       await _api.post(
         '${ApiConfig.communityPosts}/$postId/comments',
         data: {'content': content},
       );
       await loadPosts(refresh: true);
-      return true;
+      return null; // null means success
+    } on DioException catch (e) {
+      if (e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map && data['detail'] != null) {
+          return data['detail'].toString();
+        }
+      }
+      return 'Failed to add comment';
     } catch (e) {
-      return false;
+      return 'Failed to add comment: ${e.toString()}';
     }
   }
 
