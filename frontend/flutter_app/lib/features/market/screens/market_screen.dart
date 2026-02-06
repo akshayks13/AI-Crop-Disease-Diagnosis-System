@@ -21,12 +21,11 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
   @override
   Widget build(BuildContext context) {
     final marketState = ref.watch(marketProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Market Prices'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -37,26 +36,23 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
       ),
       body: Column(
         children: [
-          // 🔍 SEARCH BAR (FIXED – PLACEHOLDER ALWAYS VISIBLE)
+          // 🔍 SEARCH BAR
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.green.shade50,
+            color: theme.scaffoldBackgroundColor, // Seamless with body
             child: TextField(
               controller: _searchController,
-              style: TextStyle(
-                color: Colors.green.shade800,
-                fontWeight: FontWeight.w500,
-              ),
+              style: theme.textTheme.bodyMedium,
               decoration: InputDecoration(
                 hintText: 'Search Crop or Location (Eg: Tomato, Kolar)',
-                hintStyle: const TextStyle(
-                  color: Colors.grey,
+                hintStyle: TextStyle(
+                  color: theme.hintColor,
                   fontSize: 14,
                 ),
                 floatingLabelBehavior: FloatingLabelBehavior.never,
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: Icon(Icons.search, color: theme.hintColor),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: theme.cardTheme.color,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
@@ -70,7 +66,6 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                 ref.read(marketProvider.notifier).setSearchQuery(value);
               },
             ),
-
           ),
 
           // 📊 PRICE LIST
@@ -103,20 +98,20 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
 
   // 🧾 PRICE CARD
   Widget _buildPriceCard(MarketPrice price) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     final isUp = price.trend == 'up';
     final isDown = price.trend == 'down';
-
+    
+    // Use theme colors where appropriate, but keep semantic meaning for up/down
     final trendColor =
-        isUp ? Colors.green : (isDown ? Colors.red : Colors.grey);
+        isUp ? Colors.green : (isDown ? colorScheme.error : Colors.grey);
     final trendIcon =
         isUp ? Icons.arrow_upward : (isDown ? Icons.arrow_downward : Icons.remove);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -126,12 +121,12 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: Colors.green.shade100,
+                color: colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 _getCommodityIcon(price.commodity),
-                color: Colors.green.shade700,
+                color: colorScheme.primary,
                 size: 28,
               ),
             ),
@@ -144,8 +139,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                 children: [
                   Text(
                     price.commodity,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -153,15 +147,12 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                   Row(
                     children: [
                       Icon(Icons.location_on,
-                          size: 14, color: Colors.grey.shade600),
+                          size: 14, color: theme.textTheme.bodySmall?.color),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           price.location,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
+                          style: theme.textTheme.bodySmall,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -177,25 +168,21 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
               children: [
                 Text(
                   '₹${price.price.toStringAsFixed(0)}',
-                  style: TextStyle(
-                    fontSize: 18,
+                  style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.green.shade800,
+                    color: colorScheme.primary,
                   ),
                 ),
                 Text(
                   '/${price.unit}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: theme.textTheme.bodySmall,
                 ),
                 const SizedBox(height: 6),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: trendColor.withOpacity(0.1),
+                    color: trendColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -244,13 +231,12 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.error_outline,
-              size: 64, color: Colors.red.shade300),
+              size: 64, color: Theme.of(context).colorScheme.error),
           const SizedBox(height: 16),
           Text(
             'Failed to load prices',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey.shade700,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 8),
@@ -271,21 +257,19 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.shopping_cart_outlined,
-              size: 64, color: Colors.grey.shade400),
+              size: 64, color: Theme.of(context).disabledColor),
           const SizedBox(height: 16),
           Text(
             'No market prices found',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey.shade600,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Try a different search',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).hintColor,
             ),
           ),
         ],

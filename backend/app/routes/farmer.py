@@ -328,6 +328,7 @@ async def get_my_questions(
                     "id": str(a.id),
                     "expert_name": u.full_name,
                     "answer_text": a.answer_text,
+                    "rating": a.rating,
                     "created_at": a.created_at.isoformat(),
                 }
                 for a, u in answers

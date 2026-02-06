@@ -77,6 +77,21 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
   final Map<String, int> _ratings = {}; // answerId -> rating
   final Set<String> _submitting = {}; // answerIds being submitted
 
+  @override
+  void initState() {
+    super.initState();
+    _initializeRatings();
+  }
+
+  void _initializeRatings() {
+    final answers = widget.question['answers'] as List? ?? [];
+    for (var a in answers) {
+      if (a['rating'] != null && a['rating'] is int) {
+        _ratings[a['id'].toString()] = a['rating'];
+      }
+    }
+  }
+
   Future<void> _submitRating(String answerId, int rating) async {
     if (_submitting.contains(answerId)) return;
 
@@ -120,6 +135,9 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
     final isResolved = status == 'RESOLVED';
     final answers = question['answers'] as List? ?? [];
     final mediaPath = question['media_path'] as String?;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -133,13 +151,26 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isResolved ? AppTheme.primaryGreen.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+                    color: isResolved 
+                        ? AppTheme.primaryGreen.withValues(alpha: 0.2) 
+                        : Colors.orange.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(status, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isResolved ? AppTheme.primaryGreen : Colors.orange)),
+                  child: Text(
+                    status, 
+                    style: TextStyle(
+                      fontSize: 12, 
+                      fontWeight: FontWeight.bold, 
+                      color: isResolved ? AppTheme.primaryGreen : Colors.orange
+                    )
+                  ),
                 ),
                 const Spacer(),
-                if (answers.isNotEmpty) Text('${answers.length} answer(s)', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                if (answers.isNotEmpty) 
+                  Text(
+                    '${answers.length} answer(s)', 
+                    style: theme.textTheme.bodySmall
+                  ),
               ],
             ),
             // Display attached image if available
@@ -156,46 +187,62 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
                     if (loadingProgress == null) return child;
                     return Container(
                       height: 180,
-                      color: Colors.grey.shade200,
+                      color: theme.disabledColor.withValues(alpha: 0.1),
                       child: const Center(child: CircularProgressIndicator()),
                     );
                   },
                   errorBuilder: (context, error, stackTrace) => Container(
                     height: 100,
-                    color: Colors.grey.shade200,
-                    child: const Center(
-                      child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                    color: theme.disabledColor.withValues(alpha: 0.1),
+                    child: Center(
+                      child: Icon(Icons.broken_image, size: 40, color: theme.disabledColor),
                     ),
                   ),
                 ),
               ),
             ],
             const SizedBox(height: 12),
-            Text(question['question_text'] ?? '', style: const TextStyle(fontSize: 15)),
+            Text(
+              question['question_text'] ?? '', 
+              style: theme.textTheme.bodyLarge?.copyWith(fontSize: 15)
+            ),
             if (answers.isNotEmpty) ...[
               const Divider(height: 24),
               ...answers.map<Widget>((a) {
                 final answerId = a['id'].toString();
-                // Check if already rated in API response (needs backend update to return 'rating' in LIST view too, but for now we rely on local or null)
-                // Actually 'get_my_questions' in backend DOES NOT return rating in the list.
-                // So initial state is 0 unless we fetch detail.
-                // Assuming start at 0.
                 final currentRating = _ratings[answerId] ?? 0;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(
+                    // Use a darker grey in dark mode, light grey in light mode
+                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, 
+                    borderRadius: BorderRadius.circular(8)
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Expert: ${a['expert_name'] ?? 'Expert'}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryGreen)),
+                      Text(
+                        'Expert: ${a['expert_name'] ?? 'Expert'}', 
+                        style: TextStyle(
+                          fontSize: 12, 
+                          fontWeight: FontWeight.bold, 
+                          color: colorScheme.primary // Adapts to theme (Primary Green / Light Green)
+                        )
+                      ),
                       const SizedBox(height: 4),
-                      Text(a['answer_text'] ?? ''),
+                      Text(
+                        a['answer_text'] ?? '',
+                        style: theme.textTheme.bodyMedium, // Ensures readable text color
+                      ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Text('Rate:', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                          Text(
+                            'Rate:', 
+                            style: theme.textTheme.bodySmall
+                          ),
                           const SizedBox(width: 8),
                           ...List.generate(5, (index) {
                             final star = index + 1;
@@ -209,7 +256,14 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
                             );
                           }),
                           if (_submitting.contains(answerId))
-                             const Padding(padding: EdgeInsets.only(left: 8), child: SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))),
+                             const Padding(
+                               padding: EdgeInsets.only(left: 8), 
+                               child: SizedBox(
+                                 width: 12, 
+                                 height: 12, 
+                                 child: CircularProgressIndicator(strokeWidth: 2)
+                               )
+                             ),
                         ],
                       )
                     ],
