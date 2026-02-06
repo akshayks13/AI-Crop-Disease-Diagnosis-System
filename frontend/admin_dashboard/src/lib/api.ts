@@ -45,9 +45,10 @@ export const adminApi = {
     },
     suspendUser: (id: string) => api.post(`/admin/users/${id}/suspend`),
     activateUser: (id: string) => api.post(`/admin/users/${id}/activate`),
-    getLogs: (page: number = 1, level?: string) => {
+    getLogs: (page: number = 1, level?: string, date?: string) => {
         const params = new URLSearchParams({ page: String(page) });
         if (level) params.append('level', level);
+        if (date) params.append('date', date);
         return api.get(`/admin/logs?${params}`);
     },
     getDiagnoses: (page: number = 1, filters?: { disease?: string; crop?: string }) => {

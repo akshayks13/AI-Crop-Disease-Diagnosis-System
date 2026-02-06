@@ -605,6 +605,7 @@ async def get_system_logs(
     page_size: int = 50,
     level: Optional[str] = None,
     source: Optional[str] = None,
+    date: Optional[str] = None,
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -619,6 +620,14 @@ async def get_system_logs(
     if source:
         query = query.where(SystemLog.source == source)
         count_query = count_query.where(SystemLog.source == source)
+        
+    if date:
+        try:
+            filter_date = datetime.strptime(date, "%Y-%m-%d").date()
+            query = query.where(func.date(SystemLog.created_at) == filter_date)
+            count_query = count_query.where(func.date(SystemLog.created_at) == filter_date)
+        except ValueError:
+            pass # Ignore invalid date format
     
     total = (await db.execute(count_query)).scalar()
     
