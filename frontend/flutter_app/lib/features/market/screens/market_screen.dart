@@ -25,25 +25,35 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Market Prices'),
-        backgroundColor: Colors.green.shade700,
+        backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read(marketProvider.notifier).refresh(),
+            onPressed: () =>
+                ref.read(marketProvider.notifier).refresh(),
           ),
         ],
       ),
       body: Column(
         children: [
-          // Search Bar
+          // 🔍 SEARCH BAR (FIXED – PLACEHOLDER ALWAYS VISIBLE)
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.green.shade50,
             child: TextField(
               controller: _searchController,
+              style: TextStyle(
+                color: Colors.green.shade800,
+                fontWeight: FontWeight.w500,
+              ),
               decoration: InputDecoration(
-                hintText: 'Search commodity or location...',
+                hintText: 'Search Crop or Location (Eg: Tomato, Kolar)',
+                hintStyle: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
+                floatingLabelBehavior: FloatingLabelBehavior.never,
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
@@ -51,15 +61,19 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
+                ),
               ),
               onChanged: (value) {
                 ref.read(marketProvider.notifier).setSearchQuery(value);
               },
             ),
+
           ),
 
-          // Price List
+          // 📊 PRICE LIST
           Expanded(
             child: marketState.isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -68,12 +82,15 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                     : marketState.filteredPrices.isEmpty
                         ? _buildEmptyWidget()
                         : RefreshIndicator(
-                            onRefresh: () => ref.read(marketProvider.notifier).refresh(),
+                            onRefresh: () =>
+                                ref.read(marketProvider.notifier).refresh(),
                             child: ListView.builder(
                               padding: const EdgeInsets.all(16),
-                              itemCount: marketState.filteredPrices.length,
+                              itemCount:
+                                  marketState.filteredPrices.length,
                               itemBuilder: (context, index) {
-                                final price = marketState.filteredPrices[index];
+                                final price =
+                                    marketState.filteredPrices[index];
                                 return _buildPriceCard(price);
                               },
                             ),
@@ -84,21 +101,27 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
     );
   }
 
+  // 🧾 PRICE CARD
   Widget _buildPriceCard(MarketPrice price) {
     final isUp = price.trend == 'up';
     final isDown = price.trend == 'down';
-    final trendColor = isUp ? Colors.green : (isDown ? Colors.red : Colors.grey);
-    final trendIcon = isUp ? Icons.arrow_upward : (isDown ? Icons.arrow_downward : Icons.remove);
+
+    final trendColor =
+        isUp ? Colors.green : (isDown ? Colors.red : Colors.grey);
+    final trendIcon =
+        isUp ? Icons.arrow_upward : (isDown ? Icons.arrow_downward : Icons.remove);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            // Commodity Icon
+            // 🌱 ICON
             Container(
               width: 50,
               height: 50,
@@ -114,7 +137,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
             ),
             const SizedBox(width: 16),
 
-            // Commodity Details
+            // 📝 DETAILS
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,7 +152,8 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
+                      Icon(Icons.location_on,
+                          size: 14, color: Colors.grey.shade600),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -147,7 +171,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
               ),
             ),
 
-            // Price & Trend
+            // 💰 PRICE
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -166,9 +190,10 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                     color: Colors.grey.shade600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: trendColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -176,7 +201,8 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(trendIcon, size: 14, color: trendColor),
+                      Icon(trendIcon,
+                          size: 14, color: trendColor),
                       const SizedBox(width: 4),
                       Text(
                         price.changeString,
@@ -197,6 +223,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
     );
   }
 
+  // 🌾 ICON HELPER
   IconData _getCommodityIcon(String commodity) {
     final lower = commodity.toLowerCase();
     if (lower.contains('tomato')) return Icons.circle;
@@ -210,20 +237,26 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
     return Icons.agriculture;
   }
 
+  // ❌ ERROR UI
   Widget _buildErrorWidget(String error) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+          Icon(Icons.error_outline,
+              size: 64, color: Colors.red.shade300),
           const SizedBox(height: 16),
           Text(
             'Failed to load prices',
-            style: TextStyle(fontSize: 18, color: Colors.grey.shade700),
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey.shade700,
+            ),
           ),
           const SizedBox(height: 8),
           ElevatedButton(
-            onPressed: () => ref.read(marketProvider.notifier).refresh(),
+            onPressed: () =>
+                ref.read(marketProvider.notifier).refresh(),
             child: const Text('Retry'),
           ),
         ],
@@ -231,21 +264,29 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
     );
   }
 
+  // 📭 EMPTY UI
   Widget _buildEmptyWidget() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey.shade400),
+          Icon(Icons.shopping_cart_outlined,
+              size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
             'No market prices found',
-            style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey.shade600,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Try a different search',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+            ),
           ),
         ],
       ),
