@@ -29,6 +29,7 @@ export default function LoginPage() {
 
             localStorage.setItem('access_token', access_token);
             router.push('/dashboard');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             console.error('Login error:', err);
             setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');

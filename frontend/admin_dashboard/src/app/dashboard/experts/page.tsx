@@ -11,25 +11,28 @@ export default function ExpertsPage() {
     const [error, setError] = useState('');
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-    const loadExperts = async () => {
-        try {
-            const res = await adminApi.getPendingExperts();
-            setExperts(res.data.experts || []);
-            setError('');
-        } catch (e: any) {
-            setError(e.response?.data?.detail || 'Failed to load pending experts');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => { loadExperts(); }, []);
+    useEffect(() => {
+        const loadExperts = async () => {
+            try {
+                const res = await adminApi.getPendingExperts();
+                setExperts(res.data.experts || []);
+                setError('');
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } catch (e: any) {
+                setError(e.response?.data?.detail || 'Failed to load pending experts');
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadExperts();
+    }, []);
 
     const handleApprove = async (id: string) => {
         setActionLoading(id);
         try {
             await adminApi.approveExpert(id);
             setExperts((prev) => prev.filter((e) => e.id !== id));
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             alert(e.response?.data?.detail || 'Failed to approve expert');
         } finally {
@@ -43,6 +46,7 @@ export default function ExpertsPage() {
         try {
             await adminApi.rejectExpert(id, reason || undefined);
             setExperts((prev) => prev.filter((e) => e.id !== id));
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             alert(e.response?.data?.detail || 'Failed to reject expert');
         } finally {
@@ -158,6 +162,7 @@ export default function ExpertsPage() {
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function InfoItem({ icon: Icon, label, value, color }: { icon: any; label: string; value: string; color: string }) {
     const colors: Record<string, string> = {
         indigo: 'bg-indigo-50 text-indigo-600',

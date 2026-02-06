@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS diagnoses (
     prevention TEXT,
     warnings TEXT,
     additional_diseases JSONB,
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

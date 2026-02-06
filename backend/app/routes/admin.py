@@ -29,7 +29,6 @@ async def get_dashboard(
 ):
     """Get admin dashboard overview."""
     today = datetime.utcnow().date()
-    yesterday = today - timedelta(days=1)
     week_ago = today - timedelta(days=7)
     
     # User counts
@@ -218,6 +217,67 @@ async def get_all_questions(
     
     return {
         "questions": questions_data,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+# ============== Diagnosis Management ==============
+
+@router.get("/diagnoses", response_model=dict)
+async def get_all_diagnoses(
+    page: int = 1,
+    page_size: int = 20,
+    crop_type: Optional[str] = None,
+    disease: Optional[str] = None,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get all diagnoses for admin review."""
+    query = select(Diagnosis)
+    count_query = select(func.count(Diagnosis.id))
+    
+    if crop_type:
+        query = query.where(Diagnosis.crop_type.ilike(f"%{crop_type}%"))
+        count_query = count_query.where(Diagnosis.crop_type.ilike(f"%{crop_type}%"))
+    
+    if disease:
+        query = query.where(Diagnosis.disease.ilike(f"%{disease}%"))
+        count_query = count_query.where(Diagnosis.disease.ilike(f"%{disease}%"))
+    
+    total = (await db.execute(count_query)).scalar()
+    
+    offset = (page - 1) * page_size
+    query = query.order_by(Diagnosis.created_at.desc()).offset(offset).limit(page_size)
+    
+    result = await db.execute(query)
+    diagnoses = result.scalars().all()
+    
+    diagnoses_data = []
+    for d in diagnoses:
+        # Get user info
+        user_result = await db.execute(select(User).where(User.id == d.user_id))
+        user = user_result.scalar_one_or_none()
+        
+        diagnoses_data.append({
+            "id": str(d.id),
+            "created_at": d.created_at.isoformat(),
+            "media_path": d.media_path,
+            "crop_type": d.crop_type,
+            "disease": d.disease,
+            "severity": d.severity,
+            "confidence": d.confidence,
+            "user": {
+                "id": str(user.id) if user else None,
+                "name": user.full_name if user else "Unknown",
+                "email": user.email if user else None,
+            },
+            "location": d.location
+        })
+    
+    return {
+        "diagnoses": diagnoses_data,
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -545,6 +605,7 @@ async def get_system_logs(
     page_size: int = 50,
     level: Optional[str] = None,
     source: Optional[str] = None,
+    date: Optional[str] = None,
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -559,6 +620,14 @@ async def get_system_logs(
     if source:
         query = query.where(SystemLog.source == source)
         count_query = count_query.where(SystemLog.source == source)
+        
+    if date:
+        try:
+            filter_date = datetime.strptime(date, "%Y-%m-%d").date()
+            query = query.where(func.date(SystemLog.created_at) == filter_date)
+            count_query = count_query.where(func.date(SystemLog.created_at) == filter_date)
+        except ValueError:
+            pass # Ignore invalid date format
     
     total = (await db.execute(count_query)).scalar()
     

@@ -176,34 +176,56 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
   void _showCreatePostDialog() {
     final titleController = TextEditingController();
     final contentController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Create Post'),
         content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  hintText: 'Enter a catchy title...',
-                  border: OutlineInputBorder(),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    hintText: 'Enter a catchy title (min 5 chars)...',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Title is required';
+                    }
+                    if (value.length < 5) {
+                      return 'Title must be at least 5 characters';
+                    }
+                    return null;
+                  },
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: contentController,
-                decoration: const InputDecoration(
-                  labelText: 'Content',
-                  hintText: 'Share your thoughts with the community...',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: contentController,
+                  decoration: const InputDecoration(
+                    labelText: 'Content',
+                    hintText: 'Share your thoughts (min 10 chars)...',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 5,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Content is required';
+                    }
+                    if (value.length < 10) {
+                      return 'Content must be at least 10 characters';
+                    }
+                    return null;
+                  },
                 ),
-                maxLines: 5,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         actions: [
@@ -213,18 +235,19 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              if (titleController.text.isNotEmpty && contentController.text.isNotEmpty) {
-                final success = await ref.read(communityProvider.notifier).createPost(
+              if (formKey.currentState!.validate()) {
+                final error = await ref.read(communityProvider.notifier).createPost(
                   titleController.text,
                   contentController.text,
                 );
                 if (mounted) {
                   Navigator.pop(context);
-                  if (success) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Post created!')),
-                    );
-                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(error ?? 'Post created successfully!'),
+                      backgroundColor: error == null ? Colors.green : Colors.red,
+                    ),
+                  );
                 }
               }
             },
@@ -321,11 +344,19 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                   IconButton(
                     onPressed: () async {
                       if (commentController.text.isNotEmpty) {
-                        await ref.read(communityProvider.notifier).addComment(
+                        final error = await ref.read(communityProvider.notifier).addComment(
                           post.id,
                           commentController.text,
                         );
-                        if (mounted) Navigator.pop(context);
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(error ?? 'Comment added!'),
+                              backgroundColor: error == null ? Colors.green : Colors.red,
+                            ),
+                          );
+                        }
                       }
                     },
                     icon: Icon(Icons.send, color: Colors.green.shade700),

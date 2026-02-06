@@ -2,6 +2,8 @@
 Test Configuration and Fixtures
 """
 import asyncio
+import os
+import uuid
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
@@ -12,8 +14,13 @@ from app.database import Base, get_db
 from app.models import User, UserRole, UserStatus
 from app.auth.jwt_handler import hash_password, create_access_token
 
-# Test database URL (in-memory SQLite for tests)
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+# Use PostgreSQL from environment (CI) or fail if not set
+# Tests require PostgreSQL because the models use PostgreSQL-specific UUID type
+TEST_DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql+asyncpg://akshayks@localhost:5432/crop_diagnosis_test"
+)
 
 
 @pytest.fixture(scope="session")
@@ -49,11 +56,13 @@ async def test_db():
 async def test_user(test_db):
     """Create a test farmer user."""
     user = User(
+        id=uuid.uuid4(),
         email="testfarmer@example.com",
         password_hash=hash_password("password123"),
         full_name="Test Farmer",
         role=UserRole.FARMER,
         status=UserStatus.ACTIVE,
+        is_verified=True,
     )
     test_db.add(user)
     await test_db.commit()
@@ -65,11 +74,13 @@ async def test_user(test_db):
 async def test_expert(test_db):
     """Create a test expert user."""
     user = User(
+        id=uuid.uuid4(),
         email="testexpert@example.com",
         password_hash=hash_password("password123"),
         full_name="Test Expert",
         role=UserRole.EXPERT,
         status=UserStatus.ACTIVE,
+        is_verified=True,
     )
     test_db.add(user)
     await test_db.commit()

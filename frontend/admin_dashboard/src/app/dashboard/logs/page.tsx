@@ -8,25 +8,47 @@ import { AlertCircle, AlertTriangle, Info, XCircle, Filter, ScrollText } from 'l
 
 export default function LogsPage() {
     const [logs, setLogs] = useState<SystemLog[]>([]);
+    const [stats, setStats] = useState<{ totalUsers: number; newSignups: number } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [levelFilter, setLevelFilter] = useState('');
+    const [viewMode, setViewMode] = useState<'today' | 'all'>('today');
 
-    const loadLogs = async () => {
-        setLoading(true);
-        try {
-            const res = await adminApi.getLogs(1, levelFilter || undefined);
-            setLogs(res.data.logs || []);
-            setError('');
-        } catch (e: any) {
-            setError(e.response?.data?.detail || 'Failed to load logs');
-        } finally {
-            setLoading(false);
-        }
-    };
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                let dateFilter: string | undefined;
+                if (viewMode === 'today') {
+                    dateFilter = new Date().toISOString().split('T')[0];
+                }
 
-    useEffect(() => { loadLogs(); }, [levelFilter]);
+                // Fetch logs and dashboard stats in parallel
+                const [logsRes, dashboardRes] = await Promise.all([
+                    adminApi.getLogs(1, levelFilter || undefined, dateFilter),
+                    adminApi.getDashboard()
+                ]);
 
+                setLogs(logsRes.data.logs || []);
+                setStats({
+                    totalUsers: dashboardRes.data.metrics.total_users,
+                    newSignups: dashboardRes.data.trends.recent_signups || 0 // Using recent signups as a proxy for now
+                });
+                setError('');
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } catch (e: any) {
+                setError(e.response?.data?.detail || 'Failed to load data');
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, [levelFilter, viewMode]);
+
+    // Calculate critical errors from *current view*
+    const criticalErrorsCount = logs.filter(l => l.level === 'ERROR' || l.level === 'CRITICAL').length;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const levelConfig: Record<string, { bg: string; text: string; icon: any; border: string }> = {
         INFO: { bg: 'bg-indigo-50', text: 'text-indigo-700', icon: Info, border: 'border-indigo-200' },
         WARNING: { bg: 'bg-amber-50', text: 'text-amber-700', icon: AlertTriangle, border: 'border-amber-200' },
@@ -48,24 +70,89 @@ export default function LogsPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">System Logs</h1>
-                    <p className="text-slate-500 text-sm mt-0.5">Monitor system activity and events</p>
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                            <Info size={20} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500 font-medium">Total Users</p>
+                            <p className="text-2xl font-bold text-slate-900">{stats?.totalUsers ?? '-'}</p>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Filter size={16} className="text-slate-400" />
-                    <select
-                        className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:border-indigo-500 outline-none transition-all font-medium text-slate-900"
-                        value={levelFilter}
-                        onChange={(e) => setLevelFilter(e.target.value)}
-                    >
-                        <option value="">All Levels</option>
-                        <option value="INFO">Info</option>
-                        <option value="WARNING">Warning</option>
-                        <option value="ERROR">Error</option>
-                    </select>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                            <Info size={20} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500 font-medium">New Signups (Week)</p>
+                            <p className="text-2xl font-bold text-slate-900">{stats?.newSignups ?? '-'}</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-50 text-red-600 rounded-lg">
+                            <AlertTriangle size={20} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500 font-medium">Critical Errors</p>
+                            <p className="text-2xl font-bold text-slate-900">{criticalErrorsCount}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Header */}
+            <div className="flex justify-between items-center pt-2">
+                <div>
+                    <h1 className="text-xl font-bold text-slate-900">System Logs</h1>
+                    <p className="text-slate-500 text-sm mt-0.5">
+                        {viewMode === 'today' ? "Showing today's activity" : "Showing all historical logs"}
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    {/* View Mode Toggle */}
+                    <div className="flex bg-slate-100 p-1 rounded-lg">
+                        <button
+                            onClick={() => setViewMode('today')}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'today'
+                                    ? 'bg-white text-slate-900 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            Today
+                        </button>
+                        <button
+                            onClick={() => setViewMode('all')}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'all'
+                                    ? 'bg-white text-slate-900 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            All Logs
+                        </button>
+                    </div>
+
+                    <div className="h-6 w-px bg-slate-200 mx-1" />
+
+                    <div className="flex items-center gap-2">
+                        <Filter size={16} className="text-slate-400" />
+                        <select
+                            className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:border-indigo-500 outline-none transition-all font-medium text-slate-900"
+                            value={levelFilter}
+                            onChange={(e) => setLevelFilter(e.target.value)}
+                        >
+                            <option value="">All Levels</option>
+                            <option value="INFO">Info</option>
+                            <option value="WARNING">Warning</option>
+                            <option value="ERROR">Error</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -78,7 +165,7 @@ export default function LogsPage() {
                 ) : logs.length === 0 ? (
                     <div className="p-16 text-center">
                         <ScrollText size={40} className="text-slate-300 mx-auto mb-4" />
-                        <p className="text-slate-500">No logs found</p>
+                        <p className="text-slate-500">No logs found {viewMode === 'today' ? 'for today' : ''}</p>
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100">

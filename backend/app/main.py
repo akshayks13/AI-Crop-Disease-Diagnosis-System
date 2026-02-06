@@ -30,6 +30,7 @@ from app.routes.market import router as market_router
 from app.routes.community import router as community_router
 from app.routes.farm import router as farm_router
 from app.routes.encyclopedia import router as encyclopedia_router
+from app.middleware.logging import SystemLoggingMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -94,6 +95,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Add System Logging Middleware
+app.add_middleware(SystemLoggingMiddleware)
 
 # Configure CORS
 app.add_middleware(
