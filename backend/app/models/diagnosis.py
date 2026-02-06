@@ -99,6 +99,11 @@ class Diagnosis(Base):
         nullable=True,
     )
     
+    # Diagnosis Rating
+    rating: Mapped[Optional[int]] = mapped_column(
+        nullable=True,
+    )
+    
     # Additional ML outputs
     additional_diseases: Mapped[Optional[Dict[str, Any]]] = mapped_column(
         JSON,
@@ -128,6 +133,7 @@ class Diagnosis(Base):
             "severity": self.severity,
             "confidence": self.confidence,
             "crop_type": self.crop_type,
+            "rating": self.rating,
             "treatment_steps": self.treatment.get("steps", []),
             "chemical_options": self.treatment.get("chemical", []),
             "organic_options": self.treatment.get("organic", []),

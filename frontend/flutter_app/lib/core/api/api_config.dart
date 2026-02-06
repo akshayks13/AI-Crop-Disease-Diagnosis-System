@@ -28,6 +28,7 @@ class ApiConfig {
   static const String expertQuestions = '/expert/questions';
   static const String expertAnswer = '/expert/answer';
   static const String expertStats = '/expert/stats';
+  static const String expertMyAnswers = '/expert/my-answers';
   
   // Market endpoints
   static const String marketPrices = '/market/prices';
