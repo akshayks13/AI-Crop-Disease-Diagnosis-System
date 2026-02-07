@@ -144,6 +144,51 @@ async def get_open_questions(
     }
 
 
+@router.get("/my-answers", response_model=dict)
+async def get_my_answers(
+    page: int = 1,
+    page_size: int = 20,
+    current_user: User = Depends(require_approved_expert),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get questions answered by the current expert."""
+    # Count total
+    count_query = select(func.count(Answer.id)).where(Answer.expert_id == current_user.id)
+    total = (await db.execute(count_query)).scalar()
+    
+    # Get answers with questions
+    query = (
+        select(Answer, Question, User)
+        .join(Question, Answer.question_id == Question.id)
+        .join(User, Question.farmer_id == User.id)
+        .where(Answer.expert_id == current_user.id)
+        .order_by(Answer.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    
+    result = await db.execute(query)
+    rows = result.all()
+    
+    answers_data = []
+    for answer, question, farmer in rows:
+        answers_data.append({
+            "id": str(answer.id),
+            "question_id": str(question.id),
+            "question_text": question.question_text,
+            "media_path": question.media_path,
+            "farmer_name": farmer.full_name,
+            "answer_text": answer.answer_text,
+            "rating": answer.rating,
+            "answered_at": answer.created_at.isoformat(),
+        })
+    
+    return {
+        "answers": answers_data,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
 @router.get("/questions/{question_id}", response_model=dict)
 async def get_question_detail(
     question_id: str,
@@ -324,7 +369,7 @@ async def get_expert_stats(
     
     return {
         "total_answers": answers_count,
-        "average_rating": round(avg_rating, 2) if avg_rating else None,
+        "average_rating": float(round(avg_rating, 2)) if avg_rating else None,
         "ratings_breakdown": ratings,
         "status": current_user.status.value,
         "is_approved": current_user.is_expert_approved,

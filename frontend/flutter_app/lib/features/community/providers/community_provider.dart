@@ -187,16 +187,70 @@ class CommunityNotifier extends StateNotifier<CommunityState> {
     }
   }
 
-  Future<bool> createPost(String title, String content) async {
+  Future<String?> createPost(String title, String content) async {
     try {
+      // Validate minimum lengths before sending
+      if (title.length < 5) {
+        return 'Title must be at least 5 characters';
+      }
+      if (content.length < 10) {
+        return 'Content must be at least 10 characters';
+      }
+      
       await _api.post(
         ApiConfig.communityPosts,
         data: {'title': title, 'content': content},
       );
       await loadPosts(refresh: true);
-      return true;
+      return null; // null means success
+    } on DioException catch (e) {
+      if (e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map && data['detail'] != null) {
+          return data['detail'].toString();
+        }
+      }
+      return 'Failed to create post. Please try again.';
     } catch (e) {
-      return false;
+      return 'Failed to create post: ${e.toString()}';
+    }
+  }
+
+  /// Create a post with an optional image attachment using multipart form data.
+  /// Uses bytes instead of file path to avoid dart:io dependency (web compatible).
+  Future<String?> createPostWithImage(String title, String content, List<int>? imageBytes, String? imageName) async {
+    try {
+      // Validate minimum lengths before sending
+      if (title.length < 5) {
+        return 'Title must be at least 5 characters';
+      }
+      if (content.length < 10) {
+        return 'Content must be at least 10 characters';
+      }
+
+      final formData = FormData.fromMap({
+        'title': title,
+        'content': content,
+        if (imageBytes != null && imageName != null)
+          'image': MultipartFile.fromBytes(imageBytes, filename: imageName),
+      });
+
+      await _api.post(
+        '${ApiConfig.communityPosts}/with-image',
+        data: formData,
+      );
+      await loadPosts(refresh: true);
+      return null; // null means success
+    } on DioException catch (e) {
+      if (e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map && data['detail'] != null) {
+          return data['detail'].toString();
+        }
+      }
+      return 'Failed to create post. Please try again.';
+    } catch (e) {
+      return 'Failed to create post: ${e.toString()}';
     }
   }
 
@@ -221,16 +275,50 @@ class CommunityNotifier extends StateNotifier<CommunityState> {
     }
   }
 
-  Future<bool> addComment(String postId, String content) async {
+  Future<String?> addComment(String postId, String content) async {
     try {
+      if (content.trim().isEmpty) {
+        return 'Comment cannot be empty';
+      }
       await _api.post(
         '${ApiConfig.communityPosts}/$postId/comments',
         data: {'content': content},
       );
       await loadPosts(refresh: true);
-      return true;
+      return null; // null means success
+    } on DioException catch (e) {
+      if (e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map && data['detail'] != null) {
+          return data['detail'].toString();
+        }
+      }
+      return 'Failed to add comment';
     } catch (e) {
-      return false;
+      return 'Failed to add comment: ${e.toString()}';
+    }
+  }
+
+  Future<void> loadComments(String postId) async {
+    try {
+      // Backend returns comments via GET /posts/{id} (PostDetailResponse)
+      final response = await _api.get('${ApiConfig.communityPosts}/$postId');
+      final data = response.data as Map<String, dynamic>;
+      
+      // Extract comments from the post detail response
+      final List<dynamic> commentsData = data['comments'] ?? [];
+      final comments = commentsData.map((c) => Comment.fromJson(c)).toList();
+
+      final index = state.posts.indexWhere((p) => p.id == postId);
+      if (index != -1) {
+        final post = state.posts[index];
+        final newPosts = List<CommunityPost>.from(state.posts);
+        newPosts[index] = post.copyWith(comments: comments);
+        state = state.copyWith(posts: newPosts);
+      }
+    } catch (e) {
+      // Silently fail for now, UI will show existing/empty comments
+      print('Error loading comments: $e');
     }
   }
 

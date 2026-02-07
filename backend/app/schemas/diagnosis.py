@@ -40,6 +40,7 @@ class DiagnosisResponse(BaseModel):
     warnings: Optional[str]
     prevention: Optional[str]
     media_path: str
+    rating: Optional[int] = None
     created_at: datetime
 
     class Config:
@@ -61,6 +62,7 @@ class DiagnosisSummary(BaseModel):
     severity: str
     confidence: float
     crop_type: Optional[str]
+    rating: Optional[int] = None
     created_at: datetime
 
     class Config:

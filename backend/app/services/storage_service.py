@@ -114,7 +114,9 @@ class StorageService:
         
         logger.info(f"Saved file: {save_path} ({len(content)} bytes)")
         
-        return str(save_path), media_type
+        # Return URL-friendly path for database storage
+        url_path = f"/uploads/{save_path.relative_to(self.upload_dir)}"
+        return url_path, media_type
     
     async def delete_file(self, file_path: str) -> bool:
         """
