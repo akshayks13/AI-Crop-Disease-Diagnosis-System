@@ -145,6 +145,10 @@ app.include_router(community_router)
 app.include_router(farm_router)
 app.include_router(encyclopedia_router)
 
+# Agronomy Router
+from app.agronomy.routes import router as agronomy_router
+app.include_router(agronomy_router)
+
 # Mount static files for uploads (if needed for direct access)
 # In production, use CDN or S3
 uploads_path = Path(settings.upload_dir)
