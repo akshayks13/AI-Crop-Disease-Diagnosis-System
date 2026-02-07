@@ -75,3 +75,4 @@ flutter:
     - assets/icons/
     - assets/animations/
     - assets/.env
+    - assets/crops/
