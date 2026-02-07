@@ -13,11 +13,16 @@ class _EncyclopediaScreenState extends ConsumerState<EncyclopediaScreen> with Si
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
+ @override
+void initState() {
+  super.initState();
+  _tabController = TabController(length: 2, vsync: this);
+
+  _tabController.addListener(() {
+    setState(() {}); // 🔄 refresh UI when tab changes
+  });
+}
+
 
   @override
   void dispose() {
@@ -25,6 +30,16 @@ class _EncyclopediaScreenState extends ConsumerState<EncyclopediaScreen> with Si
     _searchController.dispose();
     super.dispose();
   }
+  String _getSearchHint() {
+  if (_tabController.index == 0) {
+    // Crops tab
+    return 'Search by crop name or scientific name (e.g., Corn, Zea mays)';
+  } else {
+    // Diseases tab
+    return 'Search by disease name (e.g., Early blight, Rust)';
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -48,20 +63,38 @@ class _EncyclopediaScreenState extends ConsumerState<EncyclopediaScreen> with Si
       ),
       body: Column(
         children: [
-          // Search Bar
+          // 🔍 Search Bar
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.green.shade50,
             child: TextField(
               controller: _searchController,
+
+              // Typed text color
+              style: TextStyle(
+                color: Colors.green.shade800,
+                fontWeight: FontWeight.w500,
+              ),
+
               decoration: InputDecoration(
-                hintText: 'Search crops or diseases...',
-                prefixIcon: const Icon(Icons.search),
+                hintText: _getSearchHint(),
+                hintStyle: TextStyle(
+                  color: Colors.green.shade800,
+                  fontSize: 14,
+                ),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: Colors.green.shade700,
+                ),
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
                 ),
               ),
               onChanged: (value) {
@@ -69,6 +102,7 @@ class _EncyclopediaScreenState extends ConsumerState<EncyclopediaScreen> with Si
               },
             ),
           ),
+
 
           // Content
           Expanded(
