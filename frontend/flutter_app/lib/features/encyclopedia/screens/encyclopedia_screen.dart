@@ -13,16 +13,15 @@ class _EncyclopediaScreenState extends ConsumerState<EncyclopediaScreen> with Si
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
 
- @override
-void initState() {
-  super.initState();
-  _tabController = TabController(length: 2, vsync: this);
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
 
-  _tabController.addListener(() {
-    setState(() {}); // 🔄 refresh UI when tab changes
-  });
-}
-
+    _tabController.addListener(() {
+      setState(() {});
+    });
+  }
 
   @override
   void dispose() {
@@ -30,16 +29,16 @@ void initState() {
     _searchController.dispose();
     super.dispose();
   }
-  String _getSearchHint() {
-  if (_tabController.index == 0) {
-    // Crops tab
-    return 'Search by crop name or scientific name (e.g., Corn, Zea mays)';
-  } else {
-    // Diseases tab
-    return 'Search by disease name (e.g., Early blight, Rust)';
-  }
-}
 
+  String _getSearchHint() {
+    if (_tabController.index == 0) {
+      // Crops tab
+      return 'Search by crop name or scientific name (e.g., Corn, Zea mays)';
+    } else {
+      // Diseases tab
+      return 'Search by disease name (e.g., Early blight, Rust)';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,28 +59,25 @@ void initState() {
       ),
       body: Column(
         children: [
-          // 🔍 Search Bar
           Container(
             padding: const EdgeInsets.all(16),
             color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             child: TextField(
               controller: _searchController,
-
               // Typed text color
               style: TextStyle(
-                color: Colors.green.shade800,
+                color: colorScheme.onSurface,
                 fontWeight: FontWeight.w500,
               ),
-
               decoration: InputDecoration(
                 hintText: _getSearchHint(),
                 hintStyle: TextStyle(
-                  color: Colors.green.shade800,
+                  color: colorScheme.onSurfaceVariant,
                   fontSize: 14,
                 ),
                 prefixIcon: Icon(
                   Icons.search,
-                  color: Colors.green.shade700,
+                  color: colorScheme.primary,
                 ),
                 filled: true,
                 fillColor: colorScheme.surface,
