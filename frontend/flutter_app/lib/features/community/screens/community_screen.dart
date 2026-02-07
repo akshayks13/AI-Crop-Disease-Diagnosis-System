@@ -393,23 +393,65 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
   }
 
   Widget _buildEmptyWidget() {
-    return Center(
+  return Center(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.forum_outlined, size: 64, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          Text(
-            'No posts yet',
-            style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.forum_outlined,
+              size: 50,
+              color: Colors.green.shade700,
+            ),
           ),
-          const SizedBox(height: 8),
+
+          const SizedBox(height: 20),
+
+          const Text(
+            'No posts yet',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
           Text(
-            'Be the first to share something!',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            'Farmers can ask doubts, share solutions,\nand help each other grow.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+
+          const SizedBox(height: 25),
+
+          ElevatedButton.icon(
+            onPressed: _showCreatePostDialog,
+            icon: const Icon(Icons.add),
+            label: const Text("Create First Post"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green.shade700,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 }
