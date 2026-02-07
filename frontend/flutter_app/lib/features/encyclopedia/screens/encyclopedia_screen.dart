@@ -44,17 +44,14 @@ void initState() {
   @override
   Widget build(BuildContext context) {
     final encState = ref.watch(encyclopediaProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Crop Encyclopedia'),
-        backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
           tabs: const [
             Tab(text: 'Crops', icon: Icon(Icons.eco)),
             Tab(text: 'Diseases', icon: Icon(Icons.bug_report)),
@@ -66,7 +63,7 @@ void initState() {
           // 🔍 Search Bar
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.green.shade50,
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             child: TextField(
               controller: _searchController,
 
@@ -87,15 +84,12 @@ void initState() {
                   color: Colors.green.shade700,
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: colorScheme.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
               ),
               onChanged: (value) {
                 ref.read(encyclopediaProvider.notifier).setSearchQuery(value);
@@ -109,12 +103,12 @@ void initState() {
             child: encState.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : encState.error != null
-                    ? _buildErrorWidget()
+                    ? _buildErrorWidget(colorScheme)
                     : TabBarView(
                         controller: _tabController,
                         children: [
-                          _buildCropsGrid(encState),
-                          _buildDiseasesList(encState),
+                          _buildCropsGrid(encState, colorScheme),
+                          _buildDiseasesList(encState, colorScheme),
                         ],
                       ),
           ),
@@ -123,11 +117,11 @@ void initState() {
     );
   }
 
-  Widget _buildCropsGrid(EncyclopediaState state) {
+  Widget _buildCropsGrid(EncyclopediaState state, ColorScheme colorScheme) {
     final crops = state.filteredCrops;
     
     if (crops.isEmpty) {
-      return _buildEmptyWidget('No crops found');
+      return _buildEmptyWidget('No crops found', colorScheme);
     }
 
     return GridView.builder(
@@ -141,78 +135,81 @@ void initState() {
       itemCount: crops.length,
       itemBuilder: (context, index) {
         final crop = crops[index];
-        return _buildCropCard(crop);
+        return _buildCropCard(crop, colorScheme);
       },
     );
   }
 
-  Widget _buildCropCard(CropInfo crop) {
+  Widget _buildCropCard(CropInfo crop, ColorScheme colorScheme) {
     return GestureDetector(
       onTap: () => _showCropDetail(crop),
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         clipBehavior: Clip.antiAlias,
+        elevation: 2,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Crop Image/Icon
             Container(
               height: 100,
-              color: Colors.green.shade100,
+              color: colorScheme.primaryContainer,
               child: Center(
                 child: Icon(
                   Icons.eco,
                   size: 50,
-                  color: Colors.green.shade700,
+                  color: colorScheme.onPrimaryContainer,
                 ),
               ),
             ),
             
             // Crop Info
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    crop.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (crop.scientificName != null) ...[
-                    const SizedBox(height: 2),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      crop.scientificName!,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontStyle: FontStyle.italic,
-                        color: Colors.grey.shade600,
+                      crop.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getSeasonColor(crop.season).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      crop.season ?? 'All Season',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: _getSeasonColor(crop.season),
-                        fontWeight: FontWeight.w500,
+                    if (crop.scientificName != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        crop.scientificName!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getSeasonColor(crop.season, colorScheme).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        crop.season ?? 'All Season',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: _getSeasonColor(crop.season, colorScheme),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -221,19 +218,19 @@ void initState() {
     );
   }
 
-  Color _getSeasonColor(String? season) {
-    if (season == null) return Colors.grey;
+  Color _getSeasonColor(String? season, ColorScheme colorScheme) {
+    if (season == null) return colorScheme.outline;
     final lower = season.toLowerCase();
-    if (lower.contains('kharif')) return Colors.green.shade700;
-    if (lower.contains('rabi')) return Colors.orange.shade700;
-    return Colors.blue.shade700;
+    if (lower.contains('kharif')) return colorScheme.primary;
+    if (lower.contains('rabi')) return colorScheme.tertiary; // Orange-ish usually via tertiary/secondary
+    return colorScheme.secondary;
   }
 
-  Widget _buildDiseasesList(EncyclopediaState state) {
+  Widget _buildDiseasesList(EncyclopediaState state, ColorScheme colorScheme) {
     final diseases = state.filteredDiseases;
     
     if (diseases.isEmpty) {
-      return _buildEmptyWidget('No diseases found');
+      return _buildEmptyWidget('No diseases found', colorScheme);
     }
 
     return ListView.builder(
@@ -241,17 +238,13 @@ void initState() {
       itemCount: diseases.length,
       itemBuilder: (context, index) {
         final disease = diseases[index];
-        return _buildDiseaseCard(disease);
+        return _buildDiseaseCard(disease, colorScheme);
       },
     );
   }
 
-  Widget _buildDiseaseCard(DiseaseInfo disease) {
-    final severityColors = {
-      'mild': Colors.yellow.shade700,
-      'moderate': Colors.orange,
-      'severe': Colors.red,
-    };
+  Widget _buildDiseaseCard(DiseaseInfo disease, ColorScheme colorScheme) {
+    final severityColor = _getSeverityColor(disease.severityLevel, colorScheme);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -267,10 +260,10 @@ void initState() {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: Colors.red.shade100,
+                  color: colorScheme.errorContainer,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.bug_report, color: Colors.red.shade700, size: 28),
+                child: Icon(Icons.bug_report, color: colorScheme.onErrorContainer, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -289,7 +282,7 @@ void initState() {
                       'Affects: ${disease.affectedCrops.join(', ')}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -301,7 +294,7 @@ void initState() {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: (severityColors[disease.severityLevel] ?? Colors.grey).withOpacity(0.2),
+                    color: severityColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -309,7 +302,7 @@ void initState() {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: severityColors[disease.severityLevel] ?? Colors.grey,
+                      color: severityColor,
                     ),
                   ),
                 ),
@@ -320,6 +313,13 @@ void initState() {
     );
   }
 
+  Color _getSeverityColor(String? severity, ColorScheme colorScheme) {
+      if (severity == 'mild') return Colors.yellow.shade700; // Keep explicit for mild warning
+      if (severity == 'moderate') return Colors.orange;
+      if (severity == 'severe') return colorScheme.error;
+      return colorScheme.outline;
+  }
+
   void _showCropDetail(CropInfo crop) {
     showModalBottomSheet(
       context: context,
@@ -328,6 +328,9 @@ void initState() {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        
         return DraggableScrollableSheet(
           initialChildSize: 0.7,
           maxChildSize: 0.95,
@@ -345,7 +348,7 @@ void initState() {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: colorScheme.outlineVariant,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -359,10 +362,10 @@ void initState() {
                         width: 60,
                         height: 60,
                         decoration: BoxDecoration(
-                          color: Colors.green.shade100,
+                          color: colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(Icons.eco, color: Colors.green.shade700, size: 32),
+                        child: Icon(Icons.eco, color: colorScheme.onPrimaryContainer, size: 32),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -379,7 +382,7 @@ void initState() {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontStyle: FontStyle.italic,
-                                  color: Colors.grey.shade600,
+                                  color: colorScheme.onSurfaceVariant,
                                 ),
                               ),
                           ],
@@ -391,21 +394,21 @@ void initState() {
 
                   // Description
                   if (crop.description != null) ...[
-                    Text(crop.description!, style: TextStyle(color: Colors.grey.shade700, height: 1.5)),
+                    Text(crop.description!, style: TextStyle(color: colorScheme.onSurface, height: 1.5)),
                     const SizedBox(height: 20),
                   ],
 
                   // Growing Conditions
-                  _buildSectionTitle('Growing Conditions'),
-                  _buildInfoRow(Icons.thermostat, 'Temperature', crop.temperatureRange),
-                  _buildInfoRow(Icons.water_drop, 'Water', crop.waterRequirement ?? 'N/A'),
-                  _buildInfoRow(Icons.landscape, 'Soil', crop.soilType ?? 'N/A'),
-                  _buildInfoRow(Icons.calendar_month, 'Season', crop.season ?? 'N/A'),
+                  _buildSectionTitle('Growing Conditions', colorScheme),
+                  _buildInfoRow(Icons.thermostat, 'Temperature', crop.temperatureRange, colorScheme),
+                  _buildInfoRow(Icons.water_drop, 'Water', crop.waterRequirement ?? 'N/A', colorScheme),
+                  _buildInfoRow(Icons.landscape, 'Soil', crop.soilType ?? 'N/A', colorScheme),
+                  _buildInfoRow(Icons.calendar_month, 'Season', crop.season ?? 'N/A', colorScheme),
                   const SizedBox(height: 16),
 
                   // Growing Tips
                   if (crop.growingTips.isNotEmpty) ...[
-                    _buildSectionTitle('Growing Tips'),
+                    _buildSectionTitle('Growing Tips', colorScheme),
                     ...crop.growingTips.map((tip) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
@@ -422,14 +425,14 @@ void initState() {
 
                   // Common Diseases
                   if (crop.commonDiseases.isNotEmpty) ...[
-                    _buildSectionTitle('Common Diseases'),
+                    _buildSectionTitle('Common Diseases', colorScheme),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: crop.commonDiseases.map((d) => Chip(
                         label: Text(d, style: const TextStyle(fontSize: 12)),
-                        backgroundColor: Colors.red.shade50,
-                        avatar: Icon(Icons.warning, size: 14, color: Colors.red.shade700),
+                        backgroundColor: colorScheme.errorContainer.withValues(alpha: 0.5),
+                        avatar: Icon(Icons.warning, size: 14, color: colorScheme.error),
                       )).toList(),
                     ),
                   ],
@@ -450,6 +453,9 @@ void initState() {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
+         final theme = Theme.of(context);
+         final colorScheme = theme.colorScheme;
+
         return DraggableScrollableSheet(
           initialChildSize: 0.7,
           maxChildSize: 0.95,
@@ -467,7 +473,7 @@ void initState() {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: colorScheme.outlineVariant,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -477,7 +483,7 @@ void initState() {
                   // Header
                   Text(disease.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                   if (disease.scientificName != null)
-                    Text(disease.scientificName!, style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey.shade600)),
+                    Text(disease.scientificName!, style: TextStyle(fontStyle: FontStyle.italic, color: colorScheme.onSurfaceVariant)),
                   const SizedBox(height: 16),
 
                   // Affected Crops
@@ -485,40 +491,40 @@ void initState() {
                     spacing: 8,
                     children: disease.affectedCrops.map((c) => Chip(
                       label: Text(c, style: const TextStyle(fontSize: 12)),
-                      backgroundColor: Colors.green.shade50,
+                      backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.5),
                     )).toList(),
                   ),
                   const SizedBox(height: 16),
 
                   // Description
                   if (disease.description != null) ...[
-                    Text(disease.description!, style: TextStyle(color: Colors.grey.shade700, height: 1.5)),
+                    Text(disease.description!, style: TextStyle(color: colorScheme.onSurface, height: 1.5)),
                     const SizedBox(height: 20),
                   ],
 
                   // Symptoms
                   if (disease.symptoms.isNotEmpty) ...[
-                    _buildSectionTitle('Symptoms'),
-                    ...disease.symptoms.map((s) => _buildBulletPoint(s, Icons.visibility)),
+                    _buildSectionTitle('Symptoms', colorScheme),
+                    ...disease.symptoms.map((s) => _buildBulletPoint(s, Icons.visibility, colorScheme)),
                     const SizedBox(height: 16),
                   ],
 
                   // Treatments
                   if (disease.organicTreatment.isNotEmpty) ...[
-                    _buildSectionTitle('Organic Treatment'),
-                    ...disease.organicTreatment.map((t) => _buildBulletPoint(t, Icons.nature)),
+                    _buildSectionTitle('Organic Treatment', colorScheme),
+                    ...disease.organicTreatment.map((t) => _buildBulletPoint(t, Icons.nature, colorScheme)),
                     const SizedBox(height: 12),
                   ],
                   if (disease.chemicalTreatment.isNotEmpty) ...[
-                    _buildSectionTitle('Chemical Treatment'),
-                    ...disease.chemicalTreatment.map((t) => _buildBulletPoint(t, Icons.science)),
+                    _buildSectionTitle('Chemical Treatment', colorScheme),
+                    ...disease.chemicalTreatment.map((t) => _buildBulletPoint(t, Icons.science, colorScheme)),
                     const SizedBox(height: 12),
                   ],
 
                   // Prevention
                   if (disease.prevention.isNotEmpty) ...[
-                    _buildSectionTitle('Prevention'),
-                    ...disease.prevention.map((p) => _buildBulletPoint(p, Icons.shield)),
+                    _buildSectionTitle('Prevention', colorScheme),
+                    ...disease.prevention.map((p) => _buildBulletPoint(p, Icons.shield, colorScheme)),
                     const SizedBox(height: 12),
                   ],
 
@@ -527,7 +533,7 @@ void initState() {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
+                        color: Colors.amber.shade100, // Explicit warning color
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.amber.shade300),
                       ),
@@ -536,13 +542,13 @@ void initState() {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.warning, color: Colors.amber.shade700),
+                              Icon(Icons.warning, color: Colors.amber.shade900),
                               const SizedBox(width: 8),
-                              const Text('Safety Warnings', style: TextStyle(fontWeight: FontWeight.bold)),
+                              Text('Safety Warnings', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900)),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          ...disease.safetyWarnings.map((w) => Text('• $w')),
+                          ...disease.safetyWarnings.map((w) => Text('• $w', style: TextStyle(color: Colors.amber.shade900))),
                         ],
                       ),
                     ),
@@ -556,7 +562,7 @@ void initState() {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, ColorScheme colorScheme) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
@@ -564,33 +570,33 @@ void initState() {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          color: Colors.green.shade800,
+          color: colorScheme.primary,
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String value, ColorScheme colorScheme) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Colors.green.shade600),
+          Icon(icon, size: 18, color: colorScheme.primary),
           const SizedBox(width: 8),
-          Text('$label: ', style: TextStyle(color: Colors.grey.shade600)),
+          Text('$label: ', style: TextStyle(color: colorScheme.onSurfaceVariant)),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
-  Widget _buildBulletPoint(String text, IconData icon) {
+  Widget _buildBulletPoint(String text, IconData icon, ColorScheme colorScheme) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: Colors.grey.shade600),
+          Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
           const SizedBox(width: 8),
           Expanded(child: Text(text)),
         ],
@@ -598,12 +604,12 @@ void initState() {
     );
   }
 
-  Widget _buildErrorWidget() {
+  Widget _buildErrorWidget(ColorScheme colorScheme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+          Icon(Icons.error_outline, size: 64, color: colorScheme.error),
           const SizedBox(height: 16),
           const Text('Failed to load encyclopedia'),
           ElevatedButton(
@@ -615,14 +621,14 @@ void initState() {
     );
   }
 
-  Widget _buildEmptyWidget(String message) {
+  Widget _buildEmptyWidget(String message, ColorScheme colorScheme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+          Icon(Icons.search_off, size: 64, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
           const SizedBox(height: 16),
-          Text(message, style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+          Text(message, style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant)),
         ],
       ),
     );

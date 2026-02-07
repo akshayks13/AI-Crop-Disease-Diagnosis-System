@@ -1,11 +1,9 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../config/routes.dart';
-import '../../../../config/theme.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_config.dart';
 
@@ -19,6 +17,7 @@ class DiagnosisScreen extends ConsumerStatefulWidget {
 
 class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
   XFile? _selectedImage;
+  Uint8List? _imageBytes; // Store bytes for cross-platform display
   String? _cropType;
   bool _isProcessing = false;
   final ImagePicker _picker = ImagePicker();
@@ -43,27 +42,35 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
       );
 
       if (image != null) {
+        // Read bytes for cross-platform display and upload
+        final bytes = await image.readAsBytes();
         setState(() {
           _selectedImage = image;
+          _imageBytes = bytes;
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
     }
   }
 
   Future<void> _analyzeCrop() async {
-    if (_selectedImage == null) return;
+    if (_selectedImage == null || _imageBytes == null) return;
 
     setState(() => _isProcessing = true);
 
     try {
       final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.uploadFile(
+      // Use bytes-based upload for cross-platform compatibility
+      final response = await apiClient.uploadFileBytes(
         ApiConfig.predict,
-        file: File(_selectedImage!.path),
+        bytes: _imageBytes!,
+        filename: _selectedImage!.name,
+        fieldName: 'file',
         fields: {
           if (_cropType != null) 'crop_type': _cropType,
         },
@@ -95,6 +102,7 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -109,17 +117,17 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.primaryGreen.withOpacity(0.1),
+                color: colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: AppTheme.primaryGreen),
+                  Icon(Icons.info_outline, color: colorScheme.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Take a clear photo of the affected plant part for accurate diagnosis.',
-                      style: TextStyle(color: AppTheme.primaryGreen),
+                      style: TextStyle(color: colorScheme.primary),
                     ),
                   ),
                 ],
@@ -137,51 +145,47 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
                   color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: theme.colorScheme.outline.withOpacity(0.3),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
                     width: 2,
                     style: BorderStyle.solid,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: _selectedImage != null
+                child: _imageBytes != null
                     ? Column(
                         children: [
                           ClipRRect(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxHeight: 400),
-                              child: kIsWeb 
-                                  ? Image.network(
-                                      _selectedImage!.path,
-                                      fit: BoxFit.contain,
-                                    )
-                                  : Image.file(
-                                      File(_selectedImage!.path),
-                                      fit: BoxFit.contain,
-                                    ),
+                              // Use Image.memory for cross-platform (web, mobile, desktop)
+                              child: Image.memory(
+                                _imageBytes!,
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
-                              color: Colors.red.shade50,
+                              color: colorScheme.errorContainer,
                               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.delete_outline, color: Colors.red.shade700),
+                                Icon(Icons.delete_outline, color: colorScheme.onErrorContainer),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Remove Image',
                                   style: TextStyle(
-                                    color: Colors.red.shade700,
+                                    color: colorScheme.onErrorContainer,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -198,13 +202,13 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
                             Icon(
                               Icons.add_a_photo_outlined,
                               size: 64,
-                              color: theme.colorScheme.onSurface.withOpacity(0.4),
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Tap to capture or select image',
                               style: theme.textTheme.bodyLarge?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                               ),
                             ),
                           ],
@@ -236,11 +240,12 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
                       _cropType = selected ? crop.toLowerCase() : null;
                     });
                   },
-                  selectedColor: AppTheme.primaryGreen.withOpacity(0.2),
+                  selectedColor: colorScheme.primaryContainer,
                   labelStyle: TextStyle(
-                    color: isSelected ? AppTheme.primaryGreen : null,
+                    color: isSelected ? colorScheme.onPrimaryContainer : null,
                     fontWeight: isSelected ? FontWeight.bold : null,
                   ),
+                  backgroundColor: theme.canvasColor, // Or surfaceContainerHighest
                 );
               }).toList(),
             ),
@@ -255,16 +260,20 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
                     ? _analyzeCrop
                     : null,
                 icon: _isProcessing
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: colorScheme.onPrimary,
                         ),
                       )
                     : const Icon(Icons.science_outlined),
                 label: Text(_isProcessing ? 'Analyzing...' : 'Analyze Crop'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                ),
               ),
             ),
           ],
@@ -274,6 +283,9 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
   }
 
   void _showImagePickerOptions() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -289,10 +301,10 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen.withOpacity(0.1),
+                    color: colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(Icons.camera_alt, color: AppTheme.primaryGreen),
+                  child: Icon(Icons.camera_alt, color: colorScheme.onPrimaryContainer),
                 ),
                 title: const Text('Take Photo'),
                 subtitle: const Text('Use camera to capture'),
@@ -305,10 +317,10 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: colorScheme.secondaryContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.photo_library, color: Colors.blue),
+                  child: Icon(Icons.photo_library, color: colorScheme.onSecondaryContainer),
                 ),
                 title: const Text('Choose from Gallery'),
                 subtitle: const Text('Select existing image'),

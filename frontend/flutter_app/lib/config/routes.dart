@@ -13,6 +13,8 @@ import '../features/expert/screens/expert_dashboard_screen.dart';
 import '../features/expert/screens/questions_screen.dart';
 import '../features/expert/screens/answer_screen.dart';
 import '../features/expert/screens/expert_stats_screen.dart';
+import '../features/expert/screens/answered_questions_screen.dart';
+import '../features/expert/screens/answer_detail_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 import '../features/questions/screens/ask_expert_screen.dart';
@@ -59,6 +61,8 @@ class AppRoutes {
   static const String expertQuestions = '/expert/questions';
   static const String expertAnswer = '/expert/answer';
   static const String expertStats = '/expert/stats';
+  static const String expertMyAnswers = '/expert/my-answers';
+  static const String expertAnswerDetail = '/expert/answer-detail';
   
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -95,7 +99,11 @@ class AppRoutes {
       
       // Questions
       case askExpert:
-        return _slideRoute(const AskExpertScreen(), settings);
+        final args = settings.arguments as Map<String, dynamic>?;
+        return _slideRoute(AskExpertScreen(
+          diagnosisId: args?['id'], 
+          diagnosisInfo: args,
+        ), settings);
       case myQuestions:
         return _slideRoute(const MyQuestionsScreen(), settings);
       
@@ -123,6 +131,11 @@ class AppRoutes {
         return _slideRoute(AnswerScreen(question: args), settings);
       case expertStats:
         return _slideRoute(const ExpertStatsScreen(), settings);
+      case expertMyAnswers:
+        return _slideRoute(const AnsweredQuestionsScreen(), settings);
+      case expertAnswerDetail:
+        final args = settings.arguments as Map<String, dynamic>;
+        return _slideRoute(AnswerDetailScreen(answerData: args), settings);
       
       default:
         return MaterialPageRoute(
