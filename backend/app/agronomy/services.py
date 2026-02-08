@@ -25,7 +25,7 @@ class AgronomyService:
         # Fetch rules for the disease
         query = select(DiagnosticRule).where(
             DiagnosticRule.disease_id == disease_id,
-            DiagnosticRule.is_active == True
+            DiagnosticRule.is_active
         )
         result = await self.db.execute(query)
         rules = result.scalars().all()
