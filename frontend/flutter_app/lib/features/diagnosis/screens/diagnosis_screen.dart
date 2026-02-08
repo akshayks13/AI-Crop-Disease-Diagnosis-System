@@ -4,8 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../config/routes.dart';
-import '../../../../core/api/api_client.dart';
+import '../../../../config/routes.dart';
 import '../../../../core/api/api_config.dart';
+import '../../../../core/services/ml_service.dart'; // Import MLService
 
 /// Diagnosis screen with camera capture
 class DiagnosisScreen extends ConsumerStatefulWidget {
@@ -64,23 +65,24 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      final apiClient = ref.read(apiClientProvider);
-      // Use bytes-based upload for cross-platform compatibility
-      final response = await apiClient.uploadFileBytes(
-        ApiConfig.predict,
-        bytes: _imageBytes!,
-        filename: _selectedImage!.name,
-        fieldName: 'file',
-        fields: {
-          if (_cropType != null) 'crop_type': _cropType,
-        },
-      );
+      // Use MLService for offline prediction
+      final mlService = ref.read(mlServiceProvider);
+      
+      // Ensure initialization
+      await mlService.initialize();
+      
+      final result = await mlService.predict(_selectedImage!);
+      
+      // Add crop type to result if needed for context
+      if (_cropType != null) {
+          result['crop_type'] = _cropType;
+      }
 
       if (mounted) {
         Navigator.pushNamed(
           context,
           AppRoutes.diagnosisResult,
-          arguments: response.data as Map<String, dynamic>,
+          arguments: result,
         );
       }
     } catch (e) {
