@@ -23,6 +23,22 @@ from app.schemas.admin import (
     SystemMetricsResponse,
     DashboardResponse,
 )
+from app.agronomy.schemas import (
+    EnvironmentalContext,
+    ContextValidationRequest,
+    SafetyCheckRequest,
+    ValidationResult,
+    SafetyCheckResult,
+    DiagnosticRuleCreate,
+    DiagnosticRuleUpdate,
+    DiagnosticRuleResponse,
+    TreatmentConstraintCreate,
+    TreatmentConstraintUpdate,
+    TreatmentConstraintResponse,
+    SeasonalPatternCreate,
+    SeasonalPatternUpdate,
+    SeasonalPatternResponse,
+)
 
 __all__ = [
     "UserCreate",
@@ -39,4 +55,18 @@ __all__ = [
     "ExpertApprovalRequest",
     "SystemMetricsResponse",
     "DashboardResponse",
+    "EnvironmentalContext",
+    "ContextValidationRequest",
+    "SafetyCheckRequest",
+    "ValidationResult",
+    "SafetyCheckResult",
+    "DiagnosticRuleCreate",
+    "DiagnosticRuleUpdate",
+    "DiagnosticRuleResponse",
+    "TreatmentConstraintCreate",
+    "TreatmentConstraintUpdate",
+    "TreatmentConstraintResponse",
+    "SeasonalPatternCreate",
+    "SeasonalPatternUpdate",
+    "SeasonalPatternResponse",
 ]

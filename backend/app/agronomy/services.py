@@ -200,3 +200,145 @@ class AgronomyService:
         
         result = await self.db.execute(query)
         return result.scalars().all()
+
+    # Admin CRUD Methods
+
+    async def create_diagnostic_rule(self, rule_data: dict) -> DiagnosticRule:
+        """Create a new diagnostic rule."""
+        rule = DiagnosticRule(**rule_data)
+        self.db.add(rule)
+        await self.db.commit()
+        await self.db.refresh(rule)
+        return rule
+
+    async def get_diagnostic_rules(self, disease_id: UUID = None) -> List[DiagnosticRule]:
+        """Get all diagnostic rules, optionally filtered by disease."""
+        query = select(DiagnosticRule)
+        if disease_id:
+            query = query.where(DiagnosticRule.disease_id == disease_id)
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
+    async def get_diagnostic_rule(self, rule_id: UUID) -> DiagnosticRule:
+        """Get a single diagnostic rule by ID."""
+        query = select(DiagnosticRule).where(DiagnosticRule.id == rule_id)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def update_diagnostic_rule(self, rule_id: UUID, rule_data: dict) -> DiagnosticRule:
+        """Update a diagnostic rule."""
+        rule = await self.get_diagnostic_rule(rule_id)
+        if not rule:
+            return None
+        
+        for key, value in rule_data.items():
+            if value is not None:
+                setattr(rule, key, value)
+        
+        await self.db.commit()
+        await self.db.refresh(rule)
+        return rule
+
+    async def delete_diagnostic_rule(self, rule_id: UUID) -> bool:
+        """Delete a diagnostic rule."""
+        rule = await self.get_diagnostic_rule(rule_id)
+        if not rule:
+            return False
+        
+        await self.db.delete(rule)
+        await self.db.commit()
+        return True
+
+    async def create_treatment_constraint(self, constraint_data: dict) -> TreatmentConstraint:
+        """Create a new treatment constraint."""
+        constraint = TreatmentConstraint(**constraint_data)
+        self.db.add(constraint)
+        await self.db.commit()
+        await self.db.refresh(constraint)
+        return constraint
+
+    async def get_treatment_constraints(self, treatment_type: str = None) -> List[TreatmentConstraint]:
+        """Get all treatment constraints, optionally filtered by type."""
+        query = select(TreatmentConstraint)
+        if treatment_type:
+            query = query.where(TreatmentConstraint.treatment_type == treatment_type)
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
+    async def get_treatment_constraint(self, constraint_id: UUID) -> TreatmentConstraint:
+        """Get a single treatment constraint by ID."""
+        query = select(TreatmentConstraint).where(TreatmentConstraint.id == constraint_id)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def update_treatment_constraint(self, constraint_id: UUID, constraint_data: dict) -> TreatmentConstraint:
+        """Update a treatment constraint."""
+        constraint = await self.get_treatment_constraint(constraint_id)
+        if not constraint:
+            return None
+        
+        for key, value in constraint_data.items():
+            if value is not None:
+                setattr(constraint, key, value)
+        
+        await self.db.commit()
+        await self.db.refresh(constraint)
+        return constraint
+
+    async def delete_treatment_constraint(self, constraint_id: UUID) -> bool:
+        """Delete a treatment constraint."""
+        constraint = await self.get_treatment_constraint(constraint_id)
+        if not constraint:
+            return False
+        
+        await self.db.delete(constraint)
+        await self.db.commit()
+        return True
+
+    async def create_seasonal_pattern(self, pattern_data: dict) -> SeasonalPattern:
+        """Create a new seasonal pattern."""
+        pattern = SeasonalPattern(**pattern_data)
+        self.db.add(pattern)
+        await self.db.commit()
+        await self.db.refresh(pattern)
+        return pattern
+
+    async def get_seasonal_patterns(self, crop_id: UUID = None, disease_id: UUID = None) -> List[SeasonalPattern]:
+        """Get all seasonal patterns, optionally filtered by crop or disease."""
+        query = select(SeasonalPattern)
+        if crop_id:
+            query = query.where(SeasonalPattern.crop_id == crop_id)
+        if disease_id:
+            query = query.where(SeasonalPattern.disease_id == disease_id)
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
+    async def get_seasonal_pattern(self, pattern_id: UUID) -> SeasonalPattern:
+        """Get a single seasonal pattern by ID."""
+        query = select(SeasonalPattern).where(SeasonalPattern.id == pattern_id)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def update_seasonal_pattern(self, pattern_id: UUID, pattern_data: dict) -> SeasonalPattern:
+        """Update a seasonal pattern."""
+        pattern = await self.get_seasonal_pattern(pattern_id)
+        if not pattern:
+            return None
+        
+        for key, value in pattern_data.items():
+            if value is not None:
+                setattr(pattern, key, value)
+        
+        await self.db.commit()
+        await self.db.refresh(pattern)
+        return pattern
+
+    async def delete_seasonal_pattern(self, pattern_id: UUID) -> bool:
+        """Delete a seasonal pattern."""
+        pattern = await self.get_seasonal_pattern(pattern_id)
+        if not pattern:
+            return False
+        
+        await self.db.delete(pattern)
+        await self.db.commit()
+        return True

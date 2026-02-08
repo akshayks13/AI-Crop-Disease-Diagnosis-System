@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, Users, UserCheck, ScrollText, BriefcaseMedicalIcon, LogOut, Bell, Search, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, ScrollText, BriefcaseMedicalIcon, LogOut, Bell, Search, ChevronRight, Leaf } from 'lucide-react';
 import { authApi } from '@/lib/api';
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
     { href: '/dashboard/experts', label: 'Expert Approval', icon: UserCheck },
     { href: '/dashboard/users', label: 'Users', icon: Users },
     { href: '/dashboard/diagnoses', label: 'Diagnoses', icon: ScrollText },
+    { href: '/dashboard/agronomy', label: 'Agronomy', icon: Leaf },
     { href: '/dashboard/logs', label: 'System Logs', icon: BriefcaseMedicalIcon },
 ];
 

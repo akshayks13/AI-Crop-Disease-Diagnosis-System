@@ -9,17 +9,27 @@ from app.models.user import User, UserRole
 from app.agronomy.services import AgronomyService
 from app.agronomy.schemas import (
     ContextValidationRequest, ValidationResult,
-    SafetyCheckRequest, SafetyCheckResult
+    SafetyCheckRequest, SafetyCheckResult,
+    DiagnosticRuleCreate, DiagnosticRuleUpdate, DiagnosticRuleResponse,
+    TreatmentConstraintCreate, TreatmentConstraintUpdate, TreatmentConstraintResponse,
+    SeasonalPatternCreate, SeasonalPatternUpdate, SeasonalPatternResponse
 )
-# Note: SeasonalPattern model is SQLAlchemy, we should use a Pydantic schema for response.
-# For now, let's use a generic dict or create a schema if needed. 
-# Re-checking schemas.py: I didn't create a SeasonalPattern response schema. 
-# I'll output the model directly (FastAPI handles ORM objects if configured) or simple dicts.
 
 router = APIRouter(prefix="/agronomy", tags=["Agronomy Intelligence"])
 
 def get_agronomy_service(db: AsyncSession = Depends(get_db)) -> AgronomyService:
     return AgronomyService(db)
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Dependency to ensure user is an admin."""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user
+
+# Farmer/Expert Endpoints (existing)
 
 @router.post("/validate-diagnosis", response_model=ValidationResult)
 async def validate_diagnosis(
@@ -76,3 +86,220 @@ async def get_seasonal_diseases(
         }
         for p in patterns
     ]
+
+# Admin CRUD Endpoints - Diagnostic Rules
+
+@router.get("/admin/rules", response_model=List[DiagnosticRuleResponse], tags=["Agronomy Admin"])
+async def list_diagnostic_rules(
+    disease_id: Optional[UUID] = None,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    List all diagnostic rules, optionally filtered by disease.
+    Admin only.
+    """
+    rules = await service.get_diagnostic_rules(disease_id)
+    return rules
+
+@router.post("/admin/rules", response_model=DiagnosticRuleResponse, status_code=status.HTTP_201_CREATED, tags=["Agronomy Admin"])
+async def create_diagnostic_rule(
+    rule: DiagnosticRuleCreate,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    Create a new diagnostic rule.
+    Admin only.
+    """
+    return await service.create_diagnostic_rule(rule.model_dump())
+
+@router.get("/admin/rules/{rule_id}", response_model=DiagnosticRuleResponse, tags=["Agronomy Admin"])
+async def get_diagnostic_rule(
+    rule_id: UUID,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    Get a specific diagnostic rule.
+    Admin only.
+    """
+    rule = await service.get_diagnostic_rule(rule_id)
+    if not rule:
+        raise HTTPException(status_code=404, detail="Diagnostic rule not found")
+    return rule
+
+@router.put("/admin/rules/{rule_id}", response_model=DiagnosticRuleResponse, tags=["Agronomy Admin"])
+async def update_diagnostic_rule(
+    rule_id: UUID,
+    rule_update: DiagnosticRuleUpdate,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    Update a diagnostic rule.
+    Admin only.
+    """
+    rule = await service.update_diagnostic_rule(rule_id, rule_update.model_dump(exclude_unset=True))
+    if not rule:
+        raise HTTPException(status_code=404, detail="Diagnostic rule not found")
+    return rule
+
+@router.delete("/admin/rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Agronomy Admin"])
+async def delete_diagnostic_rule(
+    rule_id: UUID,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    Delete a diagnostic rule.
+    Admin only.
+    """
+    deleted = await service.delete_diagnostic_rule(rule_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Diagnostic rule not found")
+
+# Admin CRUD Endpoints - Treatment Constraints
+
+@router.get("/admin/constraints", response_model=List[TreatmentConstraintResponse], tags=["Agronomy Admin"])
+async def list_treatment_constraints(
+    treatment_type: Optional[str] = None,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    List all treatment constraints, optionally filtered by type.
+    Admin only.
+    """
+    constraints = await service.get_treatment_constraints(treatment_type)
+    return constraints
+
+@router.post("/admin/constraints", response_model=TreatmentConstraintResponse, status_code=status.HTTP_201_CREATED, tags=["Agronomy Admin"])
+async def create_treatment_constraint(
+    constraint: TreatmentConstraintCreate,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    Create a new treatment constraint.
+    Admin only.
+    """
+    return await service.create_treatment_constraint(constraint.model_dump())
+
+@router.get("/admin/constraints/{constraint_id}", response_model=TreatmentConstraintResponse, tags=["Agronomy Admin"])
+async def get_treatment_constraint(
+    constraint_id: UUID,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    Get a specific treatment constraint.
+    Admin only.
+    """
+    constraint = await service.get_treatment_constraint(constraint_id)
+    if not constraint:
+        raise HTTPException(status_code=404, detail="Treatment constraint not found")
+    return constraint
+
+@router.put("/admin/constraints/{constraint_id}", response_model=TreatmentConstraintResponse, tags=["Agronomy Admin"])
+async def update_treatment_constraint(
+    constraint_id: UUID,
+    constraint_update: TreatmentConstraintUpdate,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    Update a treatment constraint.
+    Admin only.
+    """
+    constraint = await service.update_treatment_constraint(constraint_id, constraint_update.model_dump(exclude_unset=True))
+    if not constraint:
+        raise HTTPException(status_code=404, detail="Treatment constraint not found")
+    return constraint
+
+@router.delete("/admin/constraints/{constraint_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Agronomy Admin"])
+async def delete_treatment_constraint(
+    constraint_id: UUID,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    Delete a treatment constraint.
+    Admin only.
+    """
+    deleted = await service.delete_treatment_constraint(constraint_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Treatment constraint not found")
+
+# Admin CRUD Endpoints - Seasonal Patterns
+
+@router.get("/admin/patterns", response_model=List[SeasonalPatternResponse], tags=["Agronomy Admin"])
+async def list_seasonal_patterns(
+    crop_id: Optional[UUID] = None,
+    disease_id: Optional[UUID] = None,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    List all seasonal patterns, optionally filtered by crop or disease.
+    Admin only.
+    """
+    patterns = await service.get_seasonal_patterns(crop_id, disease_id)
+    return patterns
+
+@router.post("/admin/patterns", response_model=SeasonalPatternResponse, status_code=status.HTTP_201_CREATED, tags=["Agronomy Admin"])
+async def create_seasonal_pattern(
+    pattern: SeasonalPatternCreate,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    Create a new seasonal pattern.
+    Admin only.
+    """
+    return await service.create_seasonal_pattern(pattern.model_dump())
+
+@router.get("/admin/patterns/{pattern_id}", response_model=SeasonalPatternResponse, tags=["Agronomy Admin"])
+async def get_seasonal_pattern(
+    pattern_id: UUID,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    Get a specific seasonal pattern.
+    Admin only.
+    """
+    pattern = await service.get_seasonal_pattern(pattern_id)
+    if not pattern:
+        raise HTTPException(status_code=404, detail="Seasonal pattern not found")
+    return pattern
+
+@router.put("/admin/patterns/{pattern_id}", response_model=SeasonalPatternResponse, tags=["Agronomy Admin"])
+async def update_seasonal_pattern(
+    pattern_id: UUID,
+    pattern_update: SeasonalPatternUpdate,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    Update a seasonal pattern.
+    Admin only.
+    """
+    pattern = await service.update_seasonal_pattern(pattern_id, pattern_update.model_dump(exclude_unset=True))
+    if not pattern:
+        raise HTTPException(status_code=404, detail="Seasonal pattern not found")
+    return pattern
+
+@router.delete("/admin/patterns/{pattern_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Agronomy Admin"])
+async def delete_seasonal_pattern(
+    pattern_id: UUID,
+    admin: User = Depends(require_admin),
+    service: AgronomyService = Depends(get_agronomy_service)
+):
+    """
+    Delete a seasonal pattern.
+    Admin only.
+    """
+    deleted = await service.delete_seasonal_pattern(pattern_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Seasonal pattern not found")

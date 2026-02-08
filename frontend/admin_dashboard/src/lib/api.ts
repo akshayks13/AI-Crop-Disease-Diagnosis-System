@@ -59,4 +59,78 @@ export const adminApi = {
     },
 };
 
+export const agronomyApi = {
+    // Diagnostic Rules
+    getDiagnosticRules: (diseaseId?: string) => {
+        const params = diseaseId ? `?disease_id=${diseaseId}` : '';
+        return api.get(`/agronomy/admin/rules${params}`);
+    },
+    createDiagnosticRule: (data: {
+        disease_id: string;
+        rule_name: string;
+        description?: string;
+        conditions: Record<string, any>;
+        impact: Record<string, any>;
+        priority?: number;
+        is_active?: boolean;
+    }) => api.post('/agronomy/admin/rules', data),
+    getDiagnosticRule: (id: string) => api.get(`/agronomy/admin/rules/${id}`),
+    updateDiagnosticRule: (id: string, data: Partial<{
+        rule_name: string;
+        description: string;
+        conditions: Record<string, any>;
+        impact: Record<string, any>;
+        priority: number;
+        is_active: boolean;
+    }>) => api.put(`/agronomy/admin/rules/${id}`, data),
+    deleteDiagnosticRule: (id: string) => api.delete(`/agronomy/admin/rules/${id}`),
+
+    // Treatment Constraints
+    getTreatmentConstraints: (treatmentType?: string) => {
+        const params = treatmentType ? `?treatment_type=${treatmentType}` : '';
+        return api.get(`/agronomy/admin/constraints${params}`);
+    },
+    createTreatmentConstraint: (data: {
+        treatment_name: string;
+        treatment_type: string;
+        constraint_description: string;
+        restricted_conditions: Record<string, any>;
+        enforcement_level?: string;
+        risk_level?: string;
+    }) => api.post('/agronomy/admin/constraints', data),
+    getTreatmentConstraint: (id: string) => api.get(`/agronomy/admin/constraints/${id}`),
+    updateTreatmentConstraint: (id: string, data: Partial<{
+        treatment_name: string;
+        treatment_type: string;
+        constraint_description: string;
+        restricted_conditions: Record<string, any>;
+        enforcement_level: string;
+        risk_level: string;
+    }>) => api.put(`/agronomy/admin/constraints/${id}`, data),
+    deleteTreatmentConstraint: (id: string) => api.delete(`/agronomy/admin/constraints/${id}`),
+
+    // Seasonal Patterns
+    getSeasonalPatterns: (cropId?: string, diseaseId?: string) => {
+        const params = new URLSearchParams();
+        if (cropId) params.append('crop_id', cropId);
+        if (diseaseId) params.append('disease_id', diseaseId);
+        const query = params.toString();
+        return api.get(`/agronomy/admin/patterns${query ? `?${query}` : ''}`);
+    },
+    createSeasonalPattern: (data: {
+        disease_id: string;
+        crop_id: string;
+        region?: string;
+        season: string;
+        likelihood_score?: number;
+    }) => api.post('/agronomy/admin/patterns', data),
+    getSeasonalPattern: (id: string) => api.get(`/agronomy/admin/patterns/${id}`),
+    updateSeasonalPattern: (id: string, data: Partial<{
+        region: string;
+        season: string;
+        likelihood_score: number;
+    }>) => api.put(`/agronomy/admin/patterns/${id}`, data),
+    deleteSeasonalPattern: (id: string) => api.delete(`/agronomy/admin/patterns/${id}`),
+};
+
 export default api;
