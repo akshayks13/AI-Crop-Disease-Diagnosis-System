@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { Maximize2, Calendar, Eye, X } from 'lucide-react';
+import { Maximize2, Calendar, Eye } from 'lucide-react';
 
 interface Diagnosis {
     id: string;

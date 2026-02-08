@@ -17,12 +17,16 @@ export default function AgronomyPage() {
     const [showModal, setShowModal] = useState(false);
 
     // Data states
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [rules, setRules] = useState<any[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [constraints, setConstraints] = useState<any[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [patterns, setPatterns] = useState<any[]>([]);
 
     useEffect(() => {
         loadData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab]);
 
     const loadData = async () => {
@@ -39,6 +43,7 @@ export default function AgronomyPage() {
                 const res = await agronomyApi.getSeasonalPatterns();
                 setPatterns(res.data);
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             setError(e.response?.data?.detail || 'Failed to load data');
         } finally {
@@ -58,11 +63,13 @@ export default function AgronomyPage() {
                 await agronomyApi.deleteSeasonalPattern(id);
             }
             loadData();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             alert(e.response?.data?.detail || 'Failed to delete');
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleCreate = async (data: any) => {
         try {
             if (activeTab === 'rules') {
@@ -74,6 +81,7 @@ export default function AgronomyPage() {
             }
             setShowModal(false);
             loadData();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             alert(e.response?.data?.detail || 'Failed to create');
         }

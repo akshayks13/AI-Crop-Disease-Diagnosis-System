@@ -69,7 +69,9 @@ export const agronomyApi = {
         disease_id: string;
         rule_name: string;
         description?: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         conditions: Record<string, any>;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         impact: Record<string, any>;
         priority?: number;
         is_active?: boolean;
@@ -78,7 +80,9 @@ export const agronomyApi = {
     updateDiagnosticRule: (id: string, data: Partial<{
         rule_name: string;
         description: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         conditions: Record<string, any>;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         impact: Record<string, any>;
         priority: number;
         is_active: boolean;
@@ -94,6 +98,7 @@ export const agronomyApi = {
         treatment_name: string;
         treatment_type: string;
         constraint_description: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         restricted_conditions: Record<string, any>;
         enforcement_level?: string;
         risk_level?: string;
@@ -103,6 +108,7 @@ export const agronomyApi = {
         treatment_name: string;
         treatment_type: string;
         constraint_description: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         restricted_conditions: Record<string, any>;
         enforcement_level: string;
         risk_level: string;

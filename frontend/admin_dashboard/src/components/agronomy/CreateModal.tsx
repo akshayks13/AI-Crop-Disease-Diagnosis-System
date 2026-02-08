@@ -11,10 +11,12 @@ type Tab = 'rules' | 'constraints' | 'patterns';
 interface CreateModalProps {
     type: Tab;
     onClose: () => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onCreate: (data: any) => void;
 }
 
 export default function CreateModal({ type, onClose, onCreate }: CreateModalProps) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [formData, setFormData] = useState<any>({});
     const [submitting, setSubmitting] = useState(false);
 
