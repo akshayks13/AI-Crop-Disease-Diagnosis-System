@@ -90,21 +90,33 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
   Future<void> _validateDiagnosis() async {
     if (_isValidating) return;
 
+    // Validate required fields
+    final diseaseId = widget.result['disease_id'];
+    if (diseaseId == null || diseaseId.toString().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Disease ID not found in diagnosis result')),
+        );
+      }
+      return;
+    }
+
     setState(() => _isValidating = true);
 
     try {
-      final  agronomyService = ref.read(agronomyServiceProvider);
-      final diseaseId = widget.result['disease_id'];
+      final agronomyService = ref.read(agronomyServiceProvider);
       
       final result = await agronomyService.validateDiagnosis(
-        diseaseId: diseaseId,
+        diseaseId: diseaseId.toString(),
         temperature: double.tryParse(_temperatureController.text),
         humidity: double.tryParse(_humidityController.text),
         season: _selectedSeason,
         region: _selectedRegion,
       );
 
-      setState(() => _validationResult = result);
+      if (mounted) {
+        setState(() => _validationResult = result);
+      }
     } catch (e) {
        if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

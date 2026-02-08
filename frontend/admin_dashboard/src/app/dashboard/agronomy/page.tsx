@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { agronomyApi } from '@/lib/api';
-import { Leaf, AlertTriangle, Calendar, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Leaf, AlertTriangle, Calendar, Plus } from 'lucide-react';
+import CreateModal from '@/components/agronomy/CreateModal';
+import RulesTable from '@/components/agronomy/tables/RulesTable';
+import ConstraintsTable from '@/components/agronomy/tables/ConstraintsTable';
+import PatternsTable from '@/components/agronomy/tables/PatternsTable';
 
 type Tab = 'rules' | 'constraints' | 'patterns';
 
@@ -10,6 +14,7 @@ export default function AgronomyPage() {
     const [activeTab, setActiveTab] = useState<Tab>('rules');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [showModal, setShowModal] = useState(false);
 
     // Data states
     const [rules, setRules] = useState<any[]>([]);
@@ -58,6 +63,22 @@ export default function AgronomyPage() {
         }
     };
 
+    const handleCreate = async (data: any) => {
+        try {
+            if (activeTab === 'rules') {
+                await agronomyApi.createDiagnosticRule(data);
+            } else if (activeTab === 'constraints') {
+                await agronomyApi.createTreatmentConstraint(data);
+            } else {
+                await agronomyApi.createSeasonalPattern(data);
+            }
+            setShowModal(false);
+            loadData();
+        } catch (e: any) {
+            alert(e.response?.data?.detail || 'Failed to create');
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -70,7 +91,7 @@ export default function AgronomyPage() {
                 </div>
                 <button
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-                    onClick={() => alert('Create dialog coming soon')}
+                    onClick={() => setShowModal(true)}
                 >
                     <Plus size={16} />
                     Add New
@@ -131,181 +152,15 @@ export default function AgronomyPage() {
                     </>
                 )}
             </div>
-        </div>
-    );
-}
 
-function RulesTable({ rules, onDelete }: { rules: any[]; onDelete: (id: string) => void }) {
-    if (rules.length === 0) {
-        return <div className="p-16 text-center text-slate-500">No diagnostic rules found</div>;
-    }
-
-    return (
-        <div className="overflow-x-auto">
-            <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Rule Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Disease</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Priority</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Status</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {rules.map((rule) => (
-                        <tr key={rule.id} className="hover:bg-slate-50">
-                            <td className="px-6 py-4 text-sm font-medium text-slate-900">{rule.rule_name}</td>
-                            <td className="px-6 py-4 text-sm text-slate-600">{rule.disease_id?.substring(0, 8)}...</td>
-                            <td className="px-6 py-4 text-sm text-slate-600">{rule.priority}</td>
-                            <td className="px-6 py-4">
-                                <span className={`px-2 py-1 text-xs font-medium rounded ${rule.is_active
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-slate-100 text-slate-600'
-                                    }`}>
-                                    {rule.is_active ? 'Active' : 'Inactive'}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                                <button
-                                    onClick={() => alert('Edit coming soon')}
-                                    className="text-blue-600 hover:text-blue-700 mr-3"
-                                >
-                                    <Pencil size={16} />
-                                </button>
-                                <button
-                                    onClick={() => onDelete(rule.id)}
-                                    className="text-red-600 hover:text-red-700"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
-}
-
-function ConstraintsTable({ constraints, onDelete }: { constraints: any[]; onDelete: (id: string) => void }) {
-    if (constraints.length === 0) {
-        return <div className="p-16 text-center text-slate-500">No treatment constraints found</div>;
-    }
-
-    return (
-        <div className="overflow-x-auto">
-            <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Treatment</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Type</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Enforcement</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Risk</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {constraints.map((constraint) => (
-                        <tr key={constraint.id} className="hover:bg-slate-50">
-                            <td className="px-6 py-4 text-sm font-medium text-slate-900">{constraint.treatment_name}</td>
-                            <td className="px-6 py-4">
-                                <span className={`px-2 py-1 text-xs font-medium rounded ${constraint.treatment_type === 'chemical'
-                                    ? 'bg-orange-100 text-orange-700'
-                                    : 'bg-green-100 text-green-700'
-                                    }`}>
-                                    {constraint.treatment_type}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-slate-600">{constraint.enforcement_level}</td>
-                            <td className="px-6 py-4">
-                                <span className={`px-2 py-1 text-xs font-medium rounded ${constraint.risk_level === 'high'
-                                    ? 'bg-red-100 text-red-700'
-                                    : constraint.risk_level === 'medium'
-                                        ? 'bg-yellow-100 text-yellow-700'
-                                        : 'bg-blue-100 text-blue-700'
-                                    }`}>
-                                    {constraint.risk_level}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                                <button
-                                    onClick={() => alert('Edit coming soon')}
-                                    className="text-blue-600 hover:text-blue-700 mr-3"
-                                >
-                                    <Pencil size={16} />
-                                </button>
-                                <button
-                                    onClick={() => onDelete(constraint.id)}
-                                    className="text-red-600 hover:text-red-700"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
-}
-
-function PatternsTable({ patterns, onDelete }: { patterns: any[]; onDelete: (id: string) => void }) {
-    if (patterns.length === 0) {
-        return <div className="p-16 text-center text-slate-500">No seasonal patterns found</div>;
-    }
-
-    return (
-        <div className="overflow-x-auto">
-            <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Crop</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Disease</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Season</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Region</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase">Likelihood</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {patterns.map((pattern) => (
-                        <tr key={pattern.id} className="hover:bg-slate-50">
-                            <td className="px-6 py-4 text-sm text-slate-600">{pattern.crop_id?.substring(0, 8)}...</td>
-                            <td className="px-6 py-4 text-sm text-slate-600">{pattern.disease_id?.substring(0, 8)}...</td>
-                            <td className="px-6 py-4 text-sm font-medium text-slate-900">{pattern.season}</td>
-                            <td className="px-6 py-4 text-sm text-slate-600">{pattern.region || 'General'}</td>
-                            <td className="px-6 py-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-24 bg-slate-200 rounded-full h-2">
-                                        <div
-                                            className="bg-blue-600 h-2 rounded-full"
-                                            style={{ width: `${(pattern.likelihood_score || 0) * 100}%` }}
-                                        />
-                                    </div>
-                                    <span className="text-sm text-slate-600">
-                                        {((pattern.likelihood_score || 0) * 100).toFixed(0)}%
-                                    </span>
-                                </div>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                                <button
-                                    onClick={() => alert('Edit coming soon')}
-                                    className="text-blue-600 hover:text-blue-700 mr-3"
-                                >
-                                    <Pencil size={16} />
-                                </button>
-                                <button
-                                    onClick={() => onDelete(pattern.id)}
-                                    className="text-red-600 hover:text-red-700"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+            {/* Create Modal */}
+            {showModal && (
+                <CreateModal
+                    type={activeTab}
+                    onClose={() => setShowModal(false)}
+                    onCreate={handleCreate}
+                />
+            )}
         </div>
     );
 }
