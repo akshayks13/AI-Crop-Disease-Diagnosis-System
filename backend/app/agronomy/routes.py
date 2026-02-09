@@ -100,7 +100,21 @@ async def list_diagnostic_rules(
     Admin only.
     """
     rules = await service.get_diagnostic_rules(disease_id)
-    return rules
+    # Manually add disease_name from relationship
+    return [
+        {
+            "id": str(r.id),
+            "disease_id": str(r.disease_id),
+            "disease_name": r.disease.name if r.disease else None,
+            "rule_name": r.rule_name,
+            "description": r.description,
+            "conditions": r.conditions,
+            "impact": r.impact,
+            "priority": r.priority,
+            "is_active": r.is_active,
+        }
+        for r in rules
+    ]
 
 @router.post("/admin/rules", response_model=DiagnosticRuleResponse, status_code=status.HTTP_201_CREATED, tags=["Agronomy Admin"])
 async def create_diagnostic_rule(

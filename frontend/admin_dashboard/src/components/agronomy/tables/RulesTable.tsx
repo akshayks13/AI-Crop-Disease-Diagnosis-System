@@ -4,6 +4,7 @@ interface Rule {
     id: string;
     rule_name: string;
     disease_id: string;
+    disease_name?: string;
     priority: number;
     is_active: boolean;
 }
@@ -11,6 +12,15 @@ interface Rule {
 interface RulesTableProps {
     rules: Rule[];
     onDelete: (id: string) => void;
+}
+
+// Format disease_id like "apple_black_rot" to "Apple Black Rot"
+function formatDiseaseName(diseaseId: string): string {
+    if (!diseaseId) return 'Unknown';
+    return diseaseId
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 }
 
 export default function RulesTable({ rules, onDelete }: RulesTableProps) {
@@ -34,7 +44,9 @@ export default function RulesTable({ rules, onDelete }: RulesTableProps) {
                     {rules.map((rule) => (
                         <tr key={rule.id} className="hover:bg-slate-50">
                             <td className="px-6 py-4 text-sm font-medium text-slate-900">{rule.rule_name}</td>
-                            <td className="px-6 py-4 text-sm text-slate-600">{rule.disease_id?.substring(0, 8)}...</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">
+                                {rule.disease_name || formatDiseaseName(rule.disease_id)}
+                            </td>
                             <td className="px-6 py-4 text-sm text-slate-600">{rule.priority}</td>
                             <td className="px-6 py-4">
                                 <span className={`px-2 py-1 text-xs font-medium rounded ${rule.is_active

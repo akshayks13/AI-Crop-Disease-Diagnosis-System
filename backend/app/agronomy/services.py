@@ -213,7 +213,8 @@ class AgronomyService:
 
     async def get_diagnostic_rules(self, disease_id: UUID = None) -> List[DiagnosticRule]:
         """Get all diagnostic rules, optionally filtered by disease."""
-        query = select(DiagnosticRule)
+        from sqlalchemy.orm import selectinload
+        query = select(DiagnosticRule).options(selectinload(DiagnosticRule.disease))
         if disease_id:
             query = query.where(DiagnosticRule.disease_id == disease_id)
         result = await self.db.execute(query)

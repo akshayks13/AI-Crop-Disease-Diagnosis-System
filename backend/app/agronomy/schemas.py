@@ -70,6 +70,7 @@ class DiagnosticRuleUpdate(BaseModel):
 class DiagnosticRuleResponse(BaseModel):
     id: UUID
     disease_id: UUID
+    disease_name: Optional[str] = None 
     rule_name: str
     description: Optional[str]
     conditions: Dict[str, Any]
