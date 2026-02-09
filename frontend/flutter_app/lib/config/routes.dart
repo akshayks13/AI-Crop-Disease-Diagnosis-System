@@ -98,6 +98,9 @@ class AppRoutes {
       case diagnosis:
         return _slideRoute(const DiagnosisScreen(), settings);
       case diagnosisResult:
+        if (settings.arguments is! Map<String, dynamic>) {
+          return _slideRoute(const DiagnosisScreen(), settings);
+        }
         final args = settings.arguments as Map<String, dynamic>;
         return _slideRoute(DiagnosisResultScreen(result: args), settings);
       case history:
