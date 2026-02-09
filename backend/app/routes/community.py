@@ -36,26 +36,39 @@ async def get_posts(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=50),
     search: Optional[str] = None,
+    my_posts_only: bool = False,
+    expert_posts_only: bool = False,
+    category: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Get list of community posts with pagination.
-    
-    - Optional search by title/content
-    - Returns posts with author info and like status
+    Get list of community posts with pagination and filters.
     """
     query = select(CommunityPost).options(selectinload(CommunityPost.author))
     count_query = select(func.count(CommunityPost.id))
     
-    # Search filter
+    # Filters
+    filters = []
+    
     if search:
-        search_filter = or_(
+        filters.append(or_(
             CommunityPost.title.ilike(f"%{search}%"),
             CommunityPost.content.ilike(f"%{search}%"),
-        )
-        query = query.where(search_filter)
-        count_query = count_query.where(search_filter)
+        ))
+    
+    if my_posts_only:
+        filters.append(CommunityPost.user_id == current_user.id)
+        
+    if expert_posts_only:
+        filters.append(CommunityPost.is_expert_post == True)
+        
+    if category:
+        filters.append(CommunityPost.category == category)
+        
+    if filters:
+        query = query.where(and_(*filters))
+        count_query = count_query.where(and_(*filters))
     
     # Get total count
     total_result = await db.execute(count_query)
@@ -70,11 +83,13 @@ async def get_posts(
     
     # Check if current user liked each post
     post_ids = [post.id for post in posts]
-    like_query = select(PostLike.post_id).where(
-        and_(PostLike.post_id.in_(post_ids), PostLike.user_id == current_user.id)
-    )
-    like_result = await db.execute(like_query)
-    liked_post_ids = {row[0] for row in like_result.fetchall()}
+    liked_post_ids = set()
+    if post_ids:
+        like_query = select(PostLike.post_id).where(
+            and_(PostLike.post_id.in_(post_ids), PostLike.user_id == current_user.id)
+        )
+        like_result = await db.execute(like_query)
+        liked_post_ids = {row[0] for row in like_result.fetchall()}
     
     return {
         "posts": [
@@ -83,12 +98,14 @@ async def get_posts(
                 "title": post.title,
                 "content": post.content,
                 "image_path": post.image_path,
+                "category": post.category,
                 "likes_count": post.likes_count,
                 "comments_count": post.comments_count,
                 "author": {
-                    "id": str(post.author.id),
-                    "full_name": post.author.full_name,
+                    "id": str(post.author.id) if post.author else "unknown",
+                    "full_name": post.author.full_name if post.author else "Unknown User",
                 },
+                "is_expert_post": post.is_expert_post,
                 "is_liked": post.id in liked_post_ids,
                 "created_at": post.created_at,
             }
@@ -167,11 +184,17 @@ async def create_post(
     """
     Create a new community post (JSON body, no image).
     """
+    # Check if user is expert
+    from app.models.user import UserRole, UserStatus
+    is_expert = current_user.role == UserRole.EXPERT and current_user.status == UserStatus.ACTIVE
+    
     new_post = CommunityPost(
         user_id=current_user.id,
         title=post_data.title,
         content=post_data.content,
         image_path=None,
+        category=post_data.category or "general",
+        is_expert_post=is_expert,
     )
     
     db.add(new_post)
@@ -183,12 +206,14 @@ async def create_post(
         "title": new_post.title,
         "content": new_post.content,
         "image_path": new_post.image_path,
+        "category": new_post.category,
         "likes_count": 0,
         "comments_count": 0,
         "author": {
             "id": str(current_user.id),
             "full_name": current_user.full_name,
         },
+        "is_expert_post": is_expert,
         "is_liked": False,
         "created_at": new_post.created_at,
     }
@@ -198,6 +223,7 @@ async def create_post(
 async def create_post_with_image(
     title: str = Form(..., min_length=5, max_length=255),
     content: str = Form(..., min_length=10),
+    category: str = Form("general"),
     image: Optional[UploadFile] = File(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -222,11 +248,17 @@ async def create_post_with_image(
         
         image_path = f"/uploads/community/{filename}"
     
+    # Check if user is expert
+    from app.models.user import UserRole, UserStatus
+    is_expert = current_user.role == UserRole.EXPERT and current_user.status == UserStatus.ACTIVE
+
     new_post = CommunityPost(
         user_id=current_user.id,
         title=title,
         content=content,
         image_path=image_path,
+        category=category,
+        is_expert_post=is_expert,
     )
     
     db.add(new_post)
@@ -238,12 +270,14 @@ async def create_post_with_image(
         "title": new_post.title,
         "content": new_post.content,
         "image_path": new_post.image_path,
+        "category": new_post.category,
         "likes_count": 0,
         "comments_count": 0,
         "author": {
             "id": str(current_user.id),
             "full_name": current_user.full_name,
         },
+        "is_expert_post": is_expert,
         "is_liked": False,
         "created_at": new_post.created_at,
     }

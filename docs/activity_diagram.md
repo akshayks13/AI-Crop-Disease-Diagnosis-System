@@ -61,7 +61,19 @@ flowchart TD
         
         D_ADD_INFO --> D_UPLOAD[Upload Image]
         D_UPLOAD --> D_PROCESS[AI Processing...]
-        D_PROCESS --> D_RESULT{Disease Found?}
+        
+        %% Dual ML Model Processing
+        D_PROCESS --> D_ML1[🧠 Disease Classification Model]
+        D_ML1 --> D_ML1_RESULT[Disease + Confidence + Severity]
+        D_ML1_RESULT --> D_ML2[🧠 Treatment Recommendation Model]
+        D_ML2 --> D_ML2_RESULT[Chemical + Organic Treatments]
+        
+        %% Agronomy Validation
+        D_ML2_RESULT --> D_AGRO[📋 Agronomy Validation]
+        D_AGRO --> D_RULES[Apply Diagnostic Rules]
+        D_RULES --> D_CONSTRAINTS[Check Treatment Constraints]
+        D_CONSTRAINTS --> D_SEASONAL[Apply Seasonal Patterns]
+        D_SEASONAL --> D_RESULT{Disease Found?}
         
         D_RESULT -->|Yes| D_SHOW_DISEASE[Show Disease Info]
         D_RESULT -->|No| D_HEALTHY[Show Healthy Status]
@@ -70,14 +82,14 @@ flowchart TD
         D_TREATMENT --> D_ACTIONS{Action?}
         D_ACTIONS -->|Ask Expert| QA_FLOW
         D_ACTIONS -->|Share| D_SHARE[Share Result]
-        D_ACTIONS -->|Save| D_SAVE[Save to History]
+        D_ACTIONS -->|Rate| D_RATE[Rate Diagnosis ⭐]
         D_ACTIONS -->|Done| HOME
         
         D_HEALTHY --> HOME
+        D_RATE --> HOME
         D_HISTORY --> D_VIEW_DETAIL[View Past Diagnosis]
         D_VIEW_DETAIL --> HOME
         D_SHARE --> HOME
-        D_SAVE --> HOME
     end
     
     %% ==================== EXPERT Q&A ====================

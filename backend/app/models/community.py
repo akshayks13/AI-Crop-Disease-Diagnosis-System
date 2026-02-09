@@ -11,14 +11,16 @@ from app.database import Base
 
 
 class CommunityPost(Base):
-    """Community forum post from farmers."""
+    """Community forum post from farmers or experts."""
     __tablename__ = "community_posts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
     image_path = Column(String(500), nullable=True)
+    category = Column(String(50), default="general")  # general, tip, article, question
+    is_expert_post = Column(Boolean, default=False)  # Expert-created post
     likes_count = Column(Integer, default=0)
     comments_count = Column(Integer, default=0)
     is_pinned = Column(Boolean, default=False)
@@ -26,7 +28,7 @@ class CommunityPost(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    author = relationship("User", backref="posts")
+    author = relationship("User", backref="posts", foreign_keys=[user_id])
     comments = relationship("CommunityComment", back_populates="post", cascade="all, delete-orphan")
     likes = relationship("PostLike", back_populates="post", cascade="all, delete-orphan")
 

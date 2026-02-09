@@ -7,6 +7,7 @@ import 'package:image/image.dart' as img;
 
 import '../constants/disease_labels.dart';
 import '../api/api_config.dart';
+import '../api/api_client.dart';
 
 /// ML Service for web - uses backend API since TFLite doesn't work on web
 class MLService {
@@ -24,14 +25,20 @@ class MLService {
     try {
       final bytes = await imageFile.readAsBytes();
       
-      // Try backend API first
+      // ---------------------------------------------------------
+      // PERSISTENCE & DIAGNOSIS
+      // ---------------------------------------------------------
+      // We call the API to:
+      // 1. Persist the diagnosis in the database (History)
+      // 2. Get the backend's simulated result
       try {
         return await _predictViaApi(bytes, imageFile.name);
       } catch (apiError) {
         print('MLService (Web): API failed, using local simulation - $apiError');
-        // Fallback to simulated prediction for demo
+        // Fallback to local simulated prediction if API fails
         return _simulatePrediction(bytes);
       }
+      
     } catch (e) {
       print('MLService (Web): Prediction failed - $e');
       rethrow;
@@ -40,22 +47,42 @@ class MLService {
 
   /// Call backend API for prediction
   Future<Map<String, dynamic>> _predictViaApi(Uint8List bytes, String filename) async {
-    final uri = Uri.parse('${ApiConfig.baseUrl}/ml/predict');
-    
-    final request = http.MultipartRequest('POST', uri);
-    request.files.add(http.MultipartFile.fromBytes(
-      'image',
-      bytes,
-      filename: filename,
-    ));
-
-    final response = await request.send();
-    
-    if (response.statusCode == 200) {
-      final responseBody = await response.stream.bytesToString();
-      return json.decode(responseBody);
-    } else {
-      throw Exception('API returned ${response.statusCode}');
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      
+      // Use helper method from ApiClient which handles Auth headers and Multipart
+      final response = await apiClient.uploadFileBytes(
+        ApiConfig.predict, // /diagnosis/predict
+        bytes: bytes,
+        filename: filename,
+        fieldName: 'file', // Backend expects 'file'
+      );
+      
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        
+        // Transform backend response to match UI expectations
+        return {
+          'id': data['id'], // Persisted ID
+          'disease': data['disease'],
+          'plant': data['crop_type'] ?? 'Unknown Plant',
+          'disease_id': data['disease'], 
+          'confidence': data['confidence'],
+          'severity': data['severity'],
+          'is_healthy': (data['disease'] as String).toLowerCase() == 'healthy',
+          'is_simulated': false,
+          'treatment_steps': data['treatment_steps'] ?? [],
+          'chemical_options': data['chemical_options'] ?? [],
+          'organic_options': data['organic_options'] ?? [],
+          'prevention': data['prevention'],
+          'warnings': data['warnings'],
+        };
+      } else {
+        throw Exception('API returned ${response.statusCode}');
+      }
+    } catch (e) {
+      print('API Exception: $e');
+      rethrow;
     }
   }
 
@@ -89,32 +116,44 @@ class MLService {
     }
 
     return {
+      'id': 'mock_${DateTime.now().millisecondsSinceEpoch}', // Mock ID for rating
       'disease': diseaseInfo.disease,
       'plant': diseaseInfo.plant,
       'disease_id': label,
-      'confidence': confidence,
+      'confidence': confidence / 100.0,
       'severity': severity,
       'is_healthy': diseaseInfo.isHealthy,
-      'is_simulated': true,  // Flag to show it's demo mode
+      'is_simulated': true,
       'treatment_steps': _getTreatmentSteps(diseaseInfo),
+      // Mock data for new UI sections
+      'chemical_options': [
+         {'name': 'Copper Fungicide', 'dosage': '2g/L', 'application_method': 'Spray', 'frequency': 'Weekly'},
+         {'name': 'Mancozeb', 'dosage': '2.5g/L', 'application_method': 'Foliar Spray', 'frequency': 'Every 10 days'},
+      ],
+      'organic_options': [
+         {'name': 'Neem Oil', 'dosage': '5ml/L', 'application_method': 'Spray', 'frequency': 'Every 5 days'},
+         {'name': 'Garlic Extract', 'dosage': '10ml/L', 'application_method': 'Spray', 'frequency': 'Weekly'},
+      ],
+      'prevention': 'Regularly monitor your crops, ensure proper spacing for air circulation, and avoid overhead watering to reduce moisture on leaves.',
+      'warnings': severity == 'high' ? 'Immediate action required! Separate infected plants.' : null,
     };
   }
 
   List<Map<String, String>> _getTreatmentSteps(DiseaseInfo info) {
     if (info.isHealthy) {
       return [
-        {'step': '1', 'description': 'Your plant appears healthy! Continue regular care.'},
-        {'step': '2', 'description': 'Maintain proper watering and sunlight exposure.'},
-        {'step': '3', 'description': 'Monitor regularly for any signs of disease.'},
+        {'step_number': '1', 'description': 'Your plant appears healthy! Continue regular care.'},
+        {'step_number': '2', 'description': 'Maintain proper watering and sunlight exposure.'},
+        {'step_number': '3', 'description': 'Monitor regularly for any signs of disease.'},
       ];
     }
 
     return [
-      {'step': '1', 'description': 'Remove affected leaves and dispose properly.'},
-      {'step': '2', 'description': 'Apply appropriate fungicide or pesticide treatment.'},
-      {'step': '3', 'description': 'Improve air circulation around plants.'},
-      {'step': '4', 'description': 'Avoid overhead watering to reduce moisture on leaves.'},
-      {'step': '5', 'description': 'Consult an expert for severe infections.'},
+      {'step_number': '1', 'description': 'Remove affected leaves and dispose properly.'},
+      {'step_number': '2', 'description': 'Apply appropriate fungicide or pesticide treatment.'},
+      {'step_number': '3', 'description': 'Improve air circulation around plants.'},
+      {'step_number': '4', 'description': 'Avoid overhead watering to reduce moisture on leaves.'},
+      {'step_number': '5', 'description': 'Consult an expert for severe infections.'},
     ];
   }
 

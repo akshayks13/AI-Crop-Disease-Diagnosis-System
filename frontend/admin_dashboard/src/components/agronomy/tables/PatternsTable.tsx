@@ -3,7 +3,9 @@ import { Pencil, Trash2 } from 'lucide-react';
 interface Pattern {
     id: string;
     crop_id: string;
+    crop_name?: string;
     disease_id: string;
+    disease_name?: string;
     season: string;
     region?: string;
     likelihood_score: number;
@@ -35,8 +37,8 @@ export default function PatternsTable({ patterns, onDelete }: PatternsTableProps
                 <tbody className="divide-y divide-slate-100">
                     {patterns.map((pattern) => (
                         <tr key={pattern.id} className="hover:bg-slate-50">
-                            <td className="px-6 py-4 text-sm text-slate-600">{pattern.crop_id?.substring(0, 8)}...</td>
-                            <td className="px-6 py-4 text-sm text-slate-600">{pattern.disease_id?.substring(0, 8)}...</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{pattern.crop_name || 'Unknown Crop'}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{pattern.disease_name || 'Unknown Disease'}</td>
                             <td className="px-6 py-4 text-sm font-medium text-slate-900">{pattern.season}</td>
                             <td className="px-6 py-4 text-sm text-slate-600">{pattern.region || 'General'}</td>
                             <td className="px-6 py-4">

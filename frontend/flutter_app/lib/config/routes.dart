@@ -15,6 +15,9 @@ import '../features/expert/screens/answer_screen.dart';
 import '../features/expert/screens/expert_stats_screen.dart';
 import '../features/expert/screens/answered_questions_screen.dart';
 import '../features/expert/screens/answer_detail_screen.dart';
+import '../features/expert/screens/knowledge_base_screen.dart';
+import '../features/expert/screens/trending_diseases_screen.dart';
+import '../features/expert/screens/expert_community_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 import '../features/questions/screens/ask_expert_screen.dart';
@@ -63,6 +66,9 @@ class AppRoutes {
   static const String expertStats = '/expert/stats';
   static const String expertMyAnswers = '/expert/my-answers';
   static const String expertAnswerDetail = '/expert/answer-detail';
+  static const String expertKnowledgeBase = '/expert/knowledge-base';
+  static const String expertTrending = '/expert/trending';
+  static const String expertCommunity = '/expert/community';
   
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -92,6 +98,9 @@ class AppRoutes {
       case diagnosis:
         return _slideRoute(const DiagnosisScreen(), settings);
       case diagnosisResult:
+        if (settings.arguments is! Map<String, dynamic>) {
+          return _slideRoute(const DiagnosisScreen(), settings);
+        }
         final args = settings.arguments as Map<String, dynamic>;
         return _slideRoute(DiagnosisResultScreen(result: args), settings);
       case history:
@@ -136,6 +145,12 @@ class AppRoutes {
       case expertAnswerDetail:
         final args = settings.arguments as Map<String, dynamic>;
         return _slideRoute(AnswerDetailScreen(answerData: args), settings);
+      case expertKnowledgeBase:
+        return _slideRoute(const KnowledgeBaseScreen(), settings);
+      case expertTrending:
+        return _slideRoute(const TrendingDiseasesScreen(), settings);
+      case expertCommunity:
+        return _slideRoute(const ExpertCommunityScreen(), settings);
       
       default:
         return MaterialPageRoute(

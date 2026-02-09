@@ -39,12 +39,14 @@ class PostCreate(BaseModel):
     """Schema for creating a post."""
     title: str = Field(..., min_length=5, max_length=255)
     content: str = Field(..., min_length=10, max_length=5000)
+    category: Optional[str] = "general"
 
 
 class PostUpdate(BaseModel):
     """Schema for updating a post."""
     title: Optional[str] = Field(None, min_length=5, max_length=255)
     content: Optional[str] = Field(None, min_length=10, max_length=5000)
+    category: Optional[str] = None
 
 
 class PostResponse(BaseModel):
@@ -53,9 +55,11 @@ class PostResponse(BaseModel):
     title: str
     content: str
     image_path: Optional[str] = None
+    category: Optional[str] = "general"
     likes_count: int
     comments_count: int
     author: AuthorInfo
+    is_expert_post: bool = False
     is_liked: bool = False  # Whether current user liked it
     created_at: datetime
 

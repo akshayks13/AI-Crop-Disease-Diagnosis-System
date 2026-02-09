@@ -19,7 +19,7 @@ classDiagram
         +Integer experience_years
         +String location
         +DateTime created_at
-        +verify_password() Boolean
+        +DateTime updated_at
     }
     
     class UserRole {
@@ -41,14 +41,17 @@ classDiagram
         +UUID id
         +UUID user_id
         +String media_path
+        +String media_type
         +String crop_type
-        +String disease_name
-        +Float confidence
-        +String severity
-        +JSON symptoms
-        +JSON treatment_plan
-        +JSON prevention_tips
         +String location
+        +String disease
+        +String severity
+        +Float confidence
+        +JSON treatment
+        +String prevention
+        +String warnings
+        +Integer rating
+        +JSON additional_diseases
         +DateTime created_at
     }
     
@@ -61,6 +64,7 @@ classDiagram
         +String media_path
         +QuestionStatus status
         +DateTime created_at
+        +DateTime updated_at
     }
     
     class Answer {
@@ -86,10 +90,13 @@ classDiagram
         +String title
         +String content
         +String image_path
+        +String category
+        +Boolean is_expert_post
         +Integer likes_count
         +Integer comments_count
         +Boolean is_pinned
         +DateTime created_at
+        +DateTime updated_at
     }
     
     class CommunityComment {
@@ -115,12 +122,15 @@ classDiagram
         +String crop_type
         +String field_name
         +Float area_size
+        +String area_unit
         +Date sow_date
         +Date expected_harvest_date
         +GrowthStage growth_stage
         +Float progress
         +String notes
         +Boolean is_active
+        +DateTime created_at
+        +DateTime updated_at
     }
     
     class FarmTask {
@@ -132,8 +142,11 @@ classDiagram
         +DateTime due_date
         +TaskPriority priority
         +Boolean is_completed
+        +DateTime completed_at
         +Boolean is_recurring
         +Integer recurrence_days
+        +DateTime created_at
+        +DateTime updated_at
     }
     
     class GrowthStage {
@@ -165,7 +178,10 @@ classDiagram
         +Float change_percent
         +Float min_price
         +Float max_price
+        +Float arrival_qty
         +DateTime recorded_at
+        +DateTime created_at
+        +DateTime updated_at
     }
     
     class TrendType {
@@ -185,9 +201,14 @@ classDiagram
         +Float temp_min
         +Float temp_max
         +String water_requirement
+        +String soil_type
         +JSON growing_tips
+        +JSON nutritional_info
+        +JSON common_varieties
         +JSON common_diseases
         +String image_url
+        +DateTime created_at
+        +DateTime updated_at
     }
     
     class DiseaseInfo {
@@ -197,10 +218,86 @@ classDiagram
         +JSON affected_crops
         +String description
         +JSON symptoms
+        +String causes
         +JSON chemical_treatment
         +JSON organic_treatment
         +JSON prevention
         +String severity_level
+        +String spread_method
+        +JSON safety_warnings
+        +JSON environmental_warnings
+        +String image_url
+        +DateTime created_at
+        +DateTime updated_at
+    }
+    
+    %% ==================== AGRONOMY INTELLIGENCE ====================
+    class DiagnosticRule {
+        +UUID id
+        +UUID disease_id
+        +String rule_name
+        +String description
+        +JSON conditions
+        +JSON impact
+        +Float priority
+        +Boolean is_active
+        +DateTime created_at
+        +DateTime updated_at
+    }
+    
+    class TreatmentConstraint {
+        +UUID id
+        +String treatment_name
+        +String treatment_type
+        +String constraint_description
+        +JSON restricted_conditions
+        +String enforcement_level
+        +String risk_level
+        +DateTime created_at
+        +DateTime updated_at
+    }
+    
+    class SeasonalPattern {
+        +UUID id
+        +UUID disease_id
+        +UUID crop_id
+        +String region
+        +String season
+        +Float likelihood_score
+        +DateTime created_at
+        +DateTime updated_at
+    }
+    
+    %% ==================== SYSTEM MONITORING ====================
+    class SystemLog {
+        +UUID id
+        +String level
+        +String message
+        +String source
+        +UUID user_id
+        +JSON log_metadata
+        +DateTime created_at
+    }
+    
+    class SystemMetric {
+        +UUID id
+        +String metric_name
+        +Float metric_value
+        +String metric_type
+        +JSON tags
+        +DateTime recorded_at
+    }
+    
+    class DailyStats {
+        +UUID id
+        +DateTime date
+        +Integer total_diagnoses
+        +Integer total_questions
+        +Integer total_answers
+        +Integer new_users
+        +Integer active_users
+        +Float avg_confidence
+        +Integer error_count
     }
     
     %% ==================== RELATIONSHIPS ====================
@@ -221,8 +318,12 @@ classDiagram
     
     FarmCrop "1" --> "*" FarmTask : has
     
-    CropInfo "1" --> "*" DiseaseInfo : affected_by
+    %% Agronomy Relationships
+    DiagnosticRule "*" --> "1" DiseaseInfo : targets
+    SeasonalPattern "*" --> "1" DiseaseInfo : tracks
+    SeasonalPattern "*" --> "1" CropInfo : applies_to
     
+    %% Enum Dependencies
     User ..> UserRole
     User ..> UserStatus
     Question ..> QuestionStatus

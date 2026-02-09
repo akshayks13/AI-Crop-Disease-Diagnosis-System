@@ -17,19 +17,9 @@ class DiagnosisScreen extends ConsumerStatefulWidget {
 class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
   XFile? _selectedImage;
   Uint8List? _imageBytes; // Store bytes for cross-platform display
-  String? _cropType;
   bool _isProcessing = false;
   final ImagePicker _picker = ImagePicker();
 
-  final List<String> _cropTypes = [
-    'Tomato',
-    'Potato',
-    'Corn',
-    'Wheat',
-    'Rice',
-    'Cotton',
-    'Other',
-  ];
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -71,10 +61,7 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
       
       final result = await mlService.predict(_selectedImage!);
       
-      // Add crop type to result if needed for context
-      if (_cropType != null) {
-          result['crop_type'] = _cropType;
-      }
+
 
       if (mounted) {
         Navigator.pushNamed(
@@ -217,38 +204,7 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
               ),
             ),
 
-            const SizedBox(height: 24),
 
-            // Crop type selector
-            Text(
-              'Crop Type (Optional)',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _cropTypes.map((crop) {
-                final isSelected = _cropType == crop.toLowerCase();
-                return ChoiceChip(
-                  label: Text(crop),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      _cropType = selected ? crop.toLowerCase() : null;
-                    });
-                  },
-                  selectedColor: colorScheme.primaryContainer,
-                  labelStyle: TextStyle(
-                    color: isSelected ? colorScheme.onPrimaryContainer : null,
-                    fontWeight: isSelected ? FontWeight.bold : null,
-                  ),
-                  backgroundColor: theme.canvasColor, // Or surfaceContainerHighest
-                );
-              }).toList(),
-            ),
 
             const SizedBox(height: 32),
 
