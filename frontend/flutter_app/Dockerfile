@@ -6,11 +6,19 @@ WORKDIR /app
 # Copy pubspec files
 COPY pubspec.yaml pubspec.lock ./
 
+# Remove tflite_flutter_plus dependency for web build to avoid FFI errors
+RUN sed -i '/tflite_flutter_plus:/d' pubspec.yaml
+
 # Get dependencies
 RUN flutter pub get
 
 # Copy the rest of the code
 COPY . .
+
+# Re-apply removal of dependency (since COPY . . overwrites pubspec.yaml)
+RUN sed -i '/tflite_flutter_plus:/d' pubspec.yaml
+# Overwrite the mobile service with the web-compatible dummy
+RUN cp web_shim/ml_service_mobile_dummy.dart lib/core/services/ml_service_mobile.dart
 
 # Create the .env file in assets for the build (if needed by build process or runtime)
 # Ideally this is mounted or copied, but for build we need it.

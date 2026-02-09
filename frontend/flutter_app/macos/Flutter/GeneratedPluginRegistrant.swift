@@ -15,6 +15,7 @@ import rive_common
 import shared_preferences_foundation
 import speech_to_text
 import sqflite_darwin
+import tflite_flutter_plus
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   ConnectivityPlugin.register(with: registry.registrar(forPlugin: "ConnectivityPlugin"))
@@ -27,4 +28,5 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
   SpeechToTextPlugin.register(with: registry.registrar(forPlugin: "SpeechToTextPlugin"))
   SqflitePlugin.register(with: registry.registrar(forPlugin: "SqflitePlugin"))
+  TfliteFlutterPlusPlugin.register(with: registry.registrar(forPlugin: "TfliteFlutterPlusPlugin"))
 }

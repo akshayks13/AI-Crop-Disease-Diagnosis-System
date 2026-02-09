@@ -5,6 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../../../../config/routes.dart';
 import '../../../../config/theme.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/api/agronomy_service.dart';
 
 /// Diagnosis result screen with treatment recommendations
 class DiagnosisResultScreen extends ConsumerStatefulWidget {
@@ -21,6 +22,15 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
   bool _isSpeaking = false;
   int _userRating = 0;
   bool _isRatingSubmitting = false;
+  
+  // Environmental context and validation
+  bool _showContextForm = false;
+  bool _isValidating = false;
+  Map<String, dynamic>? _validationResult;
+  final _temperatureController = TextEditingController();
+  final _humidityController = TextEditingController();
+  String? _selectedSeason;
+  String? _selectedRegion;
 
   @override
   void initState() {
@@ -35,6 +45,8 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
   @override
   void dispose() {
     _tts.stop();
+    _temperatureController.dispose();
+    _humidityController.dispose();
     super.dispose();
   }
 
@@ -73,6 +85,49 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
     }
 
     return speech;
+  }
+
+  Future<void> _validateDiagnosis() async {
+    if (_isValidating) return;
+
+    // Validate required fields
+    final diseaseId = widget.result['disease_id'];
+    if (diseaseId == null || diseaseId.toString().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Disease ID not found in diagnosis result')),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isValidating = true);
+
+    try {
+      final agronomyService = ref.read(agronomyServiceProvider);
+      
+      final result = await agronomyService.validateDiagnosis(
+        diseaseId: diseaseId.toString(),
+        temperature: double.tryParse(_temperatureController.text),
+        humidity: double.tryParse(_humidityController.text),
+        season: _selectedSeason,
+        region: _selectedRegion,
+      );
+
+      if (mounted) {
+        setState(() => _validationResult = result);
+      }
+    } catch (e) {
+       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Validation failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isValidating = false);
+      }
+    }
   }
 
   Future<void> _submitRating(int rating) async {
@@ -189,6 +244,162 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
                 ],
               ),
             ),
+
+            const SizedBox(height: 24),
+
+            // Environmental Context & Validation
+            GestureDetector(
+              onTap: () => setState(() => _showContextForm = !_showContextForm),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.wb_sunny, color: AppTheme.primaryGreen),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Validate with Environmental Context',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      _showContextForm ? Icons.expand_less : Icons.expand_more,
+                      color: AppTheme.primaryGreen,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            if (_showContextForm) ...{
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Enter Environmental Data', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _temperatureController,
+                            decoration: InputDecoration(
+                              labelText: 'Temperature (°C)',
+                              hintText: '25',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _humidityController,
+                            decoration: InputDecoration(
+                              labelText: 'Humidity (%)',
+                              hintText: '75',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _selectedSeason,
+                      decoration: InputDecoration(
+                        labelText: 'Season',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      items: ['Kharif', 'Rabi', 'Zaid', 'Summer', 'Winter']
+                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedSeason = v),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: _isValidating ? null : _validateDiagnosis,
+                      icon: _isValidating
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.check_circle),
+                      label: Text(_isValidating ? 'Validating...' : 'Validate Diagnosis'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(double.infinity, 44),
+                        backgroundColor: AppTheme.primaryGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            },
+
+            if (_validationResult != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.analytics, color: Colors.blue.shade700),
+                        const SizedBox(width: 8),
+                        Text('Validation Result', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade800)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Original: ${((_validationResult!['original_confidence'] ?? 0.8) * 100).toInt()}%'),
+                        Icon(Icons.arrow_forward, size: 16),
+                        Text(
+                          'Adjusted: ${((_validationResult!['adjusted_confidence'] ?? 0.8) * 100).toInt()}%',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade700),
+                        ),
+                      ],
+                    ),
+                    if (_validationResult!['warnings'] != null && (_validationResult!['warnings'] as List).isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      ...(_validationResult!['warnings'] as List).map((w) => Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Row(
+                              children: [
+                                Icon(Icons.info_outline, size: 14, color: Colors.orange.shade700),
+                                const SizedBox(width: 6),
+                                Expanded(child: Text(w.toString(), style: TextStyle(fontSize: 12, color: Colors.orange.shade800))),
+                              ],
+                            ),
+                          )),
+                    ],
+                  ],
+                ),
+              ),
+            ],
 
             const SizedBox(height: 24),
 

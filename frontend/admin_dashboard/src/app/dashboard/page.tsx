@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Leaf, HelpCircle, Clock, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { Users, Leaf, HelpCircle, Clock, TrendingUp } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { adminApi } from '@/lib/api';
 import { DashboardData, DailyMetric } from '@/types';
@@ -65,8 +65,8 @@ export default function DashboardPage() {
 
             {/* System Status Banner */}
             <div className={`flex items-center justify-between p-4 rounded-xl border ${data.system_health === 'healthy'
-                    ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-100'
-                    : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-100'
+                ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-100'
+                : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-100'
                 }`}>
                 <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${data.system_health === 'healthy' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
