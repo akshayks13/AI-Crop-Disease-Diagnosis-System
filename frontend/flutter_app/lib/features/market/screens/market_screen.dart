@@ -124,10 +124,8 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                 color: colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                _getCommodityIcon(price.commodity),
-                color: colorScheme.primary,
-                size: 28,
+              child: Center(
+                child: _buildCommodityImage(price.commodity),
               ),
             ),
             const SizedBox(width: 16),
@@ -210,19 +208,55 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
     );
   }
 
-  // 🌾 ICON HELPER
-  IconData _getCommodityIcon(String commodity) {
-    final lower = commodity.toLowerCase();
-    if (lower.contains('tomato')) return Icons.circle;
-    if (lower.contains('rice')) return Icons.grain;
-    if (lower.contains('wheat')) return Icons.grass;
-    if (lower.contains('onion')) return Icons.circle_outlined;
-    if (lower.contains('potato')) return Icons.brightness_1;
-    if (lower.contains('cotton')) return Icons.cloud;
-    if (lower.contains('maize') || lower.contains('corn')) return Icons.eco;
-    if (lower.contains('dal') || lower.contains('pulse')) return Icons.kitchen;
-    return Icons.agriculture;
+  Widget _buildCommodityImage(String commodity) {
+  final imagePath = _getCommodityImagePath(commodity);
+
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(8),
+    child: Image.asset(
+      imagePath,
+      width: 36,
+      height: 36,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Icon(
+          Icons.agriculture,
+          size: 28,
+          color: Theme.of(context).colorScheme.primary,
+        );
+      },
+    ),
+  );
+}
+
+String _getCommodityImagePath(String commodity) {
+  final lower = commodity.toLowerCase();
+
+   if (lower.contains('tomato')) return 'assets/crops/tomato.png';
+  if (lower.contains('potato')) return 'assets/crops/potato.jpg';
+  if (lower.contains('onion')) return 'assets/crops/onion.jpg';
+  if (lower.contains('wheat')) return 'assets/crops/wheat.jpg';
+  if (lower.contains('rice')) return 'assets/crops/rice_sona_masoori.jpg';
+  if (lower.contains('cotton')) return 'assets/crops/cotton.jpg';
+  if (lower.contains('maize') || lower.contains('corn')) {
+    return 'assets/crops/maize.jpg';
   }
+  if (lower.contains('green chilli')) {
+    return 'assets/crops/green_chilli.jpg';
+  }
+  if (lower.contains('red chilli')) {
+    return 'assets/crops/red_chilli.jpg';
+  }
+  if (lower.contains('groundnut') || lower.contains('peanut')) {
+    return 'assets/crops/groundnut.jpg';
+  }
+  if (lower.contains('tur') || lower.contains('dal')) {
+    return 'assets/crops/tur_dal.jpg';
+  }
+
+  return 'assets/crops/default.jpg';
+}
+
 
   // ❌ ERROR UI
   Widget _buildErrorWidget(String error) {

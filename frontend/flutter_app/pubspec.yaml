@@ -80,3 +80,4 @@ flutter:
     - assets/animations/
     - assets/.env
     - assets/models/
+    - assets/crops/
