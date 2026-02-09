@@ -4,9 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../config/routes.dart';
-import '../../../../config/routes.dart';
-import '../../../../core/api/api_config.dart';
-import '../../../../core/services/ml_service.dart'; // Import MLService
+import '../../../../core/services/ml_service.dart';
 
 /// Diagnosis screen with camera capture
 class DiagnosisScreen extends ConsumerStatefulWidget {

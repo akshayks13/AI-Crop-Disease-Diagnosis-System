@@ -14,6 +14,7 @@
 #include <permission_handler_windows/permission_handler_windows_plugin.h>
 #include <rive_common/rive_plugin.h>
 #include <speech_to_text_windows/speech_to_text_windows.h>
+#include <tflite_flutter_plus/tflite_flutter_plus_plugin_c_api.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   ConnectivityPlusWindowsPluginRegisterWithRegistrar(
@@ -32,4 +33,6 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("RivePlugin"));
   SpeechToTextWindowsRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("SpeechToTextWindows"));
+  TfliteFlutterPlusPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("TfliteFlutterPlusPluginCApi"));
 }
