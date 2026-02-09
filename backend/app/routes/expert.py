@@ -656,7 +656,7 @@ async def get_expert_community_posts(
     if my_posts_only:
         count_query = count_query.where(CommunityPost.user_id == current_user.id)
     elif expert_posts_only:
-        count_query = count_query.where(CommunityPost.is_expert_post == True)
+        count_query = count_query.where(CommunityPost.is_expert_post.is_(True))
     total = (await db.execute(count_query)).scalar()
     
     # Get posts
@@ -671,7 +671,7 @@ async def get_expert_community_posts(
     if my_posts_only:
         query = query.where(CommunityPost.user_id == current_user.id)
     elif expert_posts_only:
-        query = query.where(CommunityPost.is_expert_post == True)
+        query = query.where(CommunityPost.is_expert_post.is_(True))
     
     result = await db.execute(query)
     rows = result.all()

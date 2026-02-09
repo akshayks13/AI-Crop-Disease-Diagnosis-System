@@ -61,7 +61,7 @@ async def get_posts(
         filters.append(CommunityPost.user_id == current_user.id)
         
     if expert_posts_only:
-        filters.append(CommunityPost.is_expert_post == True)
+        filters.append(CommunityPost.is_expert_post.is_(True))
         
     if category:
         filters.append(CommunityPost.category == category)

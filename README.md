@@ -2,7 +2,53 @@
 
 An AI-powered agricultural solution that helps farmers diagnose crop diseases using image analysis and provides treatment recommendations with expert consultation.
 
-## Features
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Overview](#overview)
+- [Application URLs](#application-urls)
+- [Running the Application](#running-the-application)
+  - [Backend](#backend)
+  - [Frontend](#frontend)
+- [Environment Variables](#environment-variables)
+  - [Backend Configuration](#backend-configuration)
+  - [Frontend Configuration](#frontend-configuration)
+- [Testing](#testing)
+  - [Backend Tests](#backend-tests)
+  - [Frontend Tests](#frontend-tests)
+  - [End-to-End Tests](#end-to-end-tests)
+- [Database Seeding](#database-seeding)
+- [API Overview](#api-overview)
+- [Development Guidelines](#development-guidelines)
+- [Important Notes](#important-notes)
+
+---
+
+## Quick Start
+
+### Prerequisites
+- Docker & Docker Compose
+- **OR** Python 3.9+, Node.js 18+, Flutter 3.10+, PostgreSQL 14+
+
+### Swift Run (Docker)
+Get the entire system running in minutes:
+
+```bash
+# Build and start all services
+docker-compose up --build -d
+```
+
+Access the apps:
+- **Mobile App (Web)**: http://localhost:8080
+- **Admin Dashboard**: http://localhost:3000
+- **Backend API**: http://localhost:8000/docs
+
+---
+
+## Overview
+
+### Features
 
 ### For Farmers
 - **AI Diagnosis**: Upload crop images for instant disease detection
@@ -47,7 +93,7 @@ An AI-powered agricultural solution that helps farmers diagnose crop diseases us
 | [activity_diagram.md](docs/activity_diagram.md) | User activity flows |
 | [use_case_diagram.md](docs/use_case_diagram.md) | Actor use cases |
 
-## Tech Stack
+### Tech Stack
 
 | Component | Technology |
 |-----------|------------|
@@ -57,6 +103,19 @@ An AI-powered agricultural solution that helps farmers diagnose crop diseases us
 | Database | PostgreSQL |
 | ML Pipeline | PyTorch + OpenCV |
 | Auth | JWT + RBAC |
+
+---
+
+## Application URLs
+
+| Application | Local URL | Docker URL | Description |
+|-------------|-----------|------------|-------------|
+| **Backend API** | `http://localhost:8000` | `http://localhost:8000` | FastAPI Server & Swagger Docs |
+| **Admin Dashboard** | `http://localhost:3000` | `http://localhost:3000` | Web Dashboard for Admins |
+| **Flutter App** | `n/a` (Mobile) | `http://localhost:8080` | Crop Diagnosis App (Web Version) |
+| **Database** | `localhost:5432` | `localhost:5432` | PostgreSQL Database |
+
+---
 
 ## Project Structure
 
@@ -86,15 +145,7 @@ An AI-powered agricultural solution that helps farmers diagnose crop diseases us
 └── Password Hashing/
 ```
 
-## Quick Start
-
-### Prerequisites
-- Python 3.9+
-- Node.js 18+
-- Flutter 3.10+
-- PostgreSQL 14+
-
----
+## Running the Application
 
 ### 1. PostgreSQL Setup
 

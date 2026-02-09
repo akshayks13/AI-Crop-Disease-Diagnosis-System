@@ -8,23 +8,25 @@ This document covers infrastructure, deployment, monitoring, and operational pro
 
 ## Architecture Overview
 
+Current Development/Docker Environment:
+
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Load Balancer (Nginx)                    │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-         ┌────────────┴────────────┐
-         │                         │
-    ┌────▼────┐              ┌─────▼─────┐
-    │ FastAPI │              │   Static  │
-    │ Backend │              │   Files   │
-    │ (Uvicorn)│              │  (Flutter │
-    └────┬────┘              │    Web)   │
-         │                    └───────────┘
-    ┌────▼────┐
-    │PostgreSQL│
-    └─────────┘
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│   Flutter App   │       │ Admin Dashboard │       │   Backend API   │
+│   (Web Server)  │       │    (Next.js)    │       │    (FastAPI)    │
+│     Port 8080   │       │    Port 3000    │       │    Port 8000    │
+└────────┬────────┘       └────────┬────────┘       └────────┬────────┘
+         │                         │                         │
+         │                         │                         │
+         └─────────────────────────┼─────────────────────────┘
+                                   │
+                          ┌────────▼────────┐
+                          │    PostgreSQL   │
+                          │    Port 5432    │
+                          └─────────────────┘
 ```
+
+> **Note**: A Load Balancer (Nginx) is planned for the production environment to handle SSL termination and traffic distribution. It will be added in a future update.
 
 ---
 
@@ -36,37 +38,64 @@ This document covers infrastructure, deployment, monitoring, and operational pro
 version: '3.8'
 
 services:
+  # Postgres Database
+  db:
+    image: postgres:15-alpine
+    container_name: crop_diagnosis_db
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=crop_diagnosis
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Backend Service (FastAPI)
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: crop_diagnosis_backend
+    restart: always
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://user:pass@db:5432/cropdiag
-      - JWT_SECRET=${JWT_SECRET}
-      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/crop_diagnosis
+      - SECRET_KEY=your_secret_key_change_in_production
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
     depends_on:
       - db
     volumes:
-      - ./uploads:/app/uploads
-      - ./ml_models:/app/ml_models
+      - ./backend/uploads:/app/uploads # Persist uploads
 
-  db:
-    image: postgres:15
-    environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=pass
-      - POSTGRES_DB=cropdiag
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-  admin:
-    build: ./frontend/admin_dashboard
+  # Admin Dashboard (Next.js)
+  admin_dashboard:
+    build:
+      context: ./frontend/admin_dashboard
+      dockerfile: Dockerfile
+    container_name: crop_diagnosis_admin
+    restart: always
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+
+  # Flutter App (Web served by Nginx)
+  flutter_web:
+    build:
+      context: ./frontend/flutter_app
+      dockerfile: Dockerfile
+    container_name: crop_diagnosis_flutter_web
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
@@ -233,9 +262,10 @@ Configure cron job for daily backups:
 
 ### Horizontal Scaling
 
-- **Backend**: Run multiple Uvicorn workers behind Nginx
-- **Database**: PostgreSQL read replicas for heavy read loads
-- **File Storage**: Move to S3/GCS for uploads
+To scale for higher traffic, you should introduce a **Load Balancer**:
+
+- **Nginx / HAProxy**: Place in front of multiple backend containers.
+- **Docker Swarm / Kubernetes**: Use an orchestrator to manage replicas.
 
 ### Vertical Scaling
 
