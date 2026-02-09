@@ -12,8 +12,8 @@ class EnvironmentalContext(BaseModel):
     region: Optional[str] = None
 
 class ContextValidationRequest(BaseModel):
-    disease_id: UUID
-    crop_id: Optional[UUID] = None
+    disease_id: str  # Accept string (UUID or disease label)
+    crop_id: Optional[str] = None
     context: EnvironmentalContext
 
 class SafetyCheckRequest(BaseModel):
@@ -124,7 +124,9 @@ class SeasonalPatternUpdate(BaseModel):
 class SeasonalPatternResponse(BaseModel):
     id: UUID
     disease_id: UUID
+    disease_name: Optional[str] = None
     crop_id: UUID
+    crop_name: Optional[str] = None
     region: Optional[str]
     season: str
     likelihood_score: float

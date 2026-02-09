@@ -374,3 +374,358 @@ async def get_expert_stats(
         "status": current_user.status.value,
         "is_approved": current_user.is_expert_approved,
     }
+
+
+# ============== Knowledge Base ==============
+
+@router.get("/knowledge-base", response_model=dict)
+async def list_knowledge_guides(
+    page: int = 1,
+    page_size: int = 20,
+    current_user: User = Depends(require_approved_expert),
+    db: AsyncSession = Depends(get_db),
+):
+    """List knowledge guides created by experts."""
+    from app.models.knowledge_base import KnowledgeGuide
+    from app.models.encyclopedia import DiseaseInfo
+    
+    # Count
+    count_query = select(func.count(KnowledgeGuide.id))
+    total = (await db.execute(count_query)).scalar()
+    
+    # Get guides
+    query = (
+        select(KnowledgeGuide, User, DiseaseInfo)
+        .join(User, KnowledgeGuide.expert_id == User.id)
+        .outerjoin(DiseaseInfo, KnowledgeGuide.disease_id == DiseaseInfo.id)
+        .order_by(KnowledgeGuide.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    
+    result = await db.execute(query)
+    rows = result.all()
+    
+    guides = []
+    for guide, expert, disease in rows:
+        guides.append({
+            "id": str(guide.id),
+            "title": guide.title,
+            "content": guide.content[:200] + "..." if len(guide.content) > 200 else guide.content,
+            "tags": guide.tags or [],
+            "disease_name": disease.name if disease else None,
+            "expert_name": expert.full_name,
+            "is_mine": guide.expert_id == current_user.id,
+            "views": guide.views,
+            "status": guide.is_published,
+            "created_at": guide.created_at.isoformat(),
+        })
+    
+    return {"guides": guides, "total": total, "page": page, "page_size": page_size}
+
+
+@router.post("/knowledge-base", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def create_knowledge_guide(
+    data: dict,
+    current_user: User = Depends(require_approved_expert),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new knowledge guide."""
+    from app.models.knowledge_base import KnowledgeGuide
+    
+    title = data.get("title", "").strip()
+    content = data.get("content", "").strip()
+    
+    if len(title) < 5:
+        raise HTTPException(status_code=400, detail="Title must be at least 5 characters")
+    if len(content) < 50:
+        raise HTTPException(status_code=400, detail="Content must be at least 50 characters")
+    
+    guide = KnowledgeGuide(
+        expert_id=current_user.id,
+        disease_id=uuid.UUID(data["disease_id"]) if data.get("disease_id") else None,
+        title=title,
+        content=content,
+        tags=data.get("tags", []),
+        is_published=data.get("is_published", "draft"),
+    )
+    
+    db.add(guide)
+    await db.flush()
+    await db.refresh(guide)
+    
+    return {
+        "id": str(guide.id),
+        "title": guide.title,
+        "message": "Guide created successfully"
+    }
+
+
+@router.get("/knowledge-base/{guide_id}", response_model=dict)
+async def get_knowledge_guide(
+    guide_id: str,
+    current_user: User = Depends(require_approved_expert),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get a specific knowledge guide."""
+    from app.models.knowledge_base import KnowledgeGuide
+    from app.models.encyclopedia import DiseaseInfo
+    
+    try:
+        g_uuid = uuid.UUID(guide_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid guide ID")
+    
+    result = await db.execute(
+        select(KnowledgeGuide, User, DiseaseInfo)
+        .join(User, KnowledgeGuide.expert_id == User.id)
+        .outerjoin(DiseaseInfo, KnowledgeGuide.disease_id == DiseaseInfo.id)
+        .where(KnowledgeGuide.id == g_uuid)
+    )
+    row = result.one_or_none()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Guide not found")
+    
+    guide, expert, disease = row
+    
+    # Increment views
+    guide.views = (guide.views or 0) + 1
+    
+    return {
+        "id": str(guide.id),
+        "title": guide.title,
+        "content": guide.content,
+        "tags": guide.tags or [],
+        "disease_id": str(guide.disease_id) if guide.disease_id else None,
+        "disease_name": disease.name if disease else None,
+        "expert_name": expert.full_name,
+        "expert_id": str(expert.id),
+        "is_mine": guide.expert_id == current_user.id,
+        "views": guide.views,
+        "status": guide.is_published,
+        "created_at": guide.created_at.isoformat(),
+        "updated_at": guide.updated_at.isoformat() if guide.updated_at else None,
+    }
+
+
+@router.put("/knowledge-base/{guide_id}", response_model=dict)
+async def update_knowledge_guide(
+    guide_id: str,
+    data: dict,
+    current_user: User = Depends(require_approved_expert),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update a knowledge guide (owner only)."""
+    from app.models.knowledge_base import KnowledgeGuide
+    
+    try:
+        g_uuid = uuid.UUID(guide_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid guide ID")
+    
+    result = await db.execute(select(KnowledgeGuide).where(KnowledgeGuide.id == g_uuid))
+    guide = result.scalar_one_or_none()
+    
+    if not guide:
+        raise HTTPException(status_code=404, detail="Guide not found")
+    if guide.expert_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own guides")
+    
+    if data.get("title"):
+        guide.title = data["title"]
+    if data.get("content"):
+        guide.content = data["content"]
+    if "tags" in data:
+        guide.tags = data["tags"]
+    if data.get("disease_id"):
+        guide.disease_id = uuid.UUID(data["disease_id"])
+    if data.get("is_published"):
+        guide.is_published = data["is_published"]
+    
+    guide.updated_at = datetime.utcnow()
+    
+    return {"id": str(guide.id), "message": "Guide updated successfully"}
+
+
+@router.delete("/knowledge-base/{guide_id}", response_model=dict)
+async def delete_knowledge_guide(
+    guide_id: str,
+    current_user: User = Depends(require_approved_expert),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a knowledge guide (owner only)."""
+    from app.models.knowledge_base import KnowledgeGuide
+    
+    try:
+        g_uuid = uuid.UUID(guide_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid guide ID")
+    
+    result = await db.execute(select(KnowledgeGuide).where(KnowledgeGuide.id == g_uuid))
+    guide = result.scalar_one_or_none()
+    
+    if not guide:
+        raise HTTPException(status_code=404, detail="Guide not found")
+    if guide.expert_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own guides")
+    
+    await db.delete(guide)
+    
+    return {"message": "Guide deleted successfully"}
+
+
+# ============== Trending Diseases ==============
+
+@router.get("/trending-diseases", response_model=dict)
+async def get_trending_diseases(
+    period: str = "week",  # week, month, all
+    limit: int = 10,
+    current_user: User = Depends(require_approved_expert),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get trending diseases based on question frequency."""
+    from app.models.diagnosis import DiagnosisResult
+    from app.models.encyclopedia import DiseaseInfo
+    from datetime import timedelta
+    
+    # Build date filter
+    date_filter = None
+    if period == "week":
+        date_filter = datetime.utcnow() - timedelta(days=7)
+    elif period == "month":
+        date_filter = datetime.utcnow() - timedelta(days=30)
+    
+    # Query diagnoses grouped by disease
+    query = (
+        select(
+            DiagnosisResult.disease_name,
+            func.count(DiagnosisResult.id).label("count")
+        )
+        .group_by(DiagnosisResult.disease_name)
+        .order_by(func.count(DiagnosisResult.id).desc())
+        .limit(limit)
+    )
+    
+    if date_filter:
+        query = query.where(DiagnosisResult.created_at >= date_filter)
+    
+    result = await db.execute(query)
+    rows = result.all()
+    
+    trending = []
+    for disease_name, count in rows:
+        if disease_name:
+            trending.append({
+                "disease_name": disease_name,
+                "diagnosis_count": count,
+            })
+    
+    # Also get question counts per disease keyword
+    question_trends = []
+    for item in trending[:5]:  # Top 5
+        keyword = item["disease_name"].split()[0] if item["disease_name"] else ""
+        if keyword:
+            q_count = (await db.execute(
+                select(func.count(Question.id)).where(
+                    Question.question_text.ilike(f"%{keyword}%")
+                )
+            )).scalar()
+            item["question_count"] = q_count
+    
+    return {
+        "period": period,
+        "trending": trending,
+    }
+
+
+# ============== Expert Community Posts ==============
+
+@router.get("/community-posts", response_model=dict)
+async def get_expert_community_posts(
+    page: int = 1,
+    page_size: int = 20,
+    my_posts_only: bool = False,
+    expert_posts_only: bool = False,
+    current_user: User = Depends(require_approved_expert),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get community posts. Shows all posts by default, with optional filters."""
+    from app.models.community import CommunityPost
+    
+    # Count
+    count_query = select(func.count(CommunityPost.id))
+    if my_posts_only:
+        count_query = count_query.where(CommunityPost.user_id == current_user.id)
+    elif expert_posts_only:
+        count_query = count_query.where(CommunityPost.is_expert_post == True)
+    total = (await db.execute(count_query)).scalar()
+    
+    # Get posts
+    query = (
+        select(CommunityPost, User)
+        .outerjoin(User, CommunityPost.user_id == User.id)
+        .order_by(CommunityPost.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    
+    if my_posts_only:
+        query = query.where(CommunityPost.user_id == current_user.id)
+    elif expert_posts_only:
+        query = query.where(CommunityPost.is_expert_post == True)
+    
+    result = await db.execute(query)
+    rows = result.all()
+    
+    posts = []
+    for post, author in rows:
+        posts.append({
+            "id": str(post.id),
+            "title": post.title,
+            "content": post.content[:200] + "..." if len(post.content) > 200 else post.content,
+            "author_name": author.full_name if author else "Anonymous",
+            "is_mine": post.user_id == current_user.id if post.user_id else False,
+            "is_expert_post": post.is_expert_post or False,
+            "likes_count": post.likes_count or 0,
+            "comments_count": post.comments_count or 0,
+            "created_at": post.created_at.isoformat(),
+        })
+    
+    return {"posts": posts, "total": total, "page": page, "page_size": page_size}
+
+
+@router.post("/community-posts", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def create_expert_post(
+    data: dict,
+    current_user: User = Depends(require_approved_expert),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create an expert community post/tip."""
+    from app.models.community import CommunityPost
+    
+    title = data.get("title", "").strip()
+    content = data.get("content", "").strip()
+    
+    if len(title) < 5:
+        raise HTTPException(status_code=400, detail="Title must be at least 5 characters")
+    if len(content) < 20:
+        raise HTTPException(status_code=400, detail="Content must be at least 20 characters")
+    
+    post = CommunityPost(
+        user_id=current_user.id,
+        title=title,
+        content=content,
+        is_expert_post=True,
+        category=data.get("category", "tip"),
+    )
+    
+    db.add(post)
+    await db.flush()
+    await db.refresh(post)
+    
+    return {
+        "id": str(post.id),
+        "title": post.title,
+        "message": "Post created successfully"
+    }

@@ -259,7 +259,20 @@ async def list_seasonal_patterns(
     Admin only.
     """
     patterns = await service.get_seasonal_patterns(crop_id, disease_id)
-    return patterns
+    # Manually add crop_name and disease_name from relationships
+    return [
+        {
+            "id": str(p.id),
+            "disease_id": str(p.disease_id),
+            "disease_name": p.disease.name if p.disease else None,
+            "crop_id": str(p.crop_id),
+            "crop_name": p.crop.name if p.crop else None,
+            "region": p.region,
+            "season": p.season,
+            "likelihood_score": p.likelihood_score,
+        }
+        for p in patterns
+    ]
 
 @router.post("/admin/patterns", response_model=SeasonalPatternResponse, status_code=status.HTTP_201_CREATED, tags=["Agronomy Admin"])
 async def create_seasonal_pattern(

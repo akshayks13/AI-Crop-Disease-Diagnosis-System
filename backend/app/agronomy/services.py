@@ -15,16 +15,44 @@ class AgronomyService:
 
     async def validate_diagnosis_context(
         self, 
-        disease_id: UUID, 
+        disease_id: str,  # Can be UUID or disease label like "healthy_lemon"
         context: EnvironmentalContext, 
         initial_confidence: float = 0.8
     ) -> ValidationResult:
         """
         Validates a disease diagnosis against environmental context rules.
         """
+        from uuid import UUID as UUIDType
+        from app.models.encyclopedia import DiseaseInfo
+        
+        # Try to convert to UUID, if fails look up by name
+        actual_disease_id = None
+        try:
+            actual_disease_id = UUIDType(disease_id)
+        except (ValueError, AttributeError):
+            # Not a valid UUID, try to find disease by name
+            disease_query = select(DiseaseInfo).where(
+                DiseaseInfo.name.ilike(f"%{disease_id.replace('_', ' ')}%")
+            )
+            result = await self.db.execute(disease_query)
+            disease = result.scalar_one_or_none()
+            if disease:
+                actual_disease_id = disease.id
+        
+        # If no disease found, return empty validation result
+        if actual_disease_id is None:
+            return ValidationResult(
+                disease_id=UUIDType('00000000-0000-0000-0000-000000000000'),
+                original_confidence=initial_confidence,
+                adjusted_confidence=initial_confidence,
+                is_valid=True,
+                warnings=["Disease not found in database, skipping validation"],
+                applied_rules=[]
+            )
+        
         # Fetch rules for the disease
         query = select(DiagnosticRule).where(
-            DiagnosticRule.disease_id == disease_id,
+            DiagnosticRule.disease_id == actual_disease_id,
             DiagnosticRule.is_active
         )
         result = await self.db.execute(query)
@@ -306,7 +334,11 @@ class AgronomyService:
 
     async def get_seasonal_patterns(self, crop_id: UUID = None, disease_id: UUID = None) -> List[SeasonalPattern]:
         """Get all seasonal patterns, optionally filtered by crop or disease."""
-        query = select(SeasonalPattern)
+        from sqlalchemy.orm import selectinload
+        query = select(SeasonalPattern).options(
+            selectinload(SeasonalPattern.disease),
+            selectinload(SeasonalPattern.crop)
+        )
         if crop_id:
             query = query.where(SeasonalPattern.crop_id == crop_id)
         if disease_id:
