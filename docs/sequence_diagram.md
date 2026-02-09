@@ -46,23 +46,38 @@ sequenceDiagram
         API-->>App: 200 {access_token}
     end
 
-    %% ==================== DISEASE DIAGNOSIS ====================
+    %% ====================DISEASE DIAGNOSIS ====================
     rect rgb(255, 240, 230)
-        Note over App,AI: 🔬 Disease Diagnosis
+        Note over App,AI: 🔬 Disease Diagnosis (Dual ML Models)
         
         App->>API: POST /diagnosis/predict (multipart: image, crop_type)
         API->>Auth: Validate JWT
         API->>Storage: Save uploaded image
         Storage-->>API: file_path
         
-        API->>AI: Process image
-        AI->>AI: Load ML model
-        AI->>AI: Preprocess image
-        AI->>AI: Run inference
+        Note over API,AI: 1. Disease Classification Model
+        API->>AI: Process image (Disease Model)
+        AI->>AI: Load disease classification TFLite model
+        AI->>AI: Preprocess image (resize to 224x224)
+        AI->>AI: Run inference (MobileNetV2 CNN)
         AI-->>API: {disease, confidence, severity}
         
-        API->>DB: Fetch treatment for disease
-        API->>DB: Save diagnosis record
+        Note over API,AI: 2. Treatment Recommendation Model
+        API->>AI: Get treatments (Treatment Model)
+        AI->>AI: Load treatment recommendation model
+        AI->>AI: Encode features (disease, crop, severity, context)
+        AI->>AI: Run inference (Ensemble: RF + BERT)
+        AI-->>API: {chemical_treatments[], organic_treatments[]}
+        
+        Note over API,DB: 3. Agronomy Intelligence Validation
+        API->>DB: Fetch diagnostic rules for disease
+        API->>API: Apply context validation rules
+        API->>DB: Fetch treatment constraints
+        API->>API: Apply safety checks (block/warn)
+        API->>DB: Check seasonal patterns
+        API->>API: Adjust confidence based on season/region
+        
+        API->>DB: Save diagnosis record (disease + treatments)
         API-->>App: 200 {disease, confidence, severity, treatment, prevention}
         
         App->>API: GET /diagnosis/history?page=1
@@ -72,6 +87,21 @@ sequenceDiagram
         App->>API: GET /diagnosis/{id}
         API->>DB: Fetch diagnosis detail
         API-->>App: {diagnosis with full details}
+    end
+
+    %% ==================== RATING SYSTEM ====================
+    rect rgb(255, 255, 220)
+        Note over App,DB: ⭐ Rating System
+        
+        App->>API: POST /diagnosis/{id}/rate {rating: 1-5}
+        API->>Auth: Validate JWT (Owner only)
+        API->>DB: Update diagnosis rating
+        API-->>App: 200 {rating_updated}
+        
+        App->>API: POST /questions/{qid}/rate {answer_id, rating: 1-5}
+        API->>Auth: Validate JWT (Question owner only)
+        API->>DB: Update answer rating
+        API-->>App: 200 {rating_updated}
     end
 
     %% ==================== EXPERT Q&A ====================
@@ -203,4 +233,41 @@ sequenceDiagram
         API->>DB: Fetch system logs
         API-->>App: {logs[]}
     end
+
+    %% ==================== AGRONOMY MANAGEMENT ====================
+    rect rgb(230, 255, 250)
+        Note over App,DB: 🧪 Agronomy Knowledge Base (Expert/Admin)
+        
+        Note over App,DB: Diagnostic Rules CRUD
+        App->>API: GET /agronomy/diagnostic-rules
+        API->>Auth: Validate JWT
+        API->>DB: Fetch all rules with disease names
+        API-->>App: {rules[]}
+        
+        App->>API: POST /agronomy/diagnostic-rules {disease_id, rule_name, conditions, impact}
+        API->>Auth: Validate JWT (Admin/Expert only)
+        API->>DB: Create diagnostic rule
+        API-->>App: 201 {rule}
+        
+        App->>API: PUT /agronomy/diagnostic-rules/{id} {updates}
+        API->>Auth: Validate JWT (Admin/Expert only)
+        API->>DB: Update rule
+        API-->>App: 200 {rule}
+        
+        App->>API: DELETE /agronomy/diagnostic-rules/{id}
+        API->>Auth: Validate JWT (Admin/Expert only)
+        API->>DB: Delete rule
+        API-->>App: 204 No Content
+        
+        Note over App,DB: Treatment Constraints CRUD
+        App->>API: POST /agronomy/treatment-constraints {name, type, constraint, risk_level}
+        API->>DB: Create constraint
+        API-->>App: 201 {constraint}
+        
+        Note over App,DB: Seasonal Patterns CRUD
+        App->>API: POST /agronomy/seasonal-patterns {disease_id, crop_id, season, likelihood}
+        API->>DB: Create pattern
+        API-->>App: 201 {pattern}
+    end
 ```
+

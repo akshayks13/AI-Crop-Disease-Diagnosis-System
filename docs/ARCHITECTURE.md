@@ -1,9 +1,9 @@
 # System Architecture
 
 ## Overview
-AI-powered crop disease diagnosis platform for farmers with expert consultation.
+AI-powered crop disease diagnosis platform for farmers with expert consultation, featuring dual ML models for disease classification and treatment recommendation.
 
-## Architecture
+## High-Level Architecture
 ```
 ┌─────────────────────────────────────────────┐
 │              FRONTEND                       │
@@ -13,14 +13,42 @@ AI-powered crop disease diagnosis platform for farmers with expert consultation.
                     ▼
 ┌─────────────────────────────────────────────┐
 │           BACKEND (FastAPI)                 │
-│  Auth │ Routes │ Services │ AI/ML          │
+│  Auth │ Routes │ Services │ Agronomy       │
 └─────────────────────────────────────────────┘
                     │
-                    ▼
-┌─────────────────────────────────────────────┐
-│              DATA LAYER                     │
-│     PostgreSQL      │    File Storage       │
-└─────────────────────────────────────────────┘
+       ┌────────────┴────────────┐
+       ▼                         ▼
+┌──────────────┐        ┌─────────────────┐
+│ ML MODELS    │        │   DATA LAYER    │
+│ • Disease    │        │  PostgreSQL     │
+│ • Treatment  │        │  File Storage   │
+└──────────────┘        └─────────────────┘
+```
+
+## ML Model Architecture
+
+The system employs two specialized TensorFlow Lite models:
+
+### 1. Disease Classification Model
+- **Input**: Crop leaf/plant images (224x224 RGB)
+- **Output**: Disease predictions with confidence scores
+- **Model**: MobileNetV2-based CNN, TFLite format
+- **Accuracy**: ~92% on test dataset
+
+### 2. Treatment Recommendation Model  
+- **Input**: Disease name, crop type, severity, environmental context
+- **Output**: Ranked chemical and organic treatment options
+- **Model**: Ensemble model (Random Forest + BERT), TFLite format
+- **Integration**: Provides personalized treatment plans based on diagnosis
+
+```mermaid
+flowchart LR
+    A[User Image] --> B[Disease Model]
+    B --> C[Disease Prediction]
+    C --> D[Treatment Model]
+    D --> E[Treatment Plan]
+    E --> F[Backend API]
+    F --> G[User Diagnosis]
 ```
 
 ## Core Models
@@ -37,9 +65,10 @@ classDiagram
     class Diagnosis {
         +UUID id
         +UUID user_id
-        +String disease_name
+        +String disease
         +Float confidence
-        +JSON treatment_plan
+        +JSON treatment
+        +Integer rating
     }
     
     class Question {
@@ -55,6 +84,14 @@ classDiagram
         +UUID expert_id
         +String answer_text
         +Integer rating
+    }
+    
+    class DiagnosticRule {
+        +UUID id
+        +UUID disease_id
+        +JSON conditions
+        +JSON impact
+        +Float priority
     }
     
     User "1" --> "*" Diagnosis
@@ -79,6 +116,7 @@ graph LR
         C[Community]
         M[Market Prices]
         FA[Farm Management]
+        KB[Knowledge Base]
     end
     
     F --> D
@@ -89,7 +127,18 @@ graph LR
     
     E --> Q
     E --> C
+    E --> KB
     
     A --> |Manage Users| U[User Management]
     A --> |Approve| E
+    A --> |Manage| KB
 ```
+
+## Agronomy Intelligence Layer
+
+The platform includes an intelligent agronomy system that enhances ML predictions:
+
+- **Diagnostic Rules**: Context-aware validation of disease predictions
+- **Treatment Constraints**: Safety checks for treatment recommendations
+- **Seasonal Patterns**: Regional disease prevalence data
+- **Expert Knowledge**: Community-driven agronomy database

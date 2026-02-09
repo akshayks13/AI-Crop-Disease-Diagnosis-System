@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/theme.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/api/api_config.dart';
 
 /// Expert Community Screen - Expert can create tips/articles
 class ExpertCommunityScreen extends ConsumerStatefulWidget {
@@ -236,7 +237,23 @@ class _ExpertCommunityScreenState extends ConsumerState<ExpertCommunityScreen> {
                               Text(
                                 post['content'] ?? '',
                                 style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.8)),
+                                maxLines: 4,
+                                overflow: TextOverflow.ellipsis,
                               ),
+                              // Post Image (if any)
+                              if (post['image_path'] != null) ...[
+                                const SizedBox(height: 12),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    '${ApiConfig.baseUrl}${post['image_path']}',
+                                    height: 200,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 12),
                               Row(
                                 children: [

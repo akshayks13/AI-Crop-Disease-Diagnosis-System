@@ -584,9 +584,8 @@ async def get_trending_diseases(
     current_user: User = Depends(require_approved_expert),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get trending diseases based on question frequency."""
-    from app.models.diagnosis import DiagnosisResult
-    from app.models.encyclopedia import DiseaseInfo
+    """Get trending diseases based on diagnosis frequency."""
+    from app.models.diagnosis import Diagnosis
     from datetime import timedelta
     
     # Build date filter
@@ -599,16 +598,16 @@ async def get_trending_diseases(
     # Query diagnoses grouped by disease
     query = (
         select(
-            DiagnosisResult.disease_name,
-            func.count(DiagnosisResult.id).label("count")
+            Diagnosis.disease,
+            func.count(Diagnosis.id).label("count")
         )
-        .group_by(DiagnosisResult.disease_name)
-        .order_by(func.count(DiagnosisResult.id).desc())
+        .group_by(Diagnosis.disease)
+        .order_by(func.count(Diagnosis.id).desc())
         .limit(limit)
     )
     
     if date_filter:
-        query = query.where(DiagnosisResult.created_at >= date_filter)
+        query = query.where(Diagnosis.created_at >= date_filter)
     
     result = await db.execute(query)
     rows = result.all()
@@ -622,7 +621,6 @@ async def get_trending_diseases(
             })
     
     # Also get question counts per disease keyword
-    question_trends = []
     for item in trending[:5]:  # Top 5
         keyword = item["disease_name"].split()[0] if item["disease_name"] else ""
         if keyword:

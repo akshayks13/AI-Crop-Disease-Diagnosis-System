@@ -21,6 +21,31 @@ An AI-powered agricultural solution that helps farmers diagnose crop diseases us
 - **Expert Approval**: Review and approve expert applications
 - **User Management**: Manage all system users
 - **System Logs**: Monitor system activity
+- **Agronomy Rules**: CRUD on diagnostic rules, treatment constraints, seasonal patterns
+
+---
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture overview |
+| [API_REFERENCE.md](docs/API_REFERENCE.md) | Complete API endpoint documentation |
+| [DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) | ER diagram and table descriptions |
+| [ML_DOCS.md](docs/ML_DOCS.md) | Machine learning model documentation |
+| [TESTING.md](docs/TESTING.md) | Testing strategy and guidelines |
+| [DEVOPS.md](docs/DEVOPS.md) | Deployment and infrastructure |
+| [SECURITY.md](docs/SECURITY.md) | Security considerations |
+| [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Contribution guidelines |
+| [CI_CD.md](docs/CI_CD.md) | CI/CD pipeline configuration |
+
+### UML Diagrams
+| Diagram | Description |
+|---------|-------------|
+| [class_diagram.md](docs/class_diagram.md) | Entity classes and relationships |
+| [sequence_diagram.md](docs/sequence_diagram.md) | API interaction flows |
+| [activity_diagram.md](docs/activity_diagram.md) | User activity flows |
+| [use_case_diagram.md](docs/use_case_diagram.md) | Actor use cases |
 
 ## Tech Stack
 
@@ -242,30 +267,6 @@ npm run lint
 | Expert (Pending) | expert2@example.com | expert123 |
 
 > ⚠️ Change these credentials in production!
-
----
-
-## API Endpoints
-
-### Authentication
-- `POST /auth/register` - Register user
-- `POST /auth/login` - Login
-- `POST /auth/refresh` - Refresh token
-- `GET /auth/me` - Current user
-
-### Farmer
-- `POST /diagnosis/predict` - Upload image for diagnosis
-- `GET /diagnosis/history` - Diagnosis history
-- `POST /questions` - Ask expert
-
-### Expert
-- `GET /expert/questions` - View questions
-- `POST /expert/answer` - Submit answer
-
-### Admin
-- `GET /admin/dashboard` - Dashboard metrics
-- `GET /admin/experts/pending` - Pending experts
-- `POST /admin/experts/approve/{id}` - Approve expert
 
 ---
 
