@@ -20,7 +20,7 @@ git push → GitHub Actions Triggers → 3 Parallel Jobs Run → ✅ or ❌
 |-----|----------|----------------|
 | `backend` | Python | Linting + Tests |
 | `flutter` | Dart | Static Analysis + Tests |
-| `admin` | JavaScript | Linting + Build |
+| `admin` | TypeScript | Linting + Tests + Build |
 
 ---
 
@@ -57,7 +57,7 @@ git push → GitHub Actions Triggers → 3 Parallel Jobs Run → ✅ or ❌
 
 | Tool | Purpose | Why? |
 |------|---------|------|
-| **Flutter 3.24.0** | SDK | Specified version for consistency |
+| **Flutter 3.38.1** | SDK | Specified version for consistency |
 | **flutter analyze** | Static analysis | Catches type errors, unused code |
 | **flutter test** | Unit/Widget tests | Fast feedback on UI components |
 
@@ -65,9 +65,10 @@ git push → GitHub Actions Triggers → 3 Parallel Jobs Run → ✅ or ❌
 ```yaml
 1. Checkout code
 2. Setup Flutter with caching
-3. Run: flutter pub get    # Install deps
-4. Run: flutter analyze    # Lint
-5. Run: flutter test       # Test
+3. Copy .env.example to .env       # Create env file
+4. Run: flutter pub get            # Install deps
+5. Run: flutter analyze            # Lint (warnings allowed)
+6. Run: flutter test               # Test
 ```
 
 ---
@@ -80,7 +81,8 @@ git push → GitHub Actions Triggers → 3 Parallel Jobs Run → ✅ or ❌
 |------|---------|------|
 | **Node.js 20** | Runtime | LTS version |
 | **npm ci** | Install | Faster, lockfile-exact installs |
-| **ESLint** | Linting | Catches JS/React errors |
+| **ESLint** | Linting | Catches JS/React/TypeScript errors |
+| **Vitest** | Testing | Runs unit tests for API utilities |
 | **next build** | Build check | Ensures production build works |
 
 ### Steps
@@ -89,7 +91,8 @@ git push → GitHub Actions Triggers → 3 Parallel Jobs Run → ✅ or ❌
 2. Setup Node.js 20 with npm caching
 3. Run: npm ci        # Install deps
 4. Run: npm run lint  # Lint
-5. Run: npm run build # Build
+5. Run: npm test      # Test (Vitest)
+6. Run: npm run build # Build
 ```
 
 ---
@@ -142,5 +145,6 @@ flutter test                     # Test
 # Admin
 cd frontend/admin_dashboard
 npm run lint                     # Lint
+npm test                         # Test (Vitest)
 npm run build                    # Build
 ```
