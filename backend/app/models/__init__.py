@@ -9,6 +9,7 @@ from app.models.market import MarketPrice, TrendType
 from app.models.community import CommunityPost, CommunityComment, PostLike
 from app.models.farm import FarmCrop, FarmTask, GrowthStage, TaskPriority
 from app.models.encyclopedia import CropInfo, DiseaseInfo
+from app.agronomy_intelligence.models import KnowledgeGuide
 from app.agronomy.models import DiagnosticRule, TreatmentConstraint, SeasonalPattern
 
 __all__ = [
@@ -35,5 +36,6 @@ __all__ = [
     "DiagnosticRule",
     "TreatmentConstraint",
     "SeasonalPattern",
+    "KnowledgeGuide",
 ]
 

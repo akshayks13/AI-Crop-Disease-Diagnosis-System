@@ -386,7 +386,7 @@ async def list_knowledge_guides(
     db: AsyncSession = Depends(get_db),
 ):
     """List knowledge guides created by experts."""
-    from app.models.knowledge_base import KnowledgeGuide
+    from app.agronomy_intelligence.models import KnowledgeGuide
     from app.models.encyclopedia import DiseaseInfo
     
     # Count
@@ -431,7 +431,7 @@ async def create_knowledge_guide(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new knowledge guide."""
-    from app.models.knowledge_base import KnowledgeGuide
+    from app.agronomy_intelligence.models import KnowledgeGuide
     
     title = data.get("title", "").strip()
     content = data.get("content", "").strip()
@@ -468,7 +468,7 @@ async def get_knowledge_guide(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a specific knowledge guide."""
-    from app.models.knowledge_base import KnowledgeGuide
+    from app.agronomy_intelligence.models import KnowledgeGuide
     from app.models.encyclopedia import DiseaseInfo
     
     try:
@@ -517,7 +517,7 @@ async def update_knowledge_guide(
     db: AsyncSession = Depends(get_db),
 ):
     """Update a knowledge guide (owner only)."""
-    from app.models.knowledge_base import KnowledgeGuide
+    from app.agronomy_intelligence.models import KnowledgeGuide
     
     try:
         g_uuid = uuid.UUID(guide_id)
@@ -555,7 +555,7 @@ async def delete_knowledge_guide(
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a knowledge guide (owner only)."""
-    from app.models.knowledge_base import KnowledgeGuide
+    from app.agronomy_intelligence.models import KnowledgeGuide
     
     try:
         g_uuid = uuid.UUID(guide_id)
