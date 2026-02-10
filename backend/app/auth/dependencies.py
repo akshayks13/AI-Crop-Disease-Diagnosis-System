@@ -6,7 +6,7 @@ import uuid
 import logging
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -17,19 +17,19 @@ from app.models.user import User, UserRole, UserStatus
 # Setup logger
 logger = logging.getLogger(__name__)
 
-# HTTP Bearer token scheme
-security = HTTPBearer()
+# OAuth2 scheme - points to the token endpoint for Swagger UI login form
+security = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    token: str = Depends(security),
     db: AsyncSession = Depends(get_db)
 ) -> User:
     """
     Get the current authenticated user from JWT token.
     
     Args:
-        credentials: JWT token from Authorization header
+        token: JWT token from Authorization header
         db: Database session
         
     Returns:
@@ -44,7 +44,6 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    token = credentials.credentials
     payload = decode_token(token)
     
     if payload is None:
@@ -88,8 +87,8 @@ async def get_current_user(
 
 
 async def get_optional_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(
-        HTTPBearer(auto_error=False)
+    token: Optional[str] = Depends(
+        OAuth2PasswordBearer(tokenUrl="/auth/token", auto_error=False)
     ),
     db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
@@ -97,11 +96,11 @@ async def get_optional_user(
     Get the current user if authenticated, None otherwise.
     Used for endpoints that work with or without auth.
     """
-    if credentials is None:
+    if token is None:
         return None
     
     try:
-        return await get_current_user(credentials, db)
+        return await get_current_user(token, db)
     except HTTPException:
         return None
 
