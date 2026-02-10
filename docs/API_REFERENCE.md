@@ -78,6 +78,21 @@ Authorization: Bearer <access_token>
 { "access_token": "eyJ..." }
 ```
 
+### OAuth2 Token (Swagger UI)
+
+`POST /auth/token` (form-data: `username` + `password`)
+
+> Used by Swagger UI's Authorize button. Enter your email as username.
+
+```json
+// Response 200
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "bearer"
+}
+```
+
 ---
 
 ## Diagnosis Endpoints
@@ -203,6 +218,74 @@ Authorization: Bearer <access_token>
 | POST | `/community/posts/{id}/like` | Toggle like |
 | POST | `/community/posts/{id}/comments` | Add comment |
 | GET | `/community/posts/{id}/comments` | Get comments |
+
+---
+
+## Farm Management Endpoints
+
+**Auth**: Any authenticated user
+
+### Crops
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/farm/crops` | List user's crops (auto-calculated progress) |
+| POST | `/farm/crops` | Add a new crop |
+| GET | `/farm/crops/{id}` | Get crop details |
+| PUT | `/farm/crops/{id}` | Update crop |
+| DELETE | `/farm/crops/{id}` | Delete crop |
+
+```json
+// POST /farm/crops
+{
+  "name": "Tomato Field A",
+  "crop_type": "tomato",
+  "field_name": "North Plot",
+  "area_size": 2.5,
+  "area_unit": "acres",
+  "sow_date": "2026-01-15",
+  "expected_harvest_date": "2026-05-15"
+}
+```
+
+### Tasks
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/farm/tasks` | List user's tasks |
+| POST | `/farm/tasks` | Create a task |
+| PUT | `/farm/tasks/{id}/complete` | Toggle task completion |
+| DELETE | `/farm/tasks/{id}` | Delete task |
+
+---
+
+## Market Price Endpoints
+
+**Auth**: Any authenticated user
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/market/prices` | List commodity prices |
+| GET | `/market/prices?commodity=Tomato` | Filter by commodity |
+| GET | `/market/prices?location=Mumbai` | Filter by location |
+
+```json
+// Response 200
+{
+  "prices": [
+    {
+      "commodity": "Tomato",
+      "price": 45.0,
+      "unit": "per kg",
+      "location": "Mumbai APMC",
+      "trend": "UP",
+      "change_percent": 5.2
+    }
+  ],
+  "total": 25,
+  "page": 1
+}
+```
 
 ---
 

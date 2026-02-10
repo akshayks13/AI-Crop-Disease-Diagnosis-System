@@ -63,7 +63,11 @@ Defines API contracts using Pydantic.
 ### 3. **Routes (`app/routes/`)**
 HTTP endpoint handlers.
 *   **Flow**: Request → Pydantic Validation → Service → Response
-*   **Files**: `auth.py`, `farmer.py`, `expert.py`, `admin.py`, `community.py`
+*   **Files**: `auth.py`, `farmer.py`, `expert.py`, `admin.py`, `community.py`, `farm.py`, `market.py`, `encyclopedia.py`
+
+### 3.5 **Middleware (`app/middleware/`)**
+Request/response processing.
+*   **Logging Middleware**: Logs every API request with method, path, status code, and duration to `system_logs` table
 
 ### 4. **Services (`app/services/`)**
 Business logic layer.
@@ -124,8 +128,12 @@ pytest --cov=app --cov-report=html
 | `test_diagnosis.py` | 3 | History, Pagination |
 | `test_questions.py` | 6 | Create, Answer, Rate |
 | `test_community.py` | 6 | Posts, Comments, Likes |
+| `test_farm.py` | 5 | Crops, Tasks, Completion Toggle |
+| `test_market.py` | 4 | Prices, Filters, Pagination |
+| `test_encyclopedia.py` | 5 | Crops, Diseases, Search |
 | `test_admin.py` | 9 | Dashboard, User Management |
 | `test_expert.py` | 9 | Questions, Answers, Stats |
+| `test_agronomy.py` | 4 | Rules, Constraints, Patterns |
 
 ---
 
