@@ -53,20 +53,27 @@ Access the apps:
 ### For Farmers
 - **AI Diagnosis**: Upload crop images for instant disease detection
 - **Treatment Plans**: Get detailed chemical and organic treatment options
-- **Voice Narration**: TTS support for accessibility
+- **Farm Management**: Track crops, growth progress, and manage farm tasks
+- **Market Prices**: View real-time commodity prices by location
+- **Community Forum**: Share posts, comments, and like content
+- **Crop Encyclopedia**: Browse detailed crop and disease information
 - **Expert Consultation**: Ask verified agricultural experts
-- **Offline Support**: Works without internet connection
+- **Diagnosis Ratings**: Rate AI and expert answers for quality feedback
+- **Voice Narration**: TTS support for accessibility
 
 ### For Experts
 - **Question Dashboard**: View and answer farmer questions
+- **Community Contributions**: Share expert knowledge and articles
+- **Knowledge Base**: Access agronomy diagnostic rules and patterns
+- **Statistics**: View answer count, average ratings, and trends
 - **Profile Management**: Manage expertise and qualifications
-- **Approval System**: Admin verification before access
 
 ### For Admins
-- **Dashboard Analytics**: Real-time metrics and trends
+- **Dashboard Analytics**: Real-time metrics and daily trends
 - **Expert Approval**: Review and approve expert applications
-- **User Management**: Manage all system users
-- **System Logs**: Monitor system activity
+- **User Management**: Manage all system users (suspend, activate)
+- **Diagnosis Overview**: View all diagnoses across the platform
+- **System Logs**: Monitor system activity with level/source filtering
 - **Agronomy Rules**: CRUD on diagnostic rules, treatment constraints, seasonal patterns
 
 ---
@@ -88,10 +95,10 @@ Access the apps:
 ### UML Diagrams
 | Diagram | Description |
 |---------|-------------|
-| [class_diagram.md](docs/class_diagram.md) | Entity classes and relationships |
-| [sequence_diagram.md](docs/sequence_diagram.md) | API interaction flows |
-| [activity_diagram.md](docs/activity_diagram.md) | User activity flows |
-| [use_case_diagram.md](docs/use_case_diagram.md) | Actor use cases |
+| [class_diagram.md](docs/diagrams/class_diagram.md) | Entity classes and relationships |
+| [sequence_diagram.md](docs/diagrams/sequence_diagram.md) | API interaction flows |
+| [activity_diagram.md](docs/diagrams/activity_diagram.md) | User activity flows |
+| [use_case_diagram.md](docs/diagrams/use_case_diagram.md) | Actor use cases |
 
 ### Tech Stack
 
@@ -122,27 +129,37 @@ Access the apps:
 ```
 ├── backend/                 # FastAPI Backend
 │   ├── app/
-│   │   ├── auth/           # JWT authentication
+│   │   ├── agronomy/       # Agronomy intelligence routes
+│   │   ├── auth/           # JWT authentication & dependencies
+│   │   ├── middleware/     # Logging middleware
 │   │   ├── models/         # SQLAlchemy models
-│   │   ├── routes/         # API endpoints
+│   │   ├── routes/         # API endpoints (farm, market, community, etc.)
 │   │   ├── schemas/        # Pydantic schemas
-│   │   ├── services/       # Business logic
-│   │   └── main.py         # App entry
+│   │   ├── services/       # Business logic (ML, diagnosis, storage)
+│   │   ├── database.py     # DB connection & session
+│   │   ├── seed.py         # Database seeding
+│   │   └── main.py         # App entry point
+│   ├── tests/              # Pytest integration tests (58 tests)
 │   └── requirements.txt
 ├── frontend/
-│   ├── flutter_app/        # Mobile App
+│   ├── flutter_app/        # Mobile App (Flutter + Riverpod)
 │   │   ├── lib/
 │   │   │   ├── config/     # Theme & routes
-│   │   │   ├── core/       # API, storage
-│   │   │   └── features/   # Feature modules
+│   │   │   ├── core/       # API client, services, utils
+│   │   │   └── features/   # auth, diagnosis, farm, community, market, etc.
+│   │   ├── test/           # Flutter tests (54 tests)
 │   │   └── pubspec.yaml
-│   └── admin_dashboard/    # Next.js Admin
-│       └── src/app/        # App pages
+│   └── admin_dashboard/    # Next.js Admin Dashboard
+│       ├── src/
+│       │   ├── app/        # Pages (dashboard, users, experts, agronomy, logs)
+│       │   ├── components/ # Reusable UI components
+│       │   └── lib/        # API client utilities
+│       └── package.json
 ├── database/
 │   └── init.sql            # Schema initialization
-└── ml_models/              # ML models
-│            
-└── Password Hashing/
+├── ml_models/              # ML model files (TFLite)
+├── docs/                   # Project documentation
+└── docker-compose.yml      # Docker orchestration
 ```
 
 ## Running the Application
@@ -344,11 +361,11 @@ The system uses a simulated ML model for development. To integrate a real model:
 
 ## App Screens
 
-- **Auth**: Splash, Login, Register
-- **Farmer**: Home, Diagnosis, Results, History, Ask Expert, My Questions
-- **Expert**: Dashboard, Questions, Answer, Statistics
-- **Admin**: Dashboard, User Management, Expert Approval
-- **Common**: Profile
+- **Auth**: Splash, Login, Register, OTP Verification, Forgot Password
+- **Farmer**: Home, Diagnosis (Camera/Gallery), Results, History, Ask Expert, My Questions, Farm Management (Crops & Tasks), Market Prices, Community Forum, Crop Encyclopedia, Disease Encyclopedia
+- **Expert**: Dashboard, Open Questions, Answer Question, My Answers, Statistics, Community, Knowledge Base
+- **Admin** (Web Dashboard): Overview Metrics, User Management, Expert Approval, Diagnosis Viewer, System Logs, Agronomy Management
+- **Common**: Profile, Settings
 
 ---
 

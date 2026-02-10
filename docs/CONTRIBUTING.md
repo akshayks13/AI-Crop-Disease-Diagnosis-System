@@ -21,8 +21,7 @@ Thank you for considering contributing to the AI Crop Disease Diagnosis System! 
 ### Python (Backend)
 
 - Follow **PEP 8** style guide
-- Use **black** for formatting: `black .`
-- Use **isort** for imports: `isort .`
+- Use **Ruff** for linting and formatting: `ruff check .` and `ruff format .`
 - Type hints are encouraged
 - Maximum line length: 88 characters
 
@@ -115,7 +114,7 @@ docs(api): update diagnosis endpoint documentation
 ### Before Submitting
 
 - [ ] Tests pass locally (`pytest`, `flutter test`)
-- [ ] Code is formatted (`black`, `dart format`)
+- [ ] Code is formatted (`ruff format .`, `dart format .`)
 - [ ] No linting errors
 - [ ] Documentation updated if needed
 - [ ] Commit messages follow convention

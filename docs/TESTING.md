@@ -77,7 +77,7 @@ vitest==4.0.18
 |-----------|----------------|-------------|
 | `test_diagnosis_history_empty` | `{"diagnoses": [], "total": 0}` | 200 |
 | `test_diagnosis_history_pagination` | Paginated results with `page`, `total` | 200 |
-| `test_diagnosis_unauthorized` | Error: authentication required | 403 |
+| `test_diagnosis_unauthorized` | Error: authentication required | 401 |
 
 ---
 
@@ -181,7 +181,7 @@ vitest==4.0.18
 | `test_list_diagnostic_rules` | `{rules: [...]}` | 200 |
 | `test_list_treatment_constraints` | `{constraints: [...]}` | 200 |
 | `test_list_seasonal_patterns` | `{patterns: [...]}` | 200 |
-| `test_unauthenticated_cannot_access_agronomy` | Error: forbidden | 403 |
+| `test_unauthenticated_cannot_access_agronomy` | Error: unauthorized | 401 |
 
 ---
 
