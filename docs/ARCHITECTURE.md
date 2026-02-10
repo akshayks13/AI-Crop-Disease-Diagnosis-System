@@ -56,48 +56,111 @@ flowchart LR
 ```mermaid
 classDiagram
     class User {
-        +UUID id
-        +String email
-        +UserRole role
-        +UserStatus status
+        -UUID id
+        -String email
+        -String password_hash
+        -UserRole role
+        -UserStatus status
+        -Boolean is_verified
+        -String otp_code
+        +verify_password(plain) bool
+        +set_password(plain) void
+        +generate_otp() str
+        +to_response_dict() dict
     }
     
     class Diagnosis {
-        +UUID id
-        +UUID user_id
-        +String disease
-        +Float confidence
-        +JSON treatment
-        +Integer rating
+        -UUID id
+        -UUID user_id
+        -String disease
+        -Float confidence
+        -String severity
+        -JSON treatment
+        -Integer rating
+        +to_response_dict() dict
+        +update_rating(rating) void
     }
     
     class Question {
-        +UUID id
-        +UUID farmer_id
-        +String question_text
-        +QuestionStatus status
+        -UUID id
+        -UUID farmer_id
+        -UUID diagnosis_id
+        -String question_text
+        -QuestionStatus status
+        +close() void
+        +resolve() void
+        +to_response_dict() dict
     }
     
     class Answer {
-        +UUID id
-        +UUID question_id
-        +UUID expert_id
-        +String answer_text
-        +Integer rating
+        -UUID id
+        -UUID question_id
+        -UUID expert_id
+        -String answer_text
+        -Integer rating
+        +update_rating(rating) void
+        +to_response_dict() dict
+    }
+    
+    class CommunityPost {
+        -UUID id
+        -UUID user_id
+        -String title
+        -String content
+        -Integer likes_count
+        -Integer comments_count
+        +increment_likes() void
+        +decrement_likes() void
+        +increment_comments() void
+    }
+    
+    class FarmCrop {
+        -UUID id
+        -UUID user_id
+        -String crop_type
+        -GrowthStage growth_stage
+        -Float progress
+        +calculate_progress() float
+        +update_growth_stage(stage) void
+    }
+    
+    class FarmTask {
+        -UUID id
+        -UUID crop_id
+        -String title
+        -TaskPriority priority
+        -Boolean is_completed
+        +toggle_complete() void
+        +is_overdue() bool
+    }
+    
+    class MarketPrice {
+        -UUID id
+        -String commodity
+        -Float price
+        -String location
+        -TrendType trend
+        -Float change_percent
+        +to_response_dict() dict
     }
     
     class DiagnosticRule {
-        +UUID id
-        +UUID disease_id
-        +JSON conditions
-        +JSON impact
-        +Float priority
+        -UUID id
+        -UUID disease_id
+        -JSON conditions
+        -JSON impact
+        -Float priority
+        -Boolean is_active
+        +evaluate(diagnosis_data) bool
     }
     
-    User "1" --> "*" Diagnosis
-    User "1" --> "*" Question
-    User "1" --> "*" Answer
-    Question "1" --> "*" Answer
+    User "1" --> "*" Diagnosis : creates
+    User "1" --> "*" Question : asks
+    User "1" --> "*" Answer : provides
+    User "1" --> "*" CommunityPost : publishes
+    User "1" --> "*" FarmCrop : manages
+    Question "1" --> "*" Answer : receives
+    FarmCrop "1" --> "*" FarmTask : has
 ```
 
 ## User Roles

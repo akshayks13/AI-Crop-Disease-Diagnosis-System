@@ -1,25 +1,31 @@
 # Class Diagram
 
+## Entity Models
+
 ```mermaid
 classDiagram
     %% ==================== USER MANAGEMENT ====================
     class User {
-        +UUID id
-        +String email
-        +String password_hash
-        +String full_name
-        +String phone
-        +UserRole role
-        +UserStatus status
-        +Boolean is_verified
-        +String otp_code
-        +DateTime otp_created_at
-        +String expertise_domain
-        +String qualification
-        +Integer experience_years
-        +String location
-        +DateTime created_at
-        +DateTime updated_at
+        -UUID id
+        -String email
+        -String password_hash
+        -String full_name
+        -String phone
+        -UserRole role
+        -UserStatus status
+        -Boolean is_verified
+        -String otp_code
+        -DateTime otp_created_at
+        -String expertise_domain
+        -String qualification
+        -Integer experience_years
+        -String location
+        -DateTime created_at
+        -DateTime updated_at
+        +verify_password(plain) bool
+        +set_password(plain) void
+        +generate_otp() str
+        +to_response_dict() dict
     }
     
     class UserRole {
@@ -38,42 +44,49 @@ classDiagram
     
     %% ==================== DIAGNOSIS ====================
     class Diagnosis {
-        +UUID id
-        +UUID user_id
-        +String media_path
-        +String media_type
-        +String crop_type
-        +String location
-        +String disease
-        +String severity
-        +Float confidence
-        +JSON treatment
-        +String prevention
-        +String warnings
-        +Integer rating
-        +JSON additional_diseases
-        +DateTime created_at
+        -UUID id
+        -UUID user_id
+        -String media_path
+        -String media_type
+        -String crop_type
+        -String location
+        -String disease
+        -String severity
+        -Float confidence
+        -JSON treatment
+        -String prevention
+        -String warnings
+        -Integer rating
+        -JSON additional_diseases
+        -DateTime created_at
+        +to_response_dict() dict
+        +update_rating(rating) void
     }
     
     %% ==================== Q&A SYSTEM ====================
     class Question {
-        +UUID id
-        +UUID farmer_id
-        +UUID diagnosis_id
-        +String question_text
-        +String media_path
-        +QuestionStatus status
-        +DateTime created_at
-        +DateTime updated_at
+        -UUID id
+        -UUID farmer_id
+        -UUID diagnosis_id
+        -String question_text
+        -String media_path
+        -QuestionStatus status
+        -DateTime created_at
+        -DateTime updated_at
+        +close() void
+        +resolve() void
+        +to_response_dict() dict
     }
     
     class Answer {
-        +UUID id
-        +UUID question_id
-        +UUID expert_id
-        +String answer_text
-        +Integer rating
-        +DateTime created_at
+        -UUID id
+        -UUID question_id
+        -UUID expert_id
+        -String answer_text
+        -Integer rating
+        -DateTime created_at
+        +update_rating(rating) void
+        +to_response_dict() dict
     }
     
     class QuestionStatus {
@@ -85,68 +98,76 @@ classDiagram
     
     %% ==================== COMMUNITY ====================
     class CommunityPost {
-        +UUID id
-        +UUID user_id
-        +String title
-        +String content
-        +String image_path
-        +String category
-        +Boolean is_expert_post
-        +Integer likes_count
-        +Integer comments_count
-        +Boolean is_pinned
-        +DateTime created_at
-        +DateTime updated_at
+        -UUID id
+        -UUID user_id
+        -String title
+        -String content
+        -String image_path
+        -String category
+        -Boolean is_expert_post
+        -Integer likes_count
+        -Integer comments_count
+        -Boolean is_pinned
+        -DateTime created_at
+        -DateTime updated_at
+        +increment_likes() void
+        +decrement_likes() void
+        +increment_comments() void
     }
     
     class CommunityComment {
-        +UUID id
-        +UUID post_id
-        +UUID user_id
-        +String content
-        +DateTime created_at
+        -UUID id
+        -UUID post_id
+        -UUID user_id
+        -String content
+        -DateTime created_at
+        +to_response_dict() dict
     }
     
     class PostLike {
-        +UUID id
-        +UUID post_id
-        +UUID user_id
-        +DateTime created_at
+        -UUID id
+        -UUID post_id
+        -UUID user_id
+        -DateTime created_at
     }
     
     %% ==================== FARM MANAGEMENT ====================
     class FarmCrop {
-        +UUID id
-        +UUID user_id
-        +String name
-        +String crop_type
-        +String field_name
-        +Float area_size
-        +String area_unit
-        +Date sow_date
-        +Date expected_harvest_date
-        +GrowthStage growth_stage
-        +Float progress
-        +String notes
-        +Boolean is_active
-        +DateTime created_at
-        +DateTime updated_at
+        -UUID id
+        -UUID user_id
+        -String name
+        -String crop_type
+        -String field_name
+        -Float area_size
+        -String area_unit
+        -Date sow_date
+        -Date expected_harvest_date
+        -GrowthStage growth_stage
+        -Float progress
+        -String notes
+        -Boolean is_active
+        -DateTime created_at
+        -DateTime updated_at
+        +calculate_progress() float
+        +update_growth_stage(stage) void
     }
     
     class FarmTask {
-        +UUID id
-        +UUID user_id
-        +UUID crop_id
-        +String title
-        +String description
-        +DateTime due_date
-        +TaskPriority priority
-        +Boolean is_completed
-        +DateTime completed_at
-        +Boolean is_recurring
-        +Integer recurrence_days
-        +DateTime created_at
-        +DateTime updated_at
+        -UUID id
+        -UUID user_id
+        -UUID crop_id
+        -String title
+        -String description
+        -DateTime due_date
+        -TaskPriority priority
+        -Boolean is_completed
+        -DateTime completed_at
+        -Boolean is_recurring
+        -Integer recurrence_days
+        -DateTime created_at
+        -DateTime updated_at
+        +toggle_complete() void
+        +is_overdue() bool
     }
     
     class GrowthStage {
@@ -169,19 +190,20 @@ classDiagram
     
     %% ==================== MARKET ====================
     class MarketPrice {
-        +UUID id
-        +String commodity
-        +Float price
-        +String unit
-        +String location
-        +TrendType trend
-        +Float change_percent
-        +Float min_price
-        +Float max_price
-        +Float arrival_qty
-        +DateTime recorded_at
-        +DateTime created_at
-        +DateTime updated_at
+        -UUID id
+        -String commodity
+        -Float price
+        -String unit
+        -String location
+        -TrendType trend
+        -Float change_percent
+        -Float min_price
+        -Float max_price
+        -Float arrival_qty
+        -DateTime recorded_at
+        -DateTime created_at
+        -DateTime updated_at
+        +calculate_trend(previous_price) TrendType
     }
     
     class TrendType {
@@ -193,111 +215,119 @@ classDiagram
     
     %% ==================== ENCYCLOPEDIA ====================
     class CropInfo {
-        +UUID id
-        +String name
-        +String scientific_name
-        +String description
-        +String season
-        +Float temp_min
-        +Float temp_max
-        +String water_requirement
-        +String soil_type
-        +JSON growing_tips
-        +JSON nutritional_info
-        +JSON common_varieties
-        +JSON common_diseases
-        +String image_url
-        +DateTime created_at
-        +DateTime updated_at
+        -UUID id
+        -String name
+        -String scientific_name
+        -String description
+        -String season
+        -Float temp_min
+        -Float temp_max
+        -String water_requirement
+        -String soil_type
+        -JSON growing_tips
+        -JSON nutritional_info
+        -JSON common_varieties
+        -JSON common_diseases
+        -String image_url
+        -DateTime created_at
+        -DateTime updated_at
+        +get_disease_names() List<str>
     }
     
     class DiseaseInfo {
-        +UUID id
-        +String name
-        +String scientific_name
-        +JSON affected_crops
-        +String description
-        +JSON symptoms
-        +String causes
-        +JSON chemical_treatment
-        +JSON organic_treatment
-        +JSON prevention
-        +String severity_level
-        +String spread_method
-        +JSON safety_warnings
-        +JSON environmental_warnings
-        +String image_url
-        +DateTime created_at
-        +DateTime updated_at
+        -UUID id
+        -String name
+        -String scientific_name
+        -JSON affected_crops
+        -String description
+        -JSON symptoms
+        -String causes
+        -JSON chemical_treatment
+        -JSON organic_treatment
+        -JSON prevention
+        -String severity_level
+        -String spread_method
+        -JSON safety_warnings
+        -JSON environmental_warnings
+        -String image_url
+        -DateTime created_at
+        -DateTime updated_at
+        +get_symptom_list() List<str>
     }
     
     %% ==================== AGRONOMY INTELLIGENCE ====================
     class DiagnosticRule {
-        +UUID id
-        +UUID disease_id
-        +String rule_name
-        +String description
-        +JSON conditions
-        +JSON impact
-        +Float priority
-        +Boolean is_active
-        +DateTime created_at
-        +DateTime updated_at
+        -UUID id
+        -UUID disease_id
+        -String rule_name
+        -String description
+        -JSON conditions
+        -JSON impact
+        -Float priority
+        -Boolean is_active
+        -DateTime created_at
+        -DateTime updated_at
+        +evaluate(diagnosis_data) bool
     }
     
     class TreatmentConstraint {
-        +UUID id
-        +String treatment_name
-        +String treatment_type
-        +String constraint_description
-        +JSON restricted_conditions
-        +String enforcement_level
-        +String risk_level
-        +DateTime created_at
-        +DateTime updated_at
+        -UUID id
+        -String treatment_name
+        -String treatment_type
+        -String constraint_description
+        -JSON restricted_conditions
+        -String enforcement_level
+        -String risk_level
+        -DateTime created_at
+        -DateTime updated_at
+        +check_constraint(context_data) bool
     }
     
     class SeasonalPattern {
-        +UUID id
-        +UUID disease_id
-        +UUID crop_id
-        +String region
-        +String season
-        +Float likelihood_score
-        +DateTime created_at
-        +DateTime updated_at
+        -UUID id
+        -UUID disease_id
+        -UUID crop_id
+        -String region
+        -String season
+        -Float likelihood_score
+        -DateTime created_at
+        -DateTime updated_at
+        +is_active_for_season(current_season, current_region) bool
     }
     
     %% ==================== SYSTEM MONITORING ====================
     class SystemLog {
-        +UUID id
-        +String level
-        +String message
-        +String source
-        +UUID user_id
-        +JSON log_metadata
-        +DateTime created_at
+        -UUID id
+        -String level
+        -String message
+        -String source
+        -UUID user_id
+        -JSON log_metadata
+        -DateTime created_at
+        +to_dict() dict
     }
     
     class SystemMetric {
-        +UUID id
-        +String metric_name
-        +Float metric_value
-        +String metric_type
-        +JSON tags
-        +DateTime recorded_at
+        -UUID id
+        -String metric_name
+        -Float metric_value
+        -String metric_type
+        -JSON tags
+        -DateTime recorded_at
+        +to_dict() dict
     }
     
     class DailyStats {
-        +UUID id
-        +DateTime date
-        +Integer total_diagnoses
-        +Integer total_questions
-        +Integer total_answers
-        +Integer new_users
-        +Integer active_users
-        +Float avg_confidence
-        +Integer error_count
+        -UUID id
+        -DateTime date
+        -Integer total_diagnoses
+        -Integer total_questions
+        -Integer total_answers
+        -Integer new_users
+        -Integer active_users
+        -Float avg_confidence
+        -Integer error_count
+        +calculate_kpis() dict
     }
     
     %% ==================== RELATIONSHIPS ====================
@@ -330,4 +360,84 @@ classDiagram
     FarmCrop ..> GrowthStage
     FarmTask ..> TaskPriority
     MarketPrice ..> TrendType
+```
+
+---
+
+## Service Layer Classes
+
+```mermaid
+classDiagram
+    class DiagnosisService {
+        -MLService ml_service
+        -TreatmentService treatment_service
+        -StorageService storage_service
+        +__init__()
+        +process_diagnosis(image_path, media_type, user_id, crop_type, location, db) Dict
+        +get_diagnosis_history(user_id, db, page, page_size) Dict
+    }
+
+    class MLService {
+        -Model model
+        +__init__()
+        +predict(image_path, crop_type) MLPrediction
+        +validate_prediction(prediction, crop_type) Tuple
+        -_load_model() void
+        -_preprocess_image(image_path) Any
+        -_get_severity_label(score) str
+    }
+
+    class TreatmentService {
+        -Dict kb
+        +__init__()
+        +get_treatment(disease, severity, crop_type) TreatmentPlan
+        +to_json_response(plan) Dict
+        -_get_timing(severity, step_index) str
+    }
+
+    class StorageService {
+        -String upload_dir
+        +__init__()
+        +save_upload(file, user_id) str
+        +get_file_path(filename) str
+    }
+
+    class AuthService {
+        +register_user(request, db) User
+        +verify_otp(email, otp, db) TokenResponse
+        +login(email, password, db) TokenResponse
+        +refresh_token(token, db) TokenResponse
+        +update_profile(user, request, db) User
+        +forgot_password(email, db) void
+        +reset_password(email, otp, new_password, db) void
+    }
+
+    class MLPrediction {
+        <<dataclass>>
+        +str disease
+        +float confidence
+        +str severity
+        +float severity_score
+        +List additional_predictions
+    }
+
+    class TreatmentPlan {
+        <<dataclass>>
+        +str disease
+        +str severity
+        +str description
+        +List chemical_options
+        +List organic_options
+        +List treatment_steps
+        +str prevention
+        +str warnings
+    }
+
+    DiagnosisService --> MLService : uses
+    DiagnosisService --> TreatmentService : uses
+    DiagnosisService --> StorageService : uses
+    MLService ..> MLPrediction : returns
+    TreatmentService ..> TreatmentPlan : returns
+    DiagnosisService --> Diagnosis : creates
+    AuthService --> User : manages
 ```
