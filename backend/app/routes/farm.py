@@ -3,7 +3,7 @@ Farm Routes - API endpoints for farm management
 """
 import uuid
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,6 +28,77 @@ from app.schemas.farm import (
 router = APIRouter(prefix="/farm", tags=["Farm Management"])
 
 
+# ============== Helper: Auto-calculate progress ==============
+
+GROWTH_STAGES_ORDER = [
+    GrowthStage.GERMINATION,
+    GrowthStage.SEEDLING,
+    GrowthStage.VEGETATIVE,
+    GrowthStage.FLOWERING,
+    GrowthStage.FRUITING,
+    GrowthStage.RIPENING,
+    GrowthStage.HARVEST,
+]
+
+def compute_crop_progress(crop: FarmCrop) -> dict:
+    """
+    Auto-calculate progress and growth stage based on elapsed time.
+    Returns dict with computed 'progress' and 'growth_stage'.
+    """
+    today = date.today()
+    sow = crop.sow_date
+    harvest = crop.expected_harvest_date
+    
+    if not sow or not harvest or harvest <= sow:
+        # Can't compute, return stored values
+        return {
+            "progress": crop.progress or 0.0,
+            "growth_stage": crop.growth_stage.value if crop.growth_stage else "germination",
+        }
+    
+    total_days = (harvest - sow).days
+    elapsed_days = (today - sow).days
+    
+    if elapsed_days <= 0:
+        return {"progress": 0.0, "growth_stage": "germination"}
+    
+    if elapsed_days >= total_days:
+        return {"progress": 100.0, "growth_stage": "harvest"}
+    
+    # Progress as percentage
+    progress = round((elapsed_days / total_days) * 100, 1)
+    
+    # Map progress to growth stage
+    ratio = elapsed_days / total_days
+    if ratio < 0.10:
+        stage = "germination"
+    elif ratio < 0.25:
+        stage = "seedling"
+    elif ratio < 0.45:
+        stage = "vegetative"
+    elif ratio < 0.60:
+        stage = "flowering"
+    elif ratio < 0.75:
+        stage = "fruiting"
+    elif ratio < 0.90:
+        stage = "ripening"
+    else:
+        stage = "harvest"
+    
+    return {"progress": progress, "growth_stage": stage}
+
+
+def crop_to_response(crop: FarmCrop) -> dict:
+    """Convert crop model to response dict with auto-computed fields."""
+    computed = compute_crop_progress(crop)
+    return {
+        **{k: v for k, v in crop.__dict__.items() if not k.startswith('_')},
+        "id": str(crop.id),
+        "progress": computed["progress"],
+        "growth_stage": computed["growth_stage"],
+    }
+
+
 # ============== Crop Endpoints ==============
 
 @router.get("/crops", response_model=FarmCropListResponse)
@@ -40,6 +111,7 @@ async def get_crops(
     Get user's farm crops.
     
     - Filter by active/all crops
+    - Progress and growth stage are auto-calculated from sow/harvest dates
     """
     query = select(FarmCrop).where(FarmCrop.user_id == current_user.id)
     
@@ -52,14 +124,7 @@ async def get_crops(
     crops = result.scalars().all()
     
     return {
-        "crops": [
-            {
-                **{k: v for k, v in crop.__dict__.items() if not k.startswith('_')},
-                "id": str(crop.id),
-                "growth_stage": crop.growth_stage.value if crop.growth_stage else "germination",
-            }
-            for crop in crops
-        ],
+        "crops": [crop_to_response(crop) for crop in crops],
         "total": len(crops),
     }
 
@@ -83,11 +148,7 @@ async def get_crop_detail(
     if not crop:
         raise HTTPException(status_code=404, detail="Crop not found")
     
-    return {
-        **{k: v for k, v in crop.__dict__.items() if not k.startswith('_')},
-        "id": str(crop.id),
-        "growth_stage": crop.growth_stage.value if crop.growth_stage else "germination",
-    }
+    return crop_to_response(crop)
 
 
 @router.post("/crops", response_model=FarmCropResponse, status_code=status.HTTP_201_CREATED)
@@ -115,11 +176,7 @@ async def create_crop(
     await db.commit()
     await db.refresh(new_crop)
     
-    return {
-        **{k: v for k, v in new_crop.__dict__.items() if not k.startswith('_')},
-        "id": str(new_crop.id),
-        "growth_stage": new_crop.growth_stage.value,
-    }
+    return crop_to_response(new_crop)
 
 
 @router.put("/crops/{crop_id}", response_model=FarmCropResponse)
@@ -154,11 +211,7 @@ async def update_crop(
     await db.commit()
     await db.refresh(crop)
     
-    return {
-        **{k: v for k, v in crop.__dict__.items() if not k.startswith('_')},
-        "id": str(crop.id),
-        "growth_stage": crop.growth_stage.value,
-    }
+    return crop_to_response(crop)
 
 
 @router.delete("/crops/{crop_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -348,7 +401,9 @@ async def complete_task(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Mark a task as completed.
+    Toggle task completion status.
+    If incomplete → marks as completed.
+    If already completed → reverts to incomplete.
     """
     result = await db.execute(
         select(FarmTask).where(
@@ -360,25 +415,32 @@ async def complete_task(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
-    task.is_completed = True
-    task.completed_at = datetime.utcnow()
-    task.updated_at = datetime.utcnow()
+    if task.is_completed:
+        # Undo completion
+        task.is_completed = False
+        task.completed_at = None
+    else:
+        # Mark as completed
+        task.is_completed = True
+        task.completed_at = datetime.utcnow()
+        
+        # If recurring, create next task
+        if task.is_recurring and task.recurrence_days:
+            from datetime import timedelta
+            next_due = (task.due_date or datetime.utcnow()) + timedelta(days=task.recurrence_days)
+            new_task = FarmTask(
+                user_id=current_user.id,
+                crop_id=task.crop_id,
+                title=task.title,
+                description=task.description,
+                due_date=next_due,
+                priority=task.priority,
+                is_recurring=True,
+                recurrence_days=task.recurrence_days,
+            )
+            db.add(new_task)
     
-    # If recurring, create next task
-    if task.is_recurring and task.recurrence_days:
-        from datetime import timedelta
-        next_due = (task.due_date or datetime.utcnow()) + timedelta(days=task.recurrence_days)
-        new_task = FarmTask(
-            user_id=current_user.id,
-            crop_id=task.crop_id,
-            title=task.title,
-            description=task.description,
-            due_date=next_due,
-            priority=task.priority,
-            is_recurring=True,
-            recurrence_days=task.recurrence_days,
-        )
-        db.add(new_task)
+    task.updated_at = datetime.utcnow()
     
     await db.commit()
     await db.refresh(task)
