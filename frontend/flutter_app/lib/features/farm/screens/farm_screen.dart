@@ -111,99 +111,155 @@ class _FarmScreenState extends ConsumerState<FarmScreen> with SingleTickerProvid
   }
 
   Widget _buildCropCard(FarmCrop crop) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(10),
+    // progress is now 0-100 from backend
+    final progressFraction = (crop.progress / 100).clamp(0.0, 1.0);
+    final progressPercent = crop.progress.toInt();
+
+    return GestureDetector(
+      onTap: () => _showEditCropDialog(crop),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade100,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(_cropIcon(crop.cropType), color: Colors.green.shade700, size: 28),
                   ),
-                  child: Icon(Icons.eco, color: Colors.green.shade700, size: 28),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          crop.displayName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Sown: ${crop.sowDateFormatted}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildStageChip(crop.growthStage),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Progress Bar
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        crop.displayName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        'Growth Progress',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                       ),
                       Text(
-                        'Sown: ${crop.sowDateFormatted}',
+                        '$progressPercent%',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
                         ),
                       ),
                     ],
                   ),
-                ),
-                _buildStageChip(crop.growthStage),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Progress Bar
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                  const SizedBox(height: 6),
+                  LinearProgressIndicator(
+                    value: progressFraction,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: AlwaysStoppedAnimation(Colors.green.shade600),
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ],
+              ),
+              if (crop.expectedHarvestDate != null) ...[
+                const SizedBox(height: 8),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    Icon(Icons.calendar_today, size: 14, color: Colors.orange.shade700),
+                    const SizedBox(width: 4),
                     Text(
-                      'Growth Progress',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                    ),
-                    Text(
-                      '${(crop.progress * 100).toInt()}%',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
-                      ),
+                      'Expected harvest: ${_formatDate(crop.expectedHarvestDate!)}',
+                      style: TextStyle(fontSize: 12, color: Colors.orange.shade700),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                LinearProgressIndicator(
-                  value: crop.progress,
-                  backgroundColor: Colors.grey.shade200,
-                  valueColor: AlwaysStoppedAnimation(Colors.green.shade600),
-                  minHeight: 8,
-                  borderRadius: BorderRadius.circular(4),
+              ],
+              if (crop.notes != null && crop.notes!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  crop.notes!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
-            ),
-            if (crop.notes != null && crop.notes!.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text(
-                crop.notes!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontStyle: FontStyle.italic,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              // Action row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => _showEditCropDialog(crop),
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('Edit', style: TextStyle(fontSize: 12)),
+                    style: TextButton.styleFrom(foregroundColor: Colors.green.shade700),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _confirmDeleteCrop(crop),
+                    icon: const Icon(Icons.delete_outline, size: 16),
+                    label: const Text('Delete', style: TextStyle(fontSize: 12)),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red.shade400),
+                  ),
+                ],
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  IconData _cropIcon(String cropType) {
+    final type = cropType.toLowerCase();
+    if (type.contains('rice') || type.contains('wheat') || type.contains('corn') || type.contains('maize')) {
+      return Icons.grass;
+    }
+    if (type.contains('tomato') || type.contains('potato') || type.contains('onion')) {
+      return Icons.eco;
+    }
+    if (type.contains('cotton')) return Icons.cloud;
+    return Icons.eco;
+  }
+
+  String _formatDate(DateTime date) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
   Widget _buildStageChip(String stage) {
@@ -217,7 +273,18 @@ class _FarmScreenState extends ConsumerState<FarmScreen> with SingleTickerProvid
       'harvest': Colors.teal,
     };
 
+    final stageEmojis = {
+      'germination': '🌱',
+      'seedling': '🌿',
+      'vegetative': '🍃',
+      'flowering': '🌸',
+      'fruiting': '🍅',
+      'ripening': '🌾',
+      'harvest': '🎉',
+    };
+
     return Chip(
+      avatar: Text(stageEmojis[stage] ?? '🌱', style: const TextStyle(fontSize: 14)),
       label: Text(
         stage.toUpperCase(),
         style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
@@ -282,44 +349,84 @@ class _FarmScreenState extends ConsumerState<FarmScreen> with SingleTickerProvid
       'low': Colors.green,
     };
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Checkbox(
-          value: task.isCompleted,
-          onChanged: task.isCompleted ? null : (value) {
-            ref.read(farmProvider.notifier).completeTask(task.id);
-          },
-          activeColor: Colors.green,
+    return Dismissible(
+      key: Key(task.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: Colors.red.shade400,
+          borderRadius: BorderRadius.circular(12),
         ),
-        title: Text(
-          task.title,
-          style: TextStyle(
-            decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-            color: task.isCompleted ? Colors.grey : null,
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete Task'),
+            content: Text('Delete "${task.title}"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-        ),
-        subtitle: Row(
-          children: [
-            if (task.cropName != null) ...[
-              Icon(Icons.eco, size: 12, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text(task.cropName!, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-              const SizedBox(width: 12),
+        ) ?? false;
+      },
+      onDismissed: (_) {
+        ref.read(farmProvider.notifier).deleteTask(task.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"${task.title}" deleted')),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: Checkbox(
+            value: task.isCompleted,
+            onChanged: (value) {
+              ref.read(farmProvider.notifier).completeTask(task.id);
+            },
+            activeColor: Colors.green,
+          ),
+          title: Text(
+            task.title,
+            style: TextStyle(
+              decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+              color: task.isCompleted ? Colors.grey : null,
+            ),
+          ),
+          subtitle: Row(
+            children: [
+              if (task.cropName != null) ...[
+                Icon(Icons.eco, size: 12, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text(task.cropName!, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                const SizedBox(width: 12),
+              ],
+              if (task.dueDate != null) ...[
+                Icon(Icons.schedule, size: 12, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text(task.dueDateFormatted, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              ],
             ],
-            if (task.dueDate != null) ...[
-              Icon(Icons.schedule, size: 12, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text(task.dueDateFormatted, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-            ],
-          ],
-        ),
-        trailing: Container(
-          width: 8,
-          height: 40,
-          decoration: BoxDecoration(
-            color: priorityColors[task.priority] ?? Colors.grey,
-            borderRadius: BorderRadius.circular(4),
+          ),
+          trailing: Container(
+            width: 8,
+            height: 40,
+            decoration: BoxDecoration(
+              color: priorityColors[task.priority] ?? Colors.grey,
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
         ),
       ),
@@ -329,7 +436,9 @@ class _FarmScreenState extends ConsumerState<FarmScreen> with SingleTickerProvid
   void _showAddCropDialog() {
     final nameController = TextEditingController();
     final cropTypeController = TextEditingController();
+    final notesController = TextEditingController();
     DateTime sowDate = DateTime.now();
+    DateTime? harvestDate;
 
     showDialog(
       context: context,
@@ -367,12 +476,40 @@ class _FarmScreenState extends ConsumerState<FarmScreen> with SingleTickerProvid
                       context: context,
                       initialDate: sowDate,
                       firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 30)),
                     );
                     if (picked != null) {
                       setDialogState(() => sowDate = picked);
                     }
                   },
+                ),
+                ListTile(
+                  title: const Text('Expected Harvest Date'),
+                  subtitle: Text(harvestDate != null
+                      ? '${harvestDate!.day}/${harvestDate!.month}/${harvestDate!.year}'
+                      : 'Not set (tap to set)'),
+                  trailing: const Icon(Icons.event),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: sowDate.add(const Duration(days: 90)),
+                      firstDate: sowDate.add(const Duration(days: 1)),
+                      lastDate: DateTime(2030),
+                    );
+                    if (picked != null) {
+                      setDialogState(() => harvestDate = picked);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (optional)',
+                    hintText: 'e.g., Variety, fertilizer used',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
                 ),
               ],
             ),
@@ -389,6 +526,7 @@ class _FarmScreenState extends ConsumerState<FarmScreen> with SingleTickerProvid
                     name: nameController.text,
                     cropType: cropTypeController.text,
                     sowDate: sowDate,
+                    expectedHarvestDate: harvestDate,
                   );
                   if (mounted) {
                     Navigator.pop(context);
@@ -408,6 +546,131 @@ class _FarmScreenState extends ConsumerState<FarmScreen> with SingleTickerProvid
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showEditCropDialog(FarmCrop crop) {
+    final notesController = TextEditingController(text: crop.notes ?? '');
+    String selectedStage = crop.growthStage;
+    bool isActive = crop.isActive;
+
+    final stages = ['germination', 'seedling', 'vegetative', 'flowering', 'fruiting', 'ripening', 'harvest'];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Edit: ${crop.displayName}'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Growth stage selector
+                DropdownButtonFormField<String>(
+                  value: selectedStage,
+                  decoration: const InputDecoration(
+                    labelText: 'Growth Stage',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: stages.map((s) => DropdownMenuItem(
+                    value: s,
+                    child: Text('${_stageEmoji(s)} ${s[0].toUpperCase()}${s.substring(1)}'),
+                  )).toList(),
+                  onChanged: (val) => setDialogState(() => selectedStage = val!),
+                ),
+                const SizedBox(height: 12),
+                // Notes
+                TextField(
+                  controller: notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                // Active toggle
+                SwitchListTile(
+                  title: const Text('Active'),
+                  subtitle: Text(isActive ? 'Crop is being tracked' : 'Crop is archived'),
+                  value: isActive,
+                  onChanged: (val) => setDialogState(() => isActive = val),
+                  activeColor: Colors.green,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final data = <String, dynamic>{};
+                if (selectedStage != crop.growthStage) data['growth_stage'] = selectedStage;
+                if (notesController.text != (crop.notes ?? '')) data['notes'] = notesController.text;
+                if (isActive != crop.isActive) data['is_active'] = isActive;
+
+                if (data.isNotEmpty) {
+                  await ref.read(farmProvider.notifier).updateCrop(crop.id, data);
+                }
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Crop updated!')),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade700,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _stageEmoji(String stage) {
+    const emojis = {
+      'germination': '🌱',
+      'seedling': '🌿',
+      'vegetative': '🍃',
+      'flowering': '🌸',
+      'fruiting': '🍅',
+      'ripening': '🌾',
+      'harvest': '🎉',
+    };
+    return emojis[stage] ?? '🌱';
+  }
+
+  void _confirmDeleteCrop(FarmCrop crop) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Crop'),
+        content: Text('Delete "${crop.displayName}" and all its tasks?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(farmProvider.notifier).deleteCrop(crop.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('"${crop.displayName}" deleted')),
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }

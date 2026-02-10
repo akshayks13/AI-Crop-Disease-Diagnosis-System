@@ -259,6 +259,25 @@ class FarmNotifier extends StateNotifier<FarmState> {
     }
   }
 
+  Future<bool> updateCrop(String cropId, Map<String, dynamic> data) async {
+    try {
+      await _api.put('${ApiConfig.farmCrops}/$cropId', data: data);
+      await loadFarmData();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> deleteTask(String taskId) async {
+    try {
+      await _api.delete('${ApiConfig.farmTasks}/$taskId');
+      await loadFarmData();
+    } catch (e) {
+      // Handle error
+    }
+  }
+
   Future<void> refresh() => loadFarmData();
 }
 
