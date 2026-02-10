@@ -31,7 +31,7 @@ async def test_diagnosis_history_pagination(auth_client: AsyncClient):
 async def test_diagnosis_unauthorized(client: AsyncClient):
     """Test diagnosis endpoints require authentication."""
     response = await client.get("/diagnosis/history")
-    assert response.status_code == 403  # FastAPI returns 403 for missing auth
+    assert response.status_code == 401  # OAuth2 returns 401 for missing auth
 
 
 # ============== TODO: AI/ML Integration ==============

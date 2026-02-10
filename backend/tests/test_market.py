@@ -43,4 +43,4 @@ class TestMarketAPI:
     async def test_unauthorized_access(self, client: AsyncClient):
         """Test that unauthenticated requests are rejected."""
         response = await client.get("/market/prices")
-        assert response.status_code == 403  # FastAPI returns 403 for missing auth
+        assert response.status_code == 401  # OAuth2 returns 401 for missing auth

@@ -39,4 +39,4 @@ async def test_list_seasonal_patterns(auth_client: AsyncClient):
 async def test_unauthenticated_cannot_access_agronomy(client: AsyncClient):
     """Test that unauthenticated users cannot access agronomy endpoints."""
     response = await client.get("/agronomy/diagnostic-rules")
-    assert response.status_code == 403
+    assert response.status_code == 401
