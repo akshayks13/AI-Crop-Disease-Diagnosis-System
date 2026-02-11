@@ -4,6 +4,7 @@
 
 ```mermaid
 classDiagram
+
     %% ==================== USER MANAGEMENT ====================
     class User {
         -UUID id
@@ -26,6 +27,14 @@ classDiagram
         +set_password(plain) void
         +generate_otp() str
         +to_response_dict() dict
+        +update_profile(data) User
+        +suspend() void
+        +activate() void
+        +get_expert_status() dict
+        +get_expert_stats() dict
+        +get_dashboard_stats() dict
+        +get_daily_metrics(days) List
+        +get_system_logs(filter) List
     }
     
     class UserRole {
@@ -61,6 +70,8 @@ classDiagram
         -DateTime created_at
         +to_response_dict() dict
         +update_rating(rating) void
+        +get_history(user_id) List
+        +get_all(filter) List
     }
     
     %% ==================== Q&A SYSTEM ====================
@@ -76,6 +87,8 @@ classDiagram
         +close() void
         +resolve() void
         +to_response_dict() dict
+        +get_open_questions(filter) List
+        +get_detail(id) Question
     }
     
     class Answer {
@@ -87,6 +100,8 @@ classDiagram
         -DateTime created_at
         +update_rating(rating) void
         +to_response_dict() dict
+        +submit(data) Answer
+        +get_expert_answers(expert_id) List
     }
     
     class QuestionStatus {
@@ -110,6 +125,11 @@ classDiagram
         -Boolean is_pinned
         -DateTime created_at
         -DateTime updated_at
+        +get_posts(filter) List
+        +get_detail(id) Post
+        +create(data) Post
+        +update(data) Post
+        +delete() void
         +increment_likes() void
         +decrement_likes() void
         +increment_comments() void
@@ -122,6 +142,8 @@ classDiagram
         -String content
         -DateTime created_at
         +to_response_dict() dict
+        +create(data) Comment
+        +delete() void
     }
     
     class PostLike {
@@ -129,6 +151,7 @@ classDiagram
         -UUID post_id
         -UUID user_id
         -DateTime created_at
+        +toggle(post_id, user_id) LikeResponse
     }
     
     %% ==================== FARM MANAGEMENT ====================
@@ -148,6 +171,11 @@ classDiagram
         -Boolean is_active
         -DateTime created_at
         -DateTime updated_at
+        +get_crops(filter) List
+        +get_detail(id) Crop
+        +create(data) Crop
+        +update(data) Crop
+        +delete() void
         +calculate_progress() float
         +update_growth_stage(stage) void
     }
@@ -166,7 +194,11 @@ classDiagram
         -Integer recurrence_days
         -DateTime created_at
         -DateTime updated_at
+        +get_tasks(filter) List
+        +create(data) Task
+        +update(data) Task
         +toggle_complete() void
+        +delete() void
         +is_overdue() bool
     }
     
@@ -203,6 +235,11 @@ classDiagram
         -DateTime recorded_at
         -DateTime created_at
         -DateTime updated_at
+        +get_prices(filter) List
+        +get_history(commodity, days) List
+        +create(data) Price
+        +update(data) Price
+        +delete() void
         +calculate_trend(previous_price) TrendType
     }
     
@@ -231,6 +268,9 @@ classDiagram
         -String image_url
         -DateTime created_at
         -DateTime updated_at
+        +get_all(filter) List
+        +get_by_name(name) CropInfo
+        +create(data) CropInfo
         +get_disease_names() List<str>
     }
     
@@ -252,6 +292,9 @@ classDiagram
         -String image_url
         -DateTime created_at
         -DateTime updated_at
+        +get_all(filter) List
+        +get_detail(id) DiseaseInfo
+        +create(data) DiseaseInfo
         +get_symptom_list() List<str>
     }
     
@@ -293,8 +336,21 @@ classDiagram
         -DateTime created_at
         -DateTime updated_at
         +is_active_for_season(current_season, current_region) bool
+        +get_trending_diseases(period) List
     }
     
+    class KnowledgeGuide {
+        -UUID id
+        -String title
+        -String content
+        -UUID expert_id
+        -DateTime created_at
+        +list_guides(page) List
+        +create(data) Guide
+        +update(data) Guide
+        +delete() void
+    }
+
     %% ==================== SYSTEM MONITORING ====================
     class SystemLog {
         -UUID id
@@ -339,6 +395,7 @@ classDiagram
     User "1" --> "*" PostLike : gives
     User "1" --> "*" FarmCrop : manages
     User "1" --> "*" FarmTask : owns
+    User "1" --> "*" KnowledgeGuide : authors
     
     Question "*" --> "0..1" Diagnosis : references
     Question "1" --> "*" Answer : receives
@@ -361,6 +418,7 @@ classDiagram
     FarmTask ..> TaskPriority
     MarketPrice ..> TrendType
 ```
+
 
 ---
 
