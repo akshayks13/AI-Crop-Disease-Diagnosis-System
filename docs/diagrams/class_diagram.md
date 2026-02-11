@@ -417,59 +417,6 @@ classDiagram
     FarmCrop ..> GrowthStage
     FarmTask ..> TaskPriority
     MarketPrice ..> TrendType
-```
-
-
----
-
-## Service Layer Classes
-
-```mermaid
-classDiagram
-    class DiagnosisService {
-        -MLService ml_service
-        -TreatmentService treatment_service
-        -StorageService storage_service
-        +__init__()
-        +process_diagnosis(image_path, media_type, user_id, crop_type, location, db) Dict
-        +get_diagnosis_history(user_id, db, page, page_size) Dict
-    }
-
-    class MLService {
-        -Model model
-        +__init__()
-        +predict(image_path, crop_type) MLPrediction
-        +validate_prediction(prediction, crop_type) Tuple
-        -_load_model() void
-        -_preprocess_image(image_path) Any
-        -_get_severity_label(score) str
-    }
-
-    class TreatmentService {
-        -Dict kb
-        +__init__()
-        +get_treatment(disease, severity, crop_type) TreatmentPlan
-        +to_json_response(plan) Dict
-        -_get_timing(severity, step_index) str
-    }
-
-    class StorageService {
-        -String upload_dir
-        +__init__()
-        +save_upload(file, user_id) str
-        +get_file_path(filename) str
-    }
-
-    class AuthService {
-        +register_user(request, db) User
-        +verify_otp(email, otp, db) TokenResponse
-        +login(email, password, db) TokenResponse
-        +refresh_token(token, db) TokenResponse
-        +update_profile(user, request, db) User
-        +forgot_password(email, db) void
-        +reset_password(email, otp, new_password, db) void
-    }
-
     class MLPrediction {
         <<dataclass>>
         +str disease
@@ -491,11 +438,6 @@ classDiagram
         +str warnings
     }
 
-    DiagnosisService --> MLService : uses
-    DiagnosisService --> TreatmentService : uses
-    DiagnosisService --> StorageService : uses
-    MLService ..> MLPrediction : returns
-    TreatmentService ..> TreatmentPlan : returns
-    DiagnosisService --> Diagnosis : creates
-    AuthService --> User : manages
+    Diagnosis --> MLPrediction : contains
+    Diagnosis --> TreatmentPlan : contains
 ```
