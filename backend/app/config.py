@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # App Settings
     app_name: str = "AI Crop Disease Diagnosis System"
     debug: bool = True
+
+    # External APIs
+    agmarknet_api_key: str = ""
+    agmarknet_api_url: str = "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070"
     
     @property
     def cors_origins(self) -> List[str]:
