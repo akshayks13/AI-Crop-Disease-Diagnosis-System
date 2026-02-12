@@ -25,7 +25,7 @@ from app.schemas.market import (
 router = APIRouter(prefix="/market", tags=["Market Prices"])
 
 
-# Simple in-memory cache
+# Simple in-memory cache for API data only
 # Format: {"timestamp": float, "data": dict}
 _market_cache = {}
 CACHE_DURATION_SECONDS = 300  # 5 minutes
@@ -39,12 +39,12 @@ async def fetch_agmarknet_data(
     """
     Fetch data from Agmarknet API via OGD Platform.
     Includes basic caching to avoid rate limits.
+    Only called when API key is properly configured.
     """
     settings = get_settings()
     base_url = settings.agmarknet_api_url
     
     if not base_url:
-        print("AGMARKNET_API_URL not configured")
         return None
         
     # Generate cache key based on params
@@ -55,7 +55,6 @@ async def fetch_agmarknet_data(
     if cache_key in _market_cache:
         cached_entry = _market_cache[cache_key]
         if current_time - cached_entry["timestamp"] < CACHE_DURATION_SECONDS:
-            print(f"Returning cached market data for key: {cache_key}")
             return cached_entry["data"]
 
     params = {
@@ -78,22 +77,17 @@ async def fetch_agmarknet_data(
             
             if response.status_code == 200:
                 data = response.json()
-                # Cache successful response
+                # Cache successful response only
                 _market_cache[cache_key] = {
                     "timestamp": current_time,
                     "data": data
                 }
                 return data
-            elif response.status_code == 429:
-                print("Agmarknet API Rate Limit Exceeded.")
-                # If we have stale cache, maybe return it? 
-                # For now, just return None to fallback to DB implies consistent behavior
-                return None
             else:
-                print(f"Agmarknet API Error: {response.status_code} - {response.text}")
+                # Don't cache errors - just return None to use DB
                 return None
         except Exception as e:
-            print(f"Error fetching market data: {e}")
+            # Don't cache exceptions either
             return None
 
 
@@ -156,46 +150,41 @@ async def get_market_prices(
     settings = get_settings()
     api_key = settings.agmarknet_api_key
     
-    # Try fetching from API first if we have a key
-    if api_key:
-        api_filters = {}
-        if commodity:
-            api_filters["commodity"] = commodity
-        # Location in API is split into state, district, market. 
-        # Partial match on 'location' param is hard to map directly to API filters without knowing which field.
-        # We will skip location filter for API call strictness, or try to apply it client side?
-        # For now, let's just pass commodity if present.
-        
-        offset = (page - 1) * page_size
-        data = await fetch_agmarknet_data(api_key, limit=page_size, offset=offset, filters=api_filters)
-        
-        if data and "records" in data:
-            records = data["records"]
-            total_records = int(data.get("total", 0)) if "total" in data else len(records) # 'total' usually in response
+    # Try fetching from API first if we have a valid key (not empty)
+    if api_key and api_key.strip():
+        try:
+            api_filters = {}
+            if commodity:
+                api_filters["commodity"] = commodity
             
-            # Map records
-            mapped_prices = []
-            for rec in records:
-                mapped = map_api_record_to_schema(rec)
-                if mapped:
-                    # Apply location filter in memory if provided
-                    if location and location.lower() not in mapped["location"].lower():
-                        continue
-                    mapped_prices.append(mapped)
+            offset = (page - 1) * page_size
+            data = await fetch_agmarknet_data(api_key, limit=page_size, offset=offset, filters=api_filters)
             
-            # If we filtered in-memory, the specific page logic might be slightly off relative to total,
-            # but for a basic implementation this is acceptable.
-            
-            return {
-                "prices": mapped_prices,
-                "total": total_records, # This might be inaccurate if we filtered in memory
-                "page": page,
-                "page_size": page_size,
-            }
-    else:
-        print("No AGMARKNET_API_KEY found in settings. Using database.")
+            if data and "records" in data:
+                records = data["records"]
+                total_records = int(data.get("total", 0)) if "total" in data else len(records)
+                
+                # Map records
+                mapped_prices = []
+                for rec in records:
+                    mapped = map_api_record_to_schema(rec)
+                    if mapped:
+                        # Apply location filter in memory if provided
+                        if location and location.lower() not in mapped["location"].lower():
+                            continue
+                        mapped_prices.append(mapped)
+                
+                return {
+                    "prices": mapped_prices,
+                    "total": total_records,
+                    "page": page,
+                    "page_size": page_size,
+                }
+        except Exception as e:
+            # Silently fall back to database on any API error
+            pass
 
-    # Fallback to Database
+    # Use Database (primary source when API not configured or failed)
     query = select(MarketPrice)
     count_query = select(func.count(MarketPrice.id))
     
@@ -227,12 +216,24 @@ async def get_market_prices(
     result = await db.execute(query)
     prices = result.scalars().all()
     
+    print(f"Found {len(prices)} prices in database (total: {total})")
+    
     return {
         "prices": [
             {
-                **price.__dict__,
                 "id": str(price.id),
+                "commodity": price.commodity,
+                "price": price.price,
+                "unit": price.unit,
+                "location": price.location,
                 "trend": price.trend.value if price.trend else "stable",
+                "change_percent": price.change_percent,
+                "min_price": price.min_price,
+                "max_price": price.max_price,
+                "arrival_qty": price.arrival_qty,
+                "recorded_at": price.recorded_at.isoformat() if price.recorded_at else None,
+                "created_at": price.created_at.isoformat() if price.created_at else None,
+                "updated_at": price.updated_at.isoformat() if price.updated_at else None,
             }
             for price in prices
         ],

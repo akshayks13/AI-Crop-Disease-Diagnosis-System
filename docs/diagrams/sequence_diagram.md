@@ -200,8 +200,26 @@ sequenceDiagram
         Note over App,DB: 📊 Market & Encyclopedia
         
         App->>API: GET /market/prices?commodity=&location=
-        API->>DB: Fetch filtered prices
-        API-->>App: {prices[], total}
+        API->>API: Check Cache
+        alt Cache Hit
+            API-->>App: {prices[], total} (Cached)
+        else Cache Miss
+            API->>API: Check Agmarknet Config
+            alt Configured
+                API->>External(Agmarknet): Fetch real-time prices
+                alt Success
+                    External(Agmarknet)-->>API: JSON Data
+                    API->>API: Update Cache
+                    API-->>App: {prices[], total} (Live)
+                else Failed
+                    API->>DB: Fallback to Database
+                    API-->>App: {prices[], total} (DB)
+                end
+            else Not Configured
+                API->>DB: Fetch from Database
+                API-->>App: {prices[], total} (DB)
+            end
+        end
         
         App->>API: GET /encyclopedia/crops?search=
         API->>DB: Fetch crop info

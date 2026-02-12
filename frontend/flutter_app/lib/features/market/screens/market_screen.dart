@@ -175,31 +175,49 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                   '/${price.unit}',
                   style: theme.textTheme.bodySmall,
                 ),
+                if (price.minPrice != null && price.maxPrice != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '₹${price.minPrice!.toStringAsFixed(0)}-${price.maxPrice!.toStringAsFixed(0)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: trendColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(trendIcon,
-                          size: 14, color: trendColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        price.changeString,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: trendColor,
+                if (price.changePercent != 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: trendColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(trendIcon,
+                            size: 14, color: trendColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          price.changeString,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: trendColor,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  )
+                else
+                  Text(
+                    'Updated: ${price.recordedAt.day}/${price.recordedAt.month}/${price.recordedAt.year}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
+                      color: theme.hintColor,
+                    ),
                   ),
-                ),
               ],
             ),
           ],

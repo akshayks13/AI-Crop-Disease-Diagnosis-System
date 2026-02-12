@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User, UserRole, UserStatus
 from app.models.question import Question, QuestionStatus, Answer
+from app.models.market import MarketPrice, TrendType
 from app.auth.jwt_handler import hash_password
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,7 @@ async def seed_database(session: AsyncSession) -> None:
         print("🌱 Starting database seeding...")
         await seed_users(session)
         await seed_questions(session)
+        await seed_market_prices(session)
         print("✅ Database seeding completed successfully!")
         logger.info("Database seeding completed.")
     except Exception as e:
@@ -186,4 +188,207 @@ Your plants should recover within 2-3 weeks with proper treatment.""",
     
     session.add(answer)
     await session.commit()
+
+
+async def seed_market_prices(session: AsyncSession) -> None:
+    """Seed sample market price data."""
+    
+    # Check if market prices already exist
+    print("   Checking for existing market prices...")
+    result = await session.execute(select(MarketPrice).limit(1))
+    if result.scalar_one_or_none():
+        print("   ⏭️  Market prices already seeded, skipping...")
+        logger.info("Market prices already seeded, skipping...")
+        return
+    
+    print("   Creating market price entries...")
+    
+    # Sample market prices for various commodities across Karnataka and neighboring states
+    market_prices = [
+        MarketPrice(
+            commodity="Tomato",
+            price=2800.0,
+            unit="Quintal",
+            location="Kolar, Bangalore Rural, Karnataka",
+            trend=TrendType.UP,
+            change_percent=5.2,
+            min_price=2600.0,
+            max_price=3000.0,
+            arrival_qty=150.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Potato",
+            price=1500.0,
+            unit="Quintal",
+            location="Hassan, Hassan, Karnataka",
+            trend=TrendType.DOWN,
+            change_percent=-2.1,
+            min_price=1400.0,
+            max_price=1600.0,
+            arrival_qty=200.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Onion",
+            price=3200.0,
+            unit="Quintal",
+            location="Nashik, Nashik, Maharashtra",
+            trend=TrendType.UP,
+            change_percent=8.5,
+            min_price=3000.0,
+            max_price=3500.0,
+            arrival_qty=500.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Rice",
+            price=2100.0,
+            unit="Quintal",
+            location="Mandya, Mandya, Karnataka",
+            trend=TrendType.STABLE,
+            change_percent=0.5,
+            min_price=2000.0,
+            max_price=2200.0,
+            arrival_qty=800.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Wheat",
+            price=2400.0,
+            unit="Quintal",
+            location="Dharwad, Dharwad, Karnataka",
+            trend=TrendType.UP,
+            change_percent=3.2,
+            min_price=2300.0,
+            max_price=2500.0,
+            arrival_qty=350.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Cotton",
+            price=6800.0,
+            unit="Quintal",
+            location="Raichur, Raichur, Karnataka",
+            trend=TrendType.STABLE,
+            change_percent=0.0,
+            min_price=6500.0,
+            max_price=7000.0,
+            arrival_qty=120.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Maize",
+            price=1800.0,
+            unit="Quintal",
+            location="Davangere, Davangere, Karnataka",
+            trend=TrendType.UP,
+            change_percent=4.1,
+            min_price=1700.0,
+            max_price=1900.0,
+            arrival_qty=450.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Green Chilli",
+            price=4500.0,
+            unit="Quintal",
+            location="Guntur, Guntur, Andhra Pradesh",
+            trend=TrendType.UP,
+            change_percent=12.5,
+            min_price=4000.0,
+            max_price=5000.0,
+            arrival_qty=80.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Groundnut",
+            price=5200.0,
+            unit="Quintal",
+            location="Bellary, Bellary, Karnataka",
+            trend=TrendType.DOWN,
+            change_percent=-1.5,
+            min_price=5000.0,
+            max_price=5400.0,
+            arrival_qty=220.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Tur Dal",
+            price=7500.0,
+            unit="Quintal",
+            location="Gulbarga, Gulbarga, Karnataka",
+            trend=TrendType.STABLE,
+            change_percent=1.0,
+            min_price=7200.0,
+            max_price=7800.0,
+            arrival_qty=180.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Cabbage",
+            price=1200.0,
+            unit="Quintal",
+            location="Ooty, Nilgiris, Tamil Nadu",
+            trend=TrendType.DOWN,
+            change_percent=-3.2,
+            min_price=1100.0,
+            max_price=1300.0,
+            arrival_qty=300.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Carrot",
+            price=1800.0,
+            unit="Quintal",
+            location="Bangalore, Bangalore Urban, Karnataka",
+            trend=TrendType.STABLE,
+            change_percent=0.0,
+            min_price=1700.0,
+            max_price=1900.0,
+            arrival_qty=150.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Cauliflower",
+            price=1600.0,
+            unit="Quintal",
+            location="Mysore, Mysore, Karnataka",
+            trend=TrendType.UP,
+            change_percent=6.5,
+            min_price=1500.0,
+            max_price=1700.0,
+            arrival_qty=200.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Beans",
+            price=3500.0,
+            unit="Quintal",
+            location="Chikmagalur, Chikmagalur, Karnataka",
+            trend=TrendType.UP,
+            change_percent=9.2,
+            min_price=3200.0,
+            max_price=3800.0,
+            arrival_qty=100.0,
+            recorded_at=datetime.utcnow(),
+        ),
+        MarketPrice(
+            commodity="Brinjal",
+            price=2200.0,
+            unit="Quintal",
+            location="Hubli, Dharwad, Karnataka",
+            trend=TrendType.STABLE,
+            change_percent=-0.5,
+            min_price=2100.0,
+            max_price=2300.0,
+            arrival_qty=180.0,
+            recorded_at=datetime.utcnow(),
+        ),
+    ]
+    
+    session.add_all(market_prices)
+    await session.commit()
+    print(f"   ✅ Seeded {len(market_prices)} market price entries.")
+    logger.info(f"Seeded {len(market_prices)} market price entries.")
     logger.info(f"Seeded {len(questions)} questions with answers.")

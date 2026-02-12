@@ -11,6 +11,9 @@ class MarketPrice {
   final String location;
   final String trend;
   final double changePercent;
+  final double? minPrice;
+  final double? maxPrice;
+  final double? arrivalQty;
   final DateTime recordedAt;
 
   MarketPrice({
@@ -21,18 +24,24 @@ class MarketPrice {
     required this.location,
     required this.trend,
     required this.changePercent,
+    this.minPrice,
+    this.maxPrice,
+    this.arrivalQty,
     required this.recordedAt,
   });
 
   factory MarketPrice.fromJson(Map<String, dynamic> json) {
     return MarketPrice(
-      id: json['id'] ?? '',
-      commodity: json['commodity'] ?? '',
+      id: json['id']?.toString() ?? '',
+      commodity: json['commodity']?.toString() ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0,
-      unit: json['unit'] ?? 'Quintal',
-      location: json['location'] ?? '',
-      trend: json['trend'] ?? 'stable',
+      unit: json['unit']?.toString() ?? 'Quintal',
+      location: json['location']?.toString() ?? '',
+      trend: json['trend']?.toString() ?? 'stable',
       changePercent: (json['change_percent'] as num?)?.toDouble() ?? 0,
+      minPrice: (json['min_price'] as num?)?.toDouble(),
+      maxPrice: (json['max_price'] as num?)?.toDouble(),
+      arrivalQty: (json['arrival_qty'] as num?)?.toDouble(),
       recordedAt: json['recorded_at'] != null 
           ? DateTime.parse(json['recorded_at']) 
           : DateTime.now(),

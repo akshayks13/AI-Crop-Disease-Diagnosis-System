@@ -240,7 +240,6 @@ classDiagram
         +create(data) Price
         +update(data) Price
         +delete() void
-        +calculate_trend(previous_price) TrendType
     }
     
     class TrendType {

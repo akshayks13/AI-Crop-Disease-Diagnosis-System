@@ -54,7 +54,7 @@ Access the apps:
 - **AI Diagnosis**: Upload crop images for instant disease detection
 - **Treatment Plans**: Get detailed chemical and organic treatment options
 - **Farm Management**: Track crops, growth progress, and manage farm tasks
-- **Market Prices**: View real-time commodity prices by location
+- **Market Prices**: View real-time commodity prices from **Agmarknet** (Government of India) with fallback to local database
 - **Community Forum**: Share posts, comments, and like content
 - **Crop Encyclopedia**: Browse detailed crop and disease information
 - **Expert Consultation**: Ask verified agricultural experts
@@ -346,6 +346,8 @@ npm run lint
 | `JWT_SECRET_KEY` | Secret for JWT tokens | `your-secret-key-here` |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:3000` |
 | `DEBUG` | Enable debug mode | `true` or `false` |
+| `AGMARKNET_API_KEY` | API Key for OGD Platform (Agmarknet) | `your-api-key` |
+| `AGMARKNET_API_URL` | Agmarknet API Endpoint | `https://api.data.gov.in/resource/...` |
 
 ---
 
