@@ -6,6 +6,7 @@ import '../../../../config/routes.dart';
 import '../../../../config/theme.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/api/agronomy_service.dart';
+import '../../weather/services/weather_service.dart';
 
 /// Diagnosis result screen with treatment recommendations
 class DiagnosisResultScreen extends ConsumerStatefulWidget {
@@ -32,6 +33,10 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
   String? _selectedSeason;
   String? _selectedRegion;
 
+  // Weather data
+  WeatherData? _weatherData;
+  bool _isLoadingWeather = false;
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +44,26 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
     // Initialize rating if available given in result (from history)
     if (widget.result['rating'] != null) {
       _userRating = widget.result['rating'] is int ? widget.result['rating'] : int.tryParse(widget.result['rating'].toString()) ?? 0;
+    }
+    _fetchWeather();
+  }
+
+  Future<void> _fetchWeather() async {
+    setState(() => _isLoadingWeather = true);
+    try {
+      final weather = await WeatherService().getCurrentWeather();
+      if (mounted) {
+        setState(() {
+          _weatherData = weather;
+          // Auto-fill temperature and humidity in the validation form
+          _temperatureController.text = weather.temp.toStringAsFixed(1);
+          _humidityController.text = weather.humidity.toString();
+          _isLoadingWeather = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingWeather = false);
+      // Silently fail — weather is supplementary, not critical
     }
   }
 
@@ -246,6 +271,11 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
             ),
 
             const SizedBox(height: 24),
+
+            // Live Weather Banner
+            _buildWeatherBanner(),
+
+            const SizedBox(height: 16),
 
             // Environmental Context & Validation
             GestureDetector(
@@ -583,6 +613,111 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
     );
   }
 
+  Widget _buildWeatherBanner() {
+    if (_isLoadingWeather) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.shade100),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+            const SizedBox(width: 12),
+            Text('Fetching local weather...', style: TextStyle(color: Colors.blue.shade700, fontSize: 13)),
+          ],
+        ),
+      );
+    }
+
+    if (_weatherData == null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.cloud_off, size: 18, color: Colors.grey.shade500),
+            const SizedBox(width: 10),
+            Text('Weather unavailable (location permission needed)', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+          ],
+        ),
+      );
+    }
+
+    final w = _weatherData!;
+    // Disease risk advisory based on weather
+    String riskNote;
+    Color riskColor;
+    IconData riskIcon;
+    if (w.humidity > 80 && w.temp > 25) {
+      riskNote = 'High humidity + warmth: elevated fungal disease risk';
+      riskColor = Colors.red.shade700;
+      riskIcon = Icons.warning_amber_rounded;
+    } else if (w.humidity > 70) {
+      riskNote = 'Moderate humidity: watch for early blight or mildew';
+      riskColor = Colors.orange.shade700;
+      riskIcon = Icons.info_outline;
+    } else {
+      riskNote = 'Weather conditions are relatively low-risk for disease spread';
+      riskColor = Colors.green.shade700;
+      riskIcon = Icons.check_circle_outline;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade50, Colors.cyan.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.blue.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.wb_sunny_outlined, color: Colors.blue.shade700, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'Current Weather · ${w.cityName}',
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade800, fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _WeatherStat(icon: Icons.thermostat, label: 'Temp', value: '${w.temp.toStringAsFixed(1)}°C'),
+              _WeatherStat(icon: Icons.water_drop, label: 'Humidity', value: '${w.humidity}%'),
+              _WeatherStat(icon: Icons.air, label: 'Wind', value: '${w.windSpeed} m/s'),
+              _WeatherStat(icon: Icons.cloud, label: 'Condition', value: w.description.split(' ').first),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Icon(riskIcon, size: 14, color: riskColor),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(riskNote, style: TextStyle(fontSize: 11, color: riskColor, fontStyle: FontStyle.italic)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   IconData _getSeverityIcon(String severity) {
     switch (severity.toLowerCase()) {
       case 'mild':
@@ -594,6 +729,26 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
       default:
         return Icons.help;
     }
+  }
+}
+
+class _WeatherStat extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _WeatherStat({required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, size: 16, color: Colors.blue.shade600),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+      ],
+    );
   }
 }
 

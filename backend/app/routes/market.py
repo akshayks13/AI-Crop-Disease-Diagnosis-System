@@ -356,6 +356,39 @@ async def update_market_price(
     }
 
 
+@router.get("/debug/status")
+async def get_market_debug_status(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Debug endpoint: Check AGMarknet API key configuration and cache status.
+    Shows whether the API key is loaded and how many cache entries exist.
+    """
+    settings = get_settings()
+    api_key = settings.agmarknet_api_key
+    current_time = datetime.now().timestamp()
+
+    cache_info = []
+    for key, entry in _market_cache.items():
+        age_seconds = current_time - entry["timestamp"]
+        cache_info.append({
+            "cache_key": key,
+            "age_seconds": round(age_seconds, 1),
+            "expires_in_seconds": round(CACHE_DURATION_SECONDS - age_seconds, 1),
+            "is_valid": age_seconds < CACHE_DURATION_SECONDS,
+            "record_count": len(entry["data"].get("records", [])) if entry.get("data") else 0,
+        })
+
+    return {
+        "api_key_configured": bool(api_key and api_key.strip()),
+        "api_key_preview": f"{api_key[:8]}...{api_key[-4:]}" if api_key and len(api_key) > 12 else "NOT SET",
+        "api_url": settings.agmarknet_api_url,
+        "cache_duration_seconds": CACHE_DURATION_SECONDS,
+        "cache_entries": len(_market_cache),
+        "cache_details": cache_info,
+    }
+
+
 @router.delete("/prices/{price_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_market_price(
     price_id: str,
