@@ -71,7 +71,7 @@ def run_backup(db: dict, dry_run: bool = False) -> Optional[Path]:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_file = BACKUP_DIR / f"cropdiag_{timestamp}.sql.gz"
 
-    log(f"=== DB Backup Started ===")
+    log("=== DB Backup Started ===")
     log(f"Database : {db['dbname']} @ {db['host']}:{db['port']}")
     log(f"Output   : {backup_file}")
 

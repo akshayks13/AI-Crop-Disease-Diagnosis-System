@@ -299,7 +299,7 @@ cd backend
 # Run Linter (Ruff)
 ruff check .
 
-# Run Tests
+# Run Tests (Pytest)
 pytest
 ```
 
@@ -320,7 +320,27 @@ cd frontend/admin_dashboard
 
 # Run Linter
 npm run lint
+
+# Run Tests (Vitest)
+npm run test
 ```
+
+---
+
+## Database Backups
+
+Two scripts are available in `backend/scripts/`:
+
+- `backup_db.py`: Cross-platform backup script (Recommended)
+- `backup_db.sh`: Shell script for Linux/macOS (Good for Cron)
+
+**Usage:**
+```bash
+cd backend
+python scripts/backup_db.py
+```
+Backups are saved to `backend/backups/` and retained for 7 days.
+See [DEVOPS.md](docs/DEVOPS.md) for restore instructions.
 
 ---
 

@@ -391,4 +391,4 @@ async def seed_market_prices(session: AsyncSession) -> None:
     await session.commit()
     print(f"   ✅ Seeded {len(market_prices)} market price entries.")
     logger.info(f"Seeded {len(market_prices)} market price entries.")
-    logger.info(f"Seeded {len(questions)} questions with answers.")
+
