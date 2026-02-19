@@ -89,8 +89,8 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <MetricCard
                     title="Total Farmers"
-                    value={metrics.total_users.toLocaleString()}
-                    subtitle={`+${trends.recent_signups} new this week`}
+                    value={metrics.total_farmers.toLocaleString()}
+                    subtitle={`Active farmers`}
                     icon={Users}
                     gradient="from-blue-500 to-indigo-600"
                 />
@@ -109,9 +109,9 @@ export default function DashboardPage() {
                     gradient="from-amber-400 to-orange-500"
                 />
                 <MetricCard
-                    title="Pending Experts"
-                    value={metrics.pending_experts.toString()}
-                    subtitle="Awaiting verification"
+                    title="Total Experts"
+                    value={metrics.total_experts.toLocaleString()}
+                    subtitle={`${metrics.pending_experts} pending approval`}
                     icon={Clock}
                     gradient="from-purple-500 to-pink-600"
                 />

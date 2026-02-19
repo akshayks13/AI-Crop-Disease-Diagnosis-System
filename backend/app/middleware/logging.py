@@ -1,8 +1,10 @@
 """
 Middleware for capturing system activity and errors to the database.
+
+NOTE: This middleware writes to the SystemLog database table (visible in admin dashboard).
+      It does NOT interact with the loguru file logger (backend/logs/app.log).
 """
 import time
-import logging
 import uuid
 from typing import Optional
 
@@ -13,8 +15,7 @@ from starlette.types import ASGIApp
 from app.database import async_session_maker
 from app.models.system import SystemLog
 from app.auth.jwt_handler import decode_token
-
-logger = logging.getLogger(__name__)
+from app.utils.logger import logger  # loguru — only used as fallback if DB write fails
 
 
 class SystemLoggingMiddleware(BaseHTTPMiddleware):

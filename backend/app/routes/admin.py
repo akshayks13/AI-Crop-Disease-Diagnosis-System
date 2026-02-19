@@ -31,8 +31,10 @@ async def get_dashboard(
     today = datetime.utcnow().date()
     week_ago = today - timedelta(days=7)
     
-    # User counts
-    total_users = (await db.execute(select(func.count(User.id)))).scalar()
+    # User counts (excluding admins)
+    total_users = (await db.execute(
+        select(func.count(User.id)).where(User.role != UserRole.ADMIN)
+    )).scalar()
     total_farmers = (await db.execute(
         select(func.count(User.id)).where(User.role == UserRole.FARMER)
     )).scalar()
@@ -79,7 +81,10 @@ async def get_dashboard(
     # Recent signups (last 7 days)
     recent_signups = (await db.execute(
         select(func.count(User.id)).where(
-            func.date(User.created_at) >= week_ago
+            and_(
+                func.date(User.created_at) >= week_ago,
+                User.role != UserRole.ADMIN
+            )
         )
     )).scalar()
     

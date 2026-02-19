@@ -39,3 +39,9 @@ httpx==0.26.0
 
 # Utilities
 python-dotenv==1.0.0
+
+# Rate Limiting
+slowapi==0.1.9
+
+# Structured Logging (file-based, separate from admin DB logs)
+loguru==0.7.2

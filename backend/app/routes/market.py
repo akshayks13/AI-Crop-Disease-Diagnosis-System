@@ -28,33 +28,44 @@ router = APIRouter(prefix="/market", tags=["Market Prices"])
 # Simple in-memory cache for API data only
 # Format: {"timestamp": float, "data": dict}
 _market_cache = {}
-CACHE_DURATION_SECONDS = 300  # 5 minutes
+CACHE_DURATION_SECONDS = 3600  # 1 hour — data.gov.in is rate-limited
+_rate_limited_until: float = 0  # Epoch time until which we skip API calls
+RATE_LIMIT_BACKOFF_SECONDS = 3600  # Wait 1 hour after a 429
 
 async def fetch_agmarknet_data(
     api_key: str,
-    limit: int = 20,
+    limit: int = 10,
     offset: int = 0,
     filters: Dict[str, str] = None
 ) -> Dict[str, Any]:
     """
     Fetch data from Agmarknet API via OGD Platform.
-    Includes basic caching to avoid rate limits.
+    Includes aggressive caching (1 hour) to avoid rate limits.
     Only called when API key is properly configured.
     """
+    global _rate_limited_until
     settings = get_settings()
     base_url = settings.agmarknet_api_url
     
     if not base_url:
         return None
+    
+    # Skip API call if we're currently rate-limited
+    current_time = datetime.now().timestamp()
+    if current_time < _rate_limited_until:
+        remaining = int(_rate_limited_until - current_time)
+        print(f"[Agmarknet] Rate limited — skipping API call. {remaining}s remaining in backoff.")
+        return None
         
     # Generate cache key based on params
     cache_key = f"{limit}_{offset}_{str(filters)}"
-    current_time = datetime.now().timestamp()
     
     # Check cache
     if cache_key in _market_cache:
         cached_entry = _market_cache[cache_key]
         if current_time - cached_entry["timestamp"] < CACHE_DURATION_SECONDS:
+            age = int(current_time - cached_entry['timestamp'])
+            print(f"[Agmarknet] Cache hit (age={age}s). Records: {len(cached_entry['data'].get('records', []))}")
             return cached_entry["data"]
 
     params = {
@@ -72,22 +83,28 @@ async def fetch_agmarknet_data(
 
     async with httpx.AsyncClient() as client:
         try:
-            print(f"Fetching market data from API: {base_url}")
-            response = await client.get(base_url, params=params, timeout=10.0)
+            print(f"Fetching market data from API: {base_url} | limit={limit} offset={offset}")
+            response = await client.get(base_url, params=params, timeout=20.0)
             
+            print(f"[Agmarknet] Response status: {response.status_code}")
             if response.status_code == 200:
                 data = response.json()
-                # Cache successful response only
+                # Cache successful response for 1 hour to stay within rate limits
                 _market_cache[cache_key] = {
                     "timestamp": current_time,
                     "data": data
                 }
                 return data
+            elif response.status_code == 429:
+                # Rate limited — back off for 1 hour
+                _rate_limited_until = current_time + RATE_LIMIT_BACKOFF_SECONDS
+                print(f"[Agmarknet] Rate limited (429). Backing off for {RATE_LIMIT_BACKOFF_SECONDS}s.")
+                return None
             else:
-                # Don't cache errors - just return None to use DB
+                print(f"[Agmarknet] Non-200 response ({response.status_code}): {response.text[:200]}")
                 return None
         except Exception as e:
-            # Don't cache exceptions either
+            print(f"[Agmarknet] Exception: {type(e).__name__}: {e}")
             return None
 
 
@@ -135,7 +152,7 @@ def map_api_record_to_schema(record: Dict[str, Any]) -> Dict[str, Any]:
 @router.get("/prices", response_model=MarketPriceListResponse)
 async def get_market_prices(
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(10, ge=1, le=100),
     commodity: Optional[str] = None,
     location: Optional[str] = None,
     trend: Optional[str] = None,
@@ -150,6 +167,8 @@ async def get_market_prices(
     settings = get_settings()
     api_key = settings.agmarknet_api_key
     
+    print(f"[Market] API key configured: {bool(api_key and api_key.strip())}, key_preview: {api_key[:8] if api_key else 'NONE'}")
+    
     # Try fetching from API first if we have a valid key (not empty)
     if api_key and api_key.strip():
         try:
@@ -158,11 +177,13 @@ async def get_market_prices(
                 api_filters["commodity"] = commodity
             
             offset = (page - 1) * page_size
+            print(f"[Market] Fetching from Agmarknet API, limit={page_size}, offset={offset}, filters={api_filters}")
             data = await fetch_agmarknet_data(api_key, limit=page_size, offset=offset, filters=api_filters)
             
             if data and "records" in data:
                 records = data["records"]
                 total_records = int(data.get("total", 0)) if "total" in data else len(records)
+                print(f"[Market] Got {len(records)} records from API, total={total_records}")
                 
                 # Map records
                 mapped_prices = []
@@ -174,15 +195,18 @@ async def get_market_prices(
                             continue
                         mapped_prices.append(mapped)
                 
+                print(f"[Market] Returning {len(mapped_prices)} prices from API")
                 return {
                     "prices": mapped_prices,
                     "total": total_records,
                     "page": page,
                     "page_size": page_size,
                 }
+            else:
+                print(f"[Market] API returned no records or unexpected format. data keys: {list(data.keys()) if data else 'None'}")
         except Exception as e:
             # Silently fall back to database on any API error
-            pass
+            print(f"[Market] API error: {type(e).__name__}: {e}")
 
     # Use Database (primary source when API not configured or failed)
     query = select(MarketPrice)
@@ -387,6 +411,19 @@ async def get_market_debug_status(
         "cache_entries": len(_market_cache),
         "cache_details": cache_info,
     }
+
+
+@router.post("/cache/clear")
+async def clear_market_cache(
+    current_user: User = Depends(require_admin),
+):
+    """
+    Clear the in-memory Agmarknet API cache (Admin only).
+    Forces a fresh fetch from the API on the next request.
+    """
+    count = len(_market_cache)
+    _market_cache.clear()
+    return {"message": f"Cache cleared. {count} entries removed."}
 
 
 @router.delete("/prices/{price_id}", status_code=status.HTTP_204_NO_CONTENT)

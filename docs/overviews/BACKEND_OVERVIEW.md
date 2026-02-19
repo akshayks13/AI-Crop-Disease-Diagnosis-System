@@ -16,6 +16,8 @@ The backend is built using **FastAPI**, a high-performance, modern Python web fr
 | **Pydantic** | v2 | Data Validation | Ensures API request/response data is valid |
 | **Python-Jose** | Latest | JWT Auth | Secure, stateless authentication |
 | **Passlib** | Latest | Password Hashing | Bcrypt-based secure password storage |
+| **slowapi** | Latest | Rate Limiting | 60 req/min per IP, prevents abuse |
+| **loguru** | Latest | File Logging | Structured JSON logs with rotation (separate from admin DB logs) |
 | **Ruff** | Latest | Linter | 100x faster than Flake8, all-in-one tooling |
 
 ---
@@ -31,17 +33,25 @@ backend/
 │   ├── core/               # Core config (Security, Settings)
 │   ├── db/                 # Database setup (Session, Base)
 │   ├── models/             # SQLAlchemy Database Models
-│   ├── routes/             # API Endpoints (Auth, Diagnosis, etc.)
+│   │   ├── encyclopedia.py # CropInfo, DiseaseInfo
+│   │   ├── pest.py         # PestInfo (new)
+│   │   └── ...
+│   ├── routes/             # API Endpoints
 │   ├── schemas/            # Pydantic Request/Response Schemas
 │   ├── services/           # Business Logic Layer
+│   ├── utils/
+│   │   └── logger.py       # loguru structured file logger
 │   ├── database.py         # DB connection & session management
-│   └── main.py             # App Entry Point
+│   └── main.py             # App Entry Point (rate limiting, middleware)
+├── scripts/                # Operational scripts
+│   ├── backup_db.sh        # Shell backup script (cron-ready)
+│   ├── restore_db.sh       # DB restore from .sql.gz
+│   └── backup_db.py        # Cross-platform Python backup script
+├── logs/                   # Log files (gitignored)
+│   ├── app.log             # All logs (JSON, rotating 10MB, 7-day retention)
+│   └── errors.log          # Errors only (JSON, rotating 5MB, 30-day retention)
+├── backups/                # DB backup dumps (gitignored)
 ├── tests/                  # Pytest test suite (58 tests)
-│   ├── conftest.py         # Test fixtures & DB setup
-│   ├── test_auth.py        # Authentication tests (7)
-│   ├── test_diagnosis.py   # Diagnosis tests (3)
-│   ├── test_questions.py   # Q&A tests (6)
-│   └── ...
 ├── requirements.txt        # Python dependencies
 └── alembic.ini             # Alembic configuration
 ```
@@ -62,12 +72,20 @@ Defines API contracts using Pydantic.
 
 ### 3. **Routes (`app/routes/`)**
 HTTP endpoint handlers.
-*   **Flow**: Request → Pydantic Validation → Service → Response
+*   **Flow**: Request → Rate Limiter → Pydantic Validation → Service → Response
 *   **Files**: `auth.py`, `farmer.py`, `expert.py`, `admin.py`, `community.py`, `farm.py`, `market.py`, `encyclopedia.py`
+*   **Encyclopedia** includes 3 resource types: Crops, Diseases, and **Pests** (new)
 
 ### 3.5 **Middleware (`app/middleware/`)**
 Request/response processing.
 *   **Logging Middleware**: Logs every API request with method, path, status code, and duration to `system_logs` table
+*   **SlowAPI Rate Limiter**: 60 requests/minute per IP (returns 429 on exceed)
+
+### 3.6 **Logging (`app/utils/logger.py`)**
+Structured file logging using **loguru** (completely separate from admin DB logs):
+*   `logs/app.log` — all logs, JSON format, 10 MB rotation, 7-day retention
+*   `logs/errors.log` — errors only, 30-day retention
+*   Used by global exception handler and middleware fallback
 
 ### 4. **Services (`app/services/`)**
 Business logic layer.
