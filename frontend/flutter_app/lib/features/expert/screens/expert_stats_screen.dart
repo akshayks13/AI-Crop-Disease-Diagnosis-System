@@ -36,8 +36,8 @@ class _ExpertStatsScreenState extends ConsumerState<ExpertStatsScreen> {
       // Load stats
       final statsResponse = await api.get(ApiConfig.expertStats);
       
-      // Load answered questions (status=RESOLVED that I answered)
-      final answersResponse = await api.get('${ApiConfig.expertQuestions}?status=RESOLVED');
+      // Load answered questions (status=ANSWERED that I answered)
+      final answersResponse = await api.get('${ApiConfig.expertQuestions}?status=ANSWERED');
       
       setState(() {
         _stats = statsResponse.data;

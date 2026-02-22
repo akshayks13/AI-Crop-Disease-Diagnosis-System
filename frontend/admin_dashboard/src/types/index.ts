@@ -25,7 +25,7 @@ export interface DashboardMetrics {
     pending_experts: number;
     total_diagnoses: number;
     total_questions: number;
-    resolved_questions: number;
+    answered_questions: number;
     diagnoses_today: number;
     questions_today: number;
     storage_used_mb: number;

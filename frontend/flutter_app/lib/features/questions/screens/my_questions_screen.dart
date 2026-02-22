@@ -58,7 +58,10 @@ class _MyQuestionsScreenState extends ConsumerState<MyQuestionsScreen> {
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _questions.length,
-                    itemBuilder: (context, index) => _QuestionCard(question: _questions[index]),
+                    itemBuilder: (context, index) => _QuestionCard(
+                      question: _questions[index],
+                      onRefresh: _loadQuestions,
+                    ),
                   ),
                 ),
     );
@@ -67,7 +70,8 @@ class _MyQuestionsScreenState extends ConsumerState<MyQuestionsScreen> {
 
 class _QuestionCard extends ConsumerStatefulWidget {
   final Map<String, dynamic> question;
-  const _QuestionCard({required this.question});
+  final Future<void> Function() onRefresh;
+  const _QuestionCard({required this.question, required this.onRefresh});
 
   @override
   ConsumerState<_QuestionCard> createState() => _QuestionCardState();
@@ -128,11 +132,43 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
     }
   }
 
+  bool _isUpdatingStatus = false;
+
+  Future<void> _updateStatus(String action) async {
+    if (_isUpdatingStatus) return;
+    setState(() => _isUpdatingStatus = true);
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final questionId = widget.question['id'];
+      await apiClient.put('/questions/$questionId/$action');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Question closed!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await widget.onRefresh();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUpdatingStatus = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final question = widget.question;
     final status = question['status'] ?? 'OPEN';
-    final isResolved = status == 'RESOLVED';
+    final isAnswered = status == 'ANSWERED';
+    final isClosed = status == 'CLOSED';
     final answers = question['answers'] as List? ?? [];
     final mediaPath = question['media_path'] as String?;
     final theme = Theme.of(context);
@@ -151,9 +187,11 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isResolved 
-                        ? AppTheme.primaryGreen.withValues(alpha: 0.2) 
-                        : Colors.orange.withValues(alpha: 0.2),
+                    color: isClosed
+                        ? Colors.grey.withValues(alpha: 0.2)
+                        : isAnswered 
+                            ? AppTheme.primaryGreen.withValues(alpha: 0.2) 
+                            : Colors.orange.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -161,7 +199,7 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
                     style: TextStyle(
                       fontSize: 12, 
                       fontWeight: FontWeight.bold, 
-                      color: isResolved ? AppTheme.primaryGreen : Colors.orange
+                      color: isClosed ? Colors.grey : isAnswered ? AppTheme.primaryGreen : Colors.orange
                     )
                   ),
                 ),
@@ -270,6 +308,24 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
                   ),
                 );
               }),
+            ],
+            if (!isClosed) ...[
+              const SizedBox(height: 12),
+              if (_isUpdatingStatus)
+                const Center(child: Padding(
+                  padding: EdgeInsets.all(8),
+                  child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                ))
+              else
+                OutlinedButton.icon(
+                  onPressed: () => _updateStatus('close'),
+                  icon: const Icon(Icons.close, size: 16),
+                  label: const Text('Close Question'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                ),
             ],
           ],
         ),

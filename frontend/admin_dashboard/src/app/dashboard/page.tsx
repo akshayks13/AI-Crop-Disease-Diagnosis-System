@@ -178,7 +178,7 @@ export default function DashboardPage() {
                         <h3 className="text-lg font-bold text-slate-800 mb-4">Platform Stats</h3>
                         <div className="space-y-4">
                             <StatRow label="Verified Experts" value={metrics.total_experts} icon={Users} color="text-indigo-600" bg="bg-indigo-50" />
-                            <StatRow label="Resolved Questions" value={metrics.resolved_questions} icon={HelpCircle} color="text-emerald-600" bg="bg-emerald-50" />
+                            <StatRow label="Answered Questions" value={metrics.answered_questions} icon={HelpCircle} color="text-emerald-600" bg="bg-emerald-50" />
                             <div className="pt-4 border-t border-slate-50">
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="font-medium text-slate-600">Storage Usage</span>

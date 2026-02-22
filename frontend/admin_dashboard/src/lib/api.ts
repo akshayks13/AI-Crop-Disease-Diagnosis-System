@@ -57,6 +57,12 @@ export const adminApi = {
         if (filters?.crop) params.append('crop_type', filters.crop);
         return api.get(`/admin/diagnoses?${params}`);
     },
+    getQuestions: (page: number = 1, statusFilter?: string) => {
+        const params = new URLSearchParams({ page: String(page) });
+        if (statusFilter) params.append('status_filter', statusFilter);
+        return api.get(`/admin/questions?${params}`);
+    },
+    closeQuestion: (id: string) => api.put(`/admin/questions/${id}/close`),
 };
 
 export const agronomyApi = {

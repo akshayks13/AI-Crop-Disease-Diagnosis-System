@@ -70,8 +70,8 @@ async def get_dashboard(
     open_questions = (await db.execute(
         select(func.count(Question.id)).where(Question.status == QuestionStatus.OPEN)
     )).scalar()
-    resolved_questions = (await db.execute(
-        select(func.count(Question.id)).where(Question.status == QuestionStatus.RESOLVED)
+    answered_questions = (await db.execute(
+        select(func.count(Question.id)).where(Question.status == QuestionStatus.ANSWERED)
     )).scalar()
     
     # Storage stats
@@ -96,7 +96,7 @@ async def get_dashboard(
             "pending_experts": pending_experts,
             "total_diagnoses": total_diagnoses,
             "total_questions": total_questions,
-            "resolved_questions": resolved_questions,
+            "answered_questions": answered_questions,
             "diagnoses_today": diagnoses_today,
             "questions_today": open_questions,
             "storage_used_mb": storage_stats["total_size_mb"],
@@ -227,6 +227,37 @@ async def get_all_questions(
         "page_size": page_size,
     }
 
+
+@router.put("/questions/{question_id}/close", response_model=dict)
+async def admin_close_question(
+    question_id: str,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Admin: Close any question regardless of ownership."""
+    try:
+        q_uuid = uuid.UUID(question_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid question ID"
+        )
+
+    result = await db.execute(
+        select(Question).where(Question.id == q_uuid)
+    )
+    question = result.scalar_one_or_none()
+
+    if not question:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Question not found"
+        )
+
+    question.status = QuestionStatus.CLOSED
+    question.updated_at = datetime.utcnow()
+
+    return {"message": "Question closed by admin", "status": "CLOSED"}
 
 # ============== Diagnosis Management ==============
 
