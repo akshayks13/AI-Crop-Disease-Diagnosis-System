@@ -108,10 +108,68 @@ class DiseaseInfo {
   }
 }
 
+/// Pest encyclopedia entry model
+class PestInfo {
+  final String id;
+  final String name;
+  final String? scientificName;
+  final List<String> affectedCrops;
+  final String? description;
+  final List<String> symptoms;
+  final String? appearance;
+  final String? damageType;
+  final String? lifeCycle;
+  final List<String> controlMethods;
+  final List<String> organicControl;
+  final List<String> chemicalControl;
+  final List<String> prevention;
+  final String? severityLevel;
+  final String? imageUrl;
+
+  PestInfo({
+    required this.id,
+    required this.name,
+    this.scientificName,
+    this.affectedCrops = const [],
+    this.description,
+    this.symptoms = const [],
+    this.appearance,
+    this.damageType,
+    this.lifeCycle,
+    this.controlMethods = const [],
+    this.organicControl = const [],
+    this.chemicalControl = const [],
+    this.prevention = const [],
+    this.severityLevel,
+    this.imageUrl,
+  });
+
+  factory PestInfo.fromJson(Map<String, dynamic> json) {
+    return PestInfo(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      scientificName: json['scientific_name'],
+      affectedCrops: (json['affected_crops'] as List?)?.cast<String>() ?? [],
+      description: json['description'],
+      symptoms: (json['symptoms'] as List?)?.cast<String>() ?? [],
+      appearance: json['appearance'],
+      damageType: json['damage_type'],
+      lifeCycle: json['life_cycle'],
+      controlMethods: (json['control_methods'] as List?)?.cast<String>() ?? [],
+      organicControl: (json['organic_control'] as List?)?.cast<String>() ?? [],
+      chemicalControl: (json['chemical_control'] as List?)?.cast<String>() ?? [],
+      prevention: (json['prevention'] as List?)?.cast<String>() ?? [],
+      severityLevel: json['severity_level'],
+      imageUrl: json['image_url'],
+    );
+  }
+}
+
 /// Encyclopedia state
 class EncyclopediaState {
   final List<CropInfo> crops;
   final List<DiseaseInfo> diseases;
+  final List<PestInfo> pests;
   final bool isLoading;
   final String? error;
   final String? searchQuery;
@@ -119,6 +177,7 @@ class EncyclopediaState {
   EncyclopediaState({
     this.crops = const [],
     this.diseases = const [],
+    this.pests = const [],
     this.isLoading = false,
     this.error,
     this.searchQuery,
@@ -127,6 +186,7 @@ class EncyclopediaState {
   EncyclopediaState copyWith({
     List<CropInfo>? crops,
     List<DiseaseInfo>? diseases,
+    List<PestInfo>? pests,
     bool? isLoading,
     String? error,
     String? searchQuery,
@@ -134,6 +194,7 @@ class EncyclopediaState {
     return EncyclopediaState(
       crops: crops ?? this.crops,
       diseases: diseases ?? this.diseases,
+      pests: pests ?? this.pests,
       isLoading: isLoading ?? this.isLoading,
       error: error,
       searchQuery: searchQuery ?? this.searchQuery,
@@ -157,6 +218,16 @@ class EncyclopediaState {
       d.affectedCrops.any((c) => c.toLowerCase().contains(query))
     ).toList();
   }
+
+  List<PestInfo> get filteredPests {
+    if (searchQuery == null || searchQuery!.isEmpty) return pests;
+    final query = searchQuery!.toLowerCase();
+    return pests.where((p) =>
+      p.name.toLowerCase().contains(query) ||
+      (p.scientificName?.toLowerCase().contains(query) ?? false) ||
+      p.affectedCrops.any((c) => c.toLowerCase().contains(query))
+    ).toList();
+  }
 }
 
 /// Encyclopedia notifier
@@ -173,9 +244,11 @@ class EncyclopediaNotifier extends StateNotifier<EncyclopediaState> {
     try {
       final cropsResponse = await _api.get(ApiConfig.encyclopediaCrops);
       final diseasesResponse = await _api.get(ApiConfig.encyclopediaDiseases);
+      final pestsResponse = await _api.get('/encyclopedia/pests');
       
       final cropsData = cropsResponse.data as Map<String, dynamic>;
       final diseasesData = diseasesResponse.data as Map<String, dynamic>;
+      final pestsData = pestsResponse.data as Map<String, dynamic>;
       
       final cropsList = (cropsData['crops'] as List)
           .map((c) => CropInfo.fromJson(c))
@@ -183,10 +256,14 @@ class EncyclopediaNotifier extends StateNotifier<EncyclopediaState> {
       final diseasesList = (diseasesData['diseases'] as List)
           .map((d) => DiseaseInfo.fromJson(d))
           .toList();
+      final pestsList = (pestsData['pests'] as List)
+          .map((p) => PestInfo.fromJson(p))
+          .toList();
       
       state = state.copyWith(
         crops: cropsList,
         diseases: diseasesList,
+        pests: pestsList,
         isLoading: false,
       );
     } catch (e) {

@@ -2,11 +2,13 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../config/routes.dart';
 import '../../../../core/services/ml_service.dart';
 
-/// Diagnosis screen with camera capture
+/// Diagnosis screen with camera capture and voice symptom input
 class DiagnosisScreen extends ConsumerStatefulWidget {
   const DiagnosisScreen({super.key});
 
@@ -16,10 +18,83 @@ class DiagnosisScreen extends ConsumerStatefulWidget {
 
 class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
   XFile? _selectedImage;
-  Uint8List? _imageBytes; // Store bytes for cross-platform display
+  Uint8List? _imageBytes;
   bool _isProcessing = false;
   final ImagePicker _picker = ImagePicker();
 
+  // Voice input
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _speechAvailable = false;
+  bool _isListening = false;
+  final TextEditingController _symptomsController = TextEditingController();
+  bool _showVoiceSection = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initSpeech();
+  }
+
+  @override
+  void dispose() {
+    _symptomsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initSpeech() async {
+    final available = await _speech.initialize(
+      onError: (e) => setState(() => _isListening = false),
+      onStatus: (status) {
+        if (status == 'done' || status == 'notListening') {
+          setState(() => _isListening = false);
+        }
+      },
+    );
+    if (mounted) setState(() => _speechAvailable = available);
+  }
+
+  Future<void> _toggleListening() async {
+    if (_isListening) {
+      await _speech.stop();
+      setState(() => _isListening = false);
+      return;
+    }
+
+    // Check mic permission
+    final status = await Permission.microphone.request();
+    if (!status.isGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Microphone permission is required for voice input')),
+        );
+      }
+      return;
+    }
+
+    if (!_speechAvailable) {
+      await _initSpeech();
+      if (!_speechAvailable) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Speech recognition not available on this device')),
+          );
+        }
+        return;
+      }
+    }
+
+    setState(() => _isListening = true);
+    await _speech.listen(
+      onResult: (result) {
+        setState(() {
+          _symptomsController.text = result.recognizedWords;
+        });
+      },
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 4),
+      localeId: 'en_IN', // Indian English for better accuracy with farming terms
+    );
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -31,7 +106,6 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
       );
 
       if (image != null) {
-        // Read bytes for cross-platform display and upload
         final bytes = await image.readAsBytes();
         setState(() {
           _selectedImage = image;
@@ -53,15 +127,14 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      // Use MLService for offline prediction
       final mlService = ref.read(mlServiceProvider);
-      
-      // Ensure initialization
       await mlService.initialize();
-      
       final result = await mlService.predict(_selectedImage!);
-      
 
+      // Attach symptoms description to result if provided
+      if (_symptomsController.text.trim().isNotEmpty) {
+        result['farmer_symptoms'] = _symptomsController.text.trim();
+      }
 
       if (mounted) {
         Navigator.pushNamed(
@@ -151,7 +224,6 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxHeight: 400),
-                              // Use Image.memory for cross-platform (web, mobile, desktop)
                               child: Image.memory(
                                 _imageBytes!,
                                 fit: BoxFit.contain,
@@ -204,9 +276,12 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
               ),
             ),
 
+            const SizedBox(height: 20),
 
+            // ── Voice Input Section ──────────────────────────────────────────
+            _buildVoiceInputSection(colorScheme),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
             // Analyze button
             SizedBox(
@@ -238,10 +313,172 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
     );
   }
 
+  Widget _buildVoiceInputSection(ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Toggle header
+        InkWell(
+          onTap: () => setState(() => _showVoiceSection = !_showVoiceSection),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: colorScheme.secondaryContainer.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colorScheme.secondaryContainer),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.mic_outlined, color: colorScheme.secondary, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Describe Symptoms (Optional)',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSecondaryContainer,
+                          fontSize: 14,
+                        ),
+                      ),
+                      if (_symptomsController.text.isNotEmpty)
+                        Text(
+                          '"${_symptomsController.text.length > 40 ? '${_symptomsController.text.substring(0, 40)}...' : _symptomsController.text}"',
+                          style: TextStyle(fontSize: 11, color: colorScheme.secondary),
+                        ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  _showVoiceSection ? Icons.expand_less : Icons.expand_more,
+                  color: colorScheme.secondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Expanded voice input
+        if (_showVoiceSection) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Mic button + status
+                Row(
+                  children: [
+                    // Animated mic button
+                    GestureDetector(
+                      onTap: _toggleListening,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _isListening
+                              ? Colors.red.shade400
+                              : colorScheme.primaryContainer,
+                          boxShadow: _isListening
+                              ? [BoxShadow(color: Colors.red.withValues(alpha: 0.4), blurRadius: 12, spreadRadius: 2)]
+                              : [],
+                        ),
+                        child: Icon(
+                          _isListening ? Icons.mic : Icons.mic_none,
+                          color: _isListening ? Colors.white : colorScheme.onPrimaryContainer,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _isListening
+                                ? '🔴 Listening... speak now'
+                                : 'Tap mic to describe symptoms',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: _isListening ? Colors.red.shade700 : colorScheme.onSurface,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Text(
+                            _isListening
+                                ? 'Tap again to stop'
+                                : 'e.g., "yellow spots on leaves, wilting"',
+                            style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 14),
+
+                // Text field for transcribed / manual input
+                TextField(
+                  controller: _symptomsController,
+                  maxLines: 3,
+                  style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Transcribed text will appear here, or type manually...',
+                    hintStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+                    filled: true,
+                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                    suffixIcon: _symptomsController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () => setState(() => _symptomsController.clear()),
+                          )
+                        : null,
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+
+                if (_symptomsController.text.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.check_circle, size: 14, color: Colors.green.shade600),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${_symptomsController.text.split(' ').where((w) => w.isNotEmpty).length} words recorded',
+                        style: TextStyle(fontSize: 11, color: Colors.green.shade700),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   void _showImagePickerOptions() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(

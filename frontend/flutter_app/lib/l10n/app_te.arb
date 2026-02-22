@@ -1,0 +1,51 @@
+{
+  "@@locale": "te",
+  "appName": "పంట నిర్ధారణ",
+  "navHome": "హోమ్",
+  "navDiagnose": "నిర్ధారణ",
+  "navMarket": "మార్కెట్",
+  "navWeather": "వాతావరణం",
+  "navCommunity": "సమాజం",
+  "navEncyclopedia": "విజ్ఞాన సర్వస్వం",
+
+  "diagnoseTitle": "పంటను నిర్ధారించండి",
+  "diagnoseInstruction": "ఖచ్చితమైన నిర్ధారణ కోసం ప్రభావిత మొక్క భాగం యొక్క స్పష్టమైన ఫోటో తీయండి.",
+  "diagnoseTakePhoto": "ఫోటో తీయండి",
+  "diagnoseChooseGallery": "గ్యాలరీ నుండి ఎంచుకోండి",
+  "diagnoseAnalyze": "పంటను విశ్లేషించండి",
+  "diagnoseAnalyzing": "విశ్లేషిస్తోంది...",
+  "diagnoseTapToCapture": "చిత్రం తీయడానికి నొక్కండి",
+  "diagnoseRemoveImage": "చిత్రాన్ని తొలగించండి",
+
+  "voiceDescribeSymptoms": "లక్షణాలు వివరించండి (ఐచ్ఛికం)",
+  "voiceListening": "వింటోంది... ఇప్పుడు మాట్లాడండి",
+  "voiceTapToDescribe": "లక్షణాలు వివరించడానికి మైక్ నొక్కండి",
+  "voiceTapToStop": "ఆపడానికి మళ్ళీ నొక్కండి",
+  "voiceExample": "ఉదా., \"ఆకులపై పసుపు మచ్చలు, వాడిపోవడం\"",
+  "voiceWordsRecorded": "{count} పదాలు రికార్డ్ అయ్యాయి",
+
+  "encyclopediaTitle": "పంట విజ్ఞాన సర్వస్వం",
+  "encyclopediaCrops": "పంటలు",
+  "encyclopediaDiseases": "వ్యాధులు",
+  "encyclopediaPests": "తెగుళ్ళు",
+  "encyclopediaSearchCrops": "పంట పేరు ద్వారా వెతకండి",
+  "encyclopediaSearchDiseases": "వ్యాధి పేరు ద్వారా వెతకండి",
+  "encyclopediaSearchPests": "తెగులు లేదా ప్రభావిత పంట ద్వారా వెతకండి",
+
+  "marketTitle": "మార్కెట్ ధరలు",
+  "weatherTitle": "వాతావరణం",
+  "communityTitle": "సమాజం",
+
+  "buttonRetry": "మళ్ళీ ప్రయత్నించండి",
+  "buttonCancel": "రద్దు చేయండి",
+  "buttonSave": "సేవ్ చేయండి",
+  "buttonSubmit": "సమర్పించండి",
+
+  "errorGeneric": "ఏదో తప్పు జరిగింది. దయచేసి మళ్ళీ ప్రయత్నించండి.",
+  "errorNoInternet": "ఇంటర్నెట్ కనెక్షన్ లేదు",
+  "errorPermissionDenied": "అనుమతి నిరాకరించబడింది",
+
+  "severityMild": "తేలికపాటి",
+  "severityModerate": "మధ్యస్థ",
+  "severitySevere": "తీవ్రమైన"
+}

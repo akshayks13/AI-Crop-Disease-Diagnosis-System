@@ -13,6 +13,15 @@ All protected endpoints require a JWT token in the `Authorization` header:
 Authorization: Bearer <access_token>
 ```
 
+## Rate Limiting
+
+All endpoints are rate-limited to **60 requests per minute per IP address**.
+
+```json
+// Response 429 — Too Many Requests
+{ "detail": "Rate limit exceeded: 60 per 1 minute" }
+```
+
 ---
 
 ## Auth Endpoints
@@ -106,6 +115,7 @@ Authorization: Bearer <access_token>
 | `image` | File | Yes |
 | `crop_type` | string | Yes |
 | `location` | string | No |
+| `farmer_symptoms` | string | No — voice/text description of symptoms |
 
 ```json
 // Response 200
@@ -267,7 +277,10 @@ Authorization: Bearer <access_token>
 |--------|----------|-------------|
 | GET | `/market/prices` | List commodity prices |
 | GET | `/market/prices?commodity=Tomato` | Filter by commodity |
-| GET | `/market/prices?location=Mumbai` | Filter by location |
+| GET | `/market/prices?location=Bengaluru` | Filter by location (city/district) |
+| GET | `/market/prices?trend=up` | Filter by price trend |
+
+> **Location-based filtering**: The Flutter app auto-detects the user's GPS location and passes the nearest city/district as the `location` query parameter. The backend filters both live Agmarknet API data and the database fallback using this parameter.
 
 ```json
 // Response 200
@@ -276,10 +289,12 @@ Authorization: Bearer <access_token>
     {
       "commodity": "Tomato",
       "price": 45.0,
-      "unit": "per kg",
-      "location": "Mumbai APMC",
-      "trend": "UP",
-      "change_percent": 5.2
+      "unit": "Quintal",
+      "location": "Bengaluru, Bangalore Urban, Karnataka",
+      "trend": "up",
+      "change_percent": 5.2,
+      "min_price": 40.0,
+      "max_price": 50.0
     }
   ],
   "total": 25,
@@ -295,15 +310,46 @@ Authorization: Bearer <access_token>
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/encyclopedia/crops` | List crops |
+| GET | `/encyclopedia/crops` | List crops (supports `?search=`, `?season=`) |
 | GET | `/encyclopedia/crops/{id}` | Get crop details |
+| POST | `/encyclopedia/crops` | Create crop entry (admin only) |
 
 ### Diseases
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/encyclopedia/diseases` | List diseases |
+| GET | `/encyclopedia/diseases` | List diseases (supports `?search=`, `?severity=`) |
 | GET | `/encyclopedia/diseases/{id}` | Get disease details |
+| POST | `/encyclopedia/diseases` | Create disease entry (admin only) |
+
+### Pests _(new)_
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/encyclopedia/pests` | List pests (supports `?search=`, `?severity=`, `?crop=`) |
+| GET | `/encyclopedia/pests/{id}` | Get pest details |
+| POST | `/encyclopedia/pests` | Create pest entry (admin only) |
+
+```json
+// GET /encyclopedia/pests response
+{
+  "pests": [
+    {
+      "id": "uuid",
+      "name": "Aphids",
+      "scientific_name": "Aphidoidea",
+      "affected_crops": ["Wheat", "Cotton", "Vegetables"],
+      "damage_type": "Sucking",
+      "severity_level": "moderate",
+      "symptoms": ["Curling leaves", "Sticky honeydew"],
+      "control_methods": [...],
+      "organic_control": [...],
+      "chemical_control": [...]
+    }
+  ],
+  "total": 8
+}
+```
 
 ---
 
@@ -346,4 +392,5 @@ All errors follow this format:
 | 403 | Forbidden - Insufficient permissions |
 | 404 | Not Found - Resource doesn't exist |
 | 422 | Validation Error - Invalid data format |
+| 429 | Too Many Requests - Rate limit exceeded (60/min per IP) |
 | 500 | Server Error - Internal error |

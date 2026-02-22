@@ -187,6 +187,26 @@ erDiagram
         timestamp updated_at
     }
 
+    pest_encyclopedia {
+        uuid id PK
+        varchar name
+        varchar scientific_name
+        jsonb affected_crops
+        text description
+        jsonb symptoms
+        text appearance
+        varchar damage_type "Sucking|Chewing|Boring"
+        text life_cycle
+        jsonb control_methods
+        jsonb organic_control
+        jsonb chemical_control
+        jsonb prevention
+        varchar severity_level "mild|moderate|severe"
+        varchar image_url
+        timestamp created_at
+        timestamp updated_at
+    }
+
     %% ==================== AGRONOMY INTELLIGENCE ====================
     agronomy_diagnostic_rules {
         uuid id PK
@@ -320,6 +340,7 @@ erDiagram
 |-------|-------------|
 | `crop_encyclopedia` | Comprehensive crop information catalog |
 | `disease_encyclopedia` | Disease info with symptoms, treatments, warnings |
+| `pest_encyclopedia` | Pest info with damage type, life cycle, IPM control methods (8 pests seeded) |
 | `market_prices` | Market price data by commodity and mandi location |
 
 ### Agronomy Intelligence Tables
@@ -378,6 +399,8 @@ CREATE INDEX idx_market_location ON market_prices(location);
 -- Encyclopedia
 CREATE UNIQUE INDEX idx_crop_name ON crop_encyclopedia(name);
 CREATE INDEX idx_disease_name ON disease_encyclopedia(name);
+CREATE INDEX idx_pest_name ON pest_encyclopedia(name);
+CREATE INDEX idx_pest_severity ON pest_encyclopedia(severity_level);
 
 -- Agronomy
 CREATE INDEX idx_diagnostic_rules_disease ON agronomy_diagnostic_rules(disease_id);

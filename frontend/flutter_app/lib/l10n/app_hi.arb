@@ -1,0 +1,51 @@
+{
+  "@@locale": "hi",
+  "appName": "फसल निदान",
+  "navHome": "होम",
+  "navDiagnose": "निदान",
+  "navMarket": "बाज़ार",
+  "navWeather": "मौसम",
+  "navCommunity": "समुदाय",
+  "navEncyclopedia": "विश्वकोश",
+
+  "diagnoseTitle": "फसल का निदान करें",
+  "diagnoseInstruction": "सटीक निदान के लिए प्रभावित पौधे के हिस्से की स्पष्ट तस्वीर लें।",
+  "diagnoseTakePhoto": "फोटो लें",
+  "diagnoseChooseGallery": "गैलरी से चुनें",
+  "diagnoseAnalyze": "फसल का विश्लेषण करें",
+  "diagnoseAnalyzing": "विश्लेषण हो रहा है...",
+  "diagnoseTapToCapture": "छवि कैप्चर करने के लिए टैप करें",
+  "diagnoseRemoveImage": "छवि हटाएं",
+
+  "voiceDescribeSymptoms": "लक्षण बताएं (वैकल्पिक)",
+  "voiceListening": "सुन रहा है... अभी बोलें",
+  "voiceTapToDescribe": "लक्षण बताने के लिए माइक टैप करें",
+  "voiceTapToStop": "रोकने के लिए फिर टैप करें",
+  "voiceExample": "उदा., \"पत्तियों पर पीले धब्बे, मुरझाना\"",
+  "voiceWordsRecorded": "{count} शब्द रिकॉर्ड हुए",
+
+  "encyclopediaTitle": "फसल विश्वकोश",
+  "encyclopediaCrops": "फसलें",
+  "encyclopediaDiseases": "रोग",
+  "encyclopediaPests": "कीट",
+  "encyclopediaSearchCrops": "फसल के नाम से खोजें",
+  "encyclopediaSearchDiseases": "रोग के नाम से खोजें",
+  "encyclopediaSearchPests": "कीट या प्रभावित फसल से खोजें",
+
+  "marketTitle": "बाज़ार भाव",
+  "weatherTitle": "मौसम",
+  "communityTitle": "समुदाय",
+
+  "buttonRetry": "पुनः प्रयास करें",
+  "buttonCancel": "रद्द करें",
+  "buttonSave": "सहेजें",
+  "buttonSubmit": "जमा करें",
+
+  "errorGeneric": "कुछ गलत हुआ। कृपया पुनः प्रयास करें।",
+  "errorNoInternet": "इंटरनेट कनेक्शन नहीं है",
+  "errorPermissionDenied": "अनुमति अस्वीकृत",
+
+  "severityMild": "हल्का",
+  "severityModerate": "मध्यम",
+  "severitySevere": "गंभीर"
+}

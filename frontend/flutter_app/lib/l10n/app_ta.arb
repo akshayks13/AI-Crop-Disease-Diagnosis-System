@@ -1,0 +1,51 @@
+{
+  "@@locale": "ta",
+  "appName": "பயிர் நோயறிதல்",
+  "navHome": "முகப்பு",
+  "navDiagnose": "நோயறிதல்",
+  "navMarket": "சந்தை",
+  "navWeather": "வானிலை",
+  "navCommunity": "சமூகம்",
+  "navEncyclopedia": "கலைக்களஞ்சியம்",
+
+  "diagnoseTitle": "பயிரை நோயறி",
+  "diagnoseInstruction": "துல்லியமான நோயறிதலுக்கு பாதிக்கப்பட்ட தாவர பகுதியின் தெளிவான புகைப்படம் எடுக்கவும்.",
+  "diagnoseTakePhoto": "புகைப்படம் எடு",
+  "diagnoseChooseGallery": "கேலரியிலிருந்து தேர்வு செய்",
+  "diagnoseAnalyze": "பயிரை பகுப்பாய்வு செய்",
+  "diagnoseAnalyzing": "பகுப்பாய்வு செய்கிறது...",
+  "diagnoseTapToCapture": "படம் எடுக்க தட்டவும்",
+  "diagnoseRemoveImage": "படத்தை அகற்று",
+
+  "voiceDescribeSymptoms": "அறிகுறிகளை விவரிக்கவும் (விருப்பமானது)",
+  "voiceListening": "கேட்கிறது... இப்போது பேசுங்கள்",
+  "voiceTapToDescribe": "அறிகுறிகளை விவரிக்க மைக்கை தட்டவும்",
+  "voiceTapToStop": "நிறுத்த மீண்டும் தட்டவும்",
+  "voiceExample": "எ.கா., \"இலைகளில் மஞ்சள் புள்ளிகள், வாடுதல்\"",
+  "voiceWordsRecorded": "{count} வார்த்தைகள் பதிவாயின",
+
+  "encyclopediaTitle": "பயிர் கலைக்களஞ்சியம்",
+  "encyclopediaCrops": "பயிர்கள்",
+  "encyclopediaDiseases": "நோய்கள்",
+  "encyclopediaPests": "பூச்சிகள்",
+  "encyclopediaSearchCrops": "பயிர் பெயரால் தேடவும்",
+  "encyclopediaSearchDiseases": "நோய் பெயரால் தேடவும்",
+  "encyclopediaSearchPests": "பூச்சி அல்லது பாதிக்கப்பட்ட பயிரால் தேடவும்",
+
+  "marketTitle": "சந்தை விலைகள்",
+  "weatherTitle": "வானிலை",
+  "communityTitle": "சமூகம்",
+
+  "buttonRetry": "மீண்டும் முயற்சி",
+  "buttonCancel": "ரத்து செய்",
+  "buttonSave": "சேமி",
+  "buttonSubmit": "சமர்ப்பி",
+
+  "errorGeneric": "ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்.",
+  "errorNoInternet": "இணைய இணைப்பு இல்லை",
+  "errorPermissionDenied": "அனுமதி மறுக்கப்பட்டது",
+
+  "severityMild": "லேசான",
+  "severityModerate": "மிதமான",
+  "severitySevere": "கடுமையான"
+}

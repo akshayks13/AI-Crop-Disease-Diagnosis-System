@@ -16,7 +16,7 @@ class _EncyclopediaScreenState extends ConsumerState<EncyclopediaScreen> with Si
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
 
     _tabController.addListener(() {
       setState(() {});
@@ -32,11 +32,11 @@ class _EncyclopediaScreenState extends ConsumerState<EncyclopediaScreen> with Si
 
   String _getSearchHint() {
     if (_tabController.index == 0) {
-      // Crops tab
       return 'Search by crop name or scientific name (e.g., Corn, Zea mays)';
-    } else {
-      // Diseases tab
+    } else if (_tabController.index == 1) {
       return 'Search by disease name (e.g., Early blight, Rust)';
+    } else {
+      return 'Search by pest name or affected crop (e.g., Aphids, Tomato)';
     }
   }
 
@@ -54,6 +54,7 @@ class _EncyclopediaScreenState extends ConsumerState<EncyclopediaScreen> with Si
           tabs: const [
             Tab(text: 'Crops', icon: Icon(Icons.eco)),
             Tab(text: 'Diseases', icon: Icon(Icons.bug_report)),
+            Tab(text: 'Pests', icon: Icon(Icons.pest_control)),
           ],
         ),
       ),
@@ -105,6 +106,7 @@ class _EncyclopediaScreenState extends ConsumerState<EncyclopediaScreen> with Si
                         children: [
                           _buildCropsGrid(encState, colorScheme),
                           _buildDiseasesList(encState, colorScheme),
+                          _buildPestsList(encState, colorScheme),
                         ],
                       ),
           ),
@@ -310,10 +312,252 @@ class _EncyclopediaScreenState extends ConsumerState<EncyclopediaScreen> with Si
   }
 
   Color _getSeverityColor(String? severity, ColorScheme colorScheme) {
-      if (severity == 'mild') return Colors.yellow.shade700; // Keep explicit for mild warning
+      if (severity == 'mild') return Colors.yellow.shade700;
       if (severity == 'moderate') return Colors.orange;
       if (severity == 'severe') return colorScheme.error;
       return colorScheme.outline;
+  }
+
+  // ── Pest List & Detail ──────────────────────────────────────────────────────
+
+  Widget _buildPestsList(EncyclopediaState state, ColorScheme colorScheme) {
+    final pests = state.filteredPests;
+    if (pests.isEmpty) {
+      return _buildEmptyWidget('No pests found', colorScheme);
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: pests.length,
+      itemBuilder: (context, index) => _buildPestCard(pests[index], colorScheme),
+    );
+  }
+
+  Widget _buildPestCard(PestInfo pest, ColorScheme colorScheme) {
+    final severityColor = _getSeverityColor(pest.severityLevel, colorScheme);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => _showPestDetail(pest),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.pest_control, color: Colors.orange.shade700, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      pest.name,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    if (pest.scientificName != null)
+                      Text(
+                        pest.scientificName!,
+                        style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: colorScheme.onSurfaceVariant),
+                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Affects: ${pest.affectedCrops.take(3).join(', ')}${pest.affectedCrops.length > 3 ? '...' : ''}',
+                      style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (pest.damageType != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Text(
+                          pest.damageType!,
+                          style: TextStyle(fontSize: 10, color: Colors.orange.shade800, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (pest.severityLevel != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: severityColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    pest.severityLevel!.toUpperCase(),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: severityColor),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPestDetail(PestInfo pest) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          maxChildSize: 0.95,
+          minChildSize: 0.5,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40, height: 4,
+                      decoration: BoxDecoration(
+                        color: colorScheme.outlineVariant,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        width: 60, height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.pest_control, color: Colors.orange.shade700, size: 32),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(pest.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                            if (pest.scientificName != null)
+                              Text(
+                                pest.scientificName!,
+                                style: TextStyle(fontSize: 13, fontStyle: FontStyle.italic, color: colorScheme.onSurfaceVariant),
+                              ),
+                            if (pest.damageType != null)
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.orange.shade200),
+                                ),
+                                child: Text(
+                                  '${pest.damageType} Pest',
+                                  style: TextStyle(fontSize: 11, color: Colors.orange.shade800, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Affected crops
+                  if (pest.affectedCrops.isNotEmpty) ...[
+                    Wrap(
+                      spacing: 8,
+                      children: pest.affectedCrops.map((c) => Chip(
+                        label: Text(c, style: const TextStyle(fontSize: 12)),
+                        backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                      )).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Description
+                  if (pest.description != null) ...[
+                    Text(pest.description!, style: TextStyle(color: colorScheme.onSurface, height: 1.5)),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Appearance
+                  if (pest.appearance != null) ...[
+                    _buildSectionTitle('Appearance', colorScheme),
+                    _buildBulletPoint(pest.appearance!, Icons.visibility, colorScheme),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Damage symptoms
+                  if (pest.symptoms.isNotEmpty) ...[
+                    _buildSectionTitle('Damage Symptoms', colorScheme),
+                    ...pest.symptoms.map((s) => _buildBulletPoint(s, Icons.warning_amber_outlined, colorScheme)),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Life cycle
+                  if (pest.lifeCycle != null) ...[
+                    _buildSectionTitle('Life Cycle', colorScheme),
+                    _buildBulletPoint(pest.lifeCycle!, Icons.loop, colorScheme),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Control methods
+                  if (pest.controlMethods.isNotEmpty) ...[
+                    _buildSectionTitle('IPM Control Methods', colorScheme),
+                    ...pest.controlMethods.map((m) => _buildBulletPoint(m, Icons.shield_outlined, colorScheme)),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Organic control
+                  if (pest.organicControl.isNotEmpty) ...[
+                    _buildSectionTitle('Organic / Biological Control', colorScheme),
+                    ...pest.organicControl.map((o) => _buildBulletPoint(o, Icons.nature, colorScheme)),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Chemical control
+                  if (pest.chemicalControl.isNotEmpty) ...[
+                    _buildSectionTitle('Chemical Control', colorScheme),
+                    ...pest.chemicalControl.map((c) => _buildBulletPoint(c, Icons.science, colorScheme)),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Prevention
+                  if (pest.prevention.isNotEmpty) ...[
+                    _buildSectionTitle('Prevention', colorScheme),
+                    ...pest.prevention.map((p) => _buildBulletPoint(p, Icons.shield, colorScheme)),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showCropDetail(CropInfo crop) {

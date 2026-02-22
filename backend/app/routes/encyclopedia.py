@@ -11,6 +11,7 @@ from app.database import get_db
 from app.auth.dependencies import get_current_user, require_admin
 from app.models.user import User
 from app.models.encyclopedia import CropInfo, DiseaseInfo
+from app.models.pest import PestInfo
 from app.schemas.encyclopedia import (
     CropInfoCreate,
     CropInfoResponse,
@@ -354,3 +355,133 @@ async def create_disease_info(
         "environmental_warnings": new_disease.environmental_warnings or [],
         "image_url": new_disease.image_url,
     }
+
+# ============== Pest Info Endpoints ==============
+
+@router.get("/pests")
+async def get_pests(
+    search: Optional[str] = None,
+    severity: Optional[str] = None,
+    crop: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get list of pests in the encyclopedia.
+    - Optional search by name or scientific name
+    - Filter by severity level
+    - Filter by affected crop
+    """
+    query = select(PestInfo)
+
+    if search:
+        query = query.where(
+            or_(
+                PestInfo.name.ilike(f"%{search}%"),
+                PestInfo.scientific_name.ilike(f"%{search}%"),
+            )
+        )
+
+    if severity:
+        query = query.where(PestInfo.severity_level.ilike(severity))
+
+    query = query.order_by(PestInfo.name.asc())
+
+    result = await db.execute(query)
+    pests = result.scalars().all()
+
+    # Filter by crop if specified
+    if crop:
+        pests = [
+            p for p in pests
+            if p.affected_crops and any(crop.lower() in c.lower() for c in p.affected_crops)
+        ]
+
+    return {
+        "pests": [
+            {
+                "id": str(pest.id),
+                "name": pest.name,
+                "scientific_name": pest.scientific_name,
+                "affected_crops": pest.affected_crops or [],
+                "description": pest.description,
+                "symptoms": pest.symptoms or [],
+                "appearance": pest.appearance,
+                "damage_type": pest.damage_type,
+                "life_cycle": pest.life_cycle,
+                "control_methods": pest.control_methods or [],
+                "organic_control": pest.organic_control or [],
+                "chemical_control": pest.chemical_control or [],
+                "prevention": pest.prevention or [],
+                "severity_level": pest.severity_level,
+                "image_url": pest.image_url,
+            }
+            for pest in pests
+        ],
+        "total": len(pests),
+    }
+
+
+@router.get("/pests/{pest_id}")
+async def get_pest_detail(
+    pest_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get detailed pest information."""
+    result = await db.execute(
+        select(PestInfo).where(PestInfo.id == pest_id)
+    )
+    pest = result.scalar_one_or_none()
+
+    if not pest:
+        raise HTTPException(status_code=404, detail="Pest not found")
+
+    return {
+        "id": str(pest.id),
+        "name": pest.name,
+        "scientific_name": pest.scientific_name,
+        "affected_crops": pest.affected_crops or [],
+        "description": pest.description,
+        "symptoms": pest.symptoms or [],
+        "appearance": pest.appearance,
+        "damage_type": pest.damage_type,
+        "life_cycle": pest.life_cycle,
+        "control_methods": pest.control_methods or [],
+        "organic_control": pest.organic_control or [],
+        "chemical_control": pest.chemical_control or [],
+        "prevention": pest.prevention or [],
+        "severity_level": pest.severity_level,
+        "image_url": pest.image_url,
+    }
+
+
+@router.post("/pests", status_code=status.HTTP_201_CREATED)
+async def create_pest_info(
+    pest_data: dict,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Add a pest to the encyclopedia (Admin only)."""
+    new_pest = PestInfo(
+        name=pest_data.get("name"),
+        scientific_name=pest_data.get("scientific_name"),
+        affected_crops=pest_data.get("affected_crops", []),
+        description=pest_data.get("description"),
+        symptoms=pest_data.get("symptoms", []),
+        appearance=pest_data.get("appearance"),
+        damage_type=pest_data.get("damage_type"),
+        life_cycle=pest_data.get("life_cycle"),
+        control_methods=pest_data.get("control_methods", []),
+        organic_control=pest_data.get("organic_control", []),
+        chemical_control=pest_data.get("chemical_control", []),
+        prevention=pest_data.get("prevention", []),
+        severity_level=pest_data.get("severity_level"),
+        image_url=pest_data.get("image_url"),
+    )
+
+    db.add(new_pest)
+    await db.commit()
+    await db.refresh(new_pest)
+
+    return {"id": str(new_pest.id), "name": new_pest.name, "message": "Pest created successfully"}

@@ -199,16 +199,55 @@ jobs:
 
 ## Monitoring & Logging
 
-### Application Logs
+### Logging Architecture
 
-Logs are stored in `system_logs` table and accessible via Admin Dashboard.
+The system has **three separate logging layers** — each independent:
 
-| Level | Description |
-|-------|-------------|
-| `INFO` | Normal operations |
-| `WARNING` | Non-critical issues |
-| `ERROR` | Errors requiring attention |
-| `CRITICAL` | System failures |
+| Layer | Tool | Output | Visible In |
+|-------|------|--------|------------|
+| Backend API requests | `SystemLoggingMiddleware` | `system_logs` DB table | Admin Dashboard |
+| Backend errors/general | `loguru` | `backend/logs/app.log` + `errors.log` | Terminal / files |
+| Flutter app | `AppLogger` (`dart:developer`) | Device console | `flutter run` / Logcat / Xcode |
+| Admin dashboard | `logger.ts` (`console.*`) | Terminal + browser DevTools | `npm run dev` terminal |
+
+### Backend Log Files (loguru)
+
+```bash
+# Watch live logs
+tail -f backend/logs/app.log
+
+# See only errors
+cat backend/logs/errors.log
+
+# Trigger a test error
+curl http://localhost:8000/nonexistent-route
+```
+
+| File | Level | Rotation | Retention |
+|------|-------|----------|-----------|
+| `logs/app.log` | DEBUG+ | 10 MB | 7 days |
+| `logs/errors.log` | ERROR+ | 5 MB | 30 days |
+
+### Flutter Logs (AppLogger)
+
+```dart
+AppLogger.info('Market loaded', tag: 'Market');
+AppLogger.error('API failed', tag: 'Market', error: e);
+```
+
+View in Android Logcat: `adb logcat -s CropDiag`
+
+### Rate Limiting
+
+All API endpoints are limited to **60 requests/minute per IP** via `slowapi`.
+Exceeding returns `HTTP 429` with `{"detail": "Rate limit exceeded: 60 per 1 minute"}`.
+
+### Test Rate Limiting
+
+```bash
+# Fire 65 rapid requests — last few should return 429
+for i in {1..65}; do curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/health; done
+```
 
 ### Health Check Endpoint
 
@@ -237,24 +276,72 @@ Key metrics tracked in `system_metrics` and `daily_stats`:
 
 ## Backup & Recovery
 
-### Database Backup
+### Backup Scripts
 
+Two backup scripts are provided in `backend/scripts/`:
+
+| Script | Platform | Usage |
+|--------|----------|-------|
+| `backup_db.sh` | Linux/macOS | Shell script, ideal for cron |
+| `backup_db.py` | All platforms | Python script, reads `.env` automatically |
+| `restore_db.sh` | Linux/macOS | Restore from a `.sql.gz` backup |
+
+All scripts read `DATABASE_URL` from `backend/.env` automatically.
+
+### Running a Backup
+
+You can use either script (they do the same thing):
+
+**Option A: Python (Recommended for Cross-Platform)**
+Works on macOS, Windows, and Linux. Requires Python 3.9+.
 ```bash
-# Create backup
-pg_dump -U user -d cropdiag > backup_$(date +%Y%m%d).sql
-
-# Restore backup
-psql -U user -d cropdiag < backup_20240209.sql
+cd backend
+python scripts/backup_db.py
 ```
 
-### Automated Backups
+**Option B: Shell Script (macOS / Linux)**
+Native script, ideal for cron jobs.
+```bash
+cd backend
+bash scripts/backup_db.sh
+```
 
-Configure cron job for daily backups:
+**What happens:**
+1. A new file is created at `backend/backups/cropdiag_YYYYMMDD_HHMMSS.sql.gz`
+2. Old backups (>7 days) are automatically deleted
+3. Activity is logged to `backend/logs/backup.log`
+
+### Restoring a Backup
+
+**⚠️ WARNING**: maximizing this will DELETE your current database and replace it with the backup content. Only run this if you need to recover lost data.
 
 ```bash
-# /etc/cron.d/cropdiag-backup
-0 2 * * * root pg_dump -U user -d cropdiag | gzip > /backups/cropdiag_$(date +\%Y\%m\%d).sql.gz
+cd backend
+bash scripts/restore_db.sh backups/cropdiag_20260219_230355.sql.gz
 ```
+The script will ask you to type `yes` before proceeding.
+
+**How it works:**
+1. **Unzips** the `.sql.gz` file in memory (streaming).
+2. **Drops** the existing database (all current data is removed).
+3. **Creates** a fresh, empty database.
+4. **Restores** the schema and data from the backup file using `psql`.
+
+### Troubleshooting
+- **Python Version**: The `.py` script is compatible with Python 3.9+ (type hints fixed).
+- **Permissions**: Ensure `scripts/backup_db.sh` is executable (`chmod +x scripts/backup_db.sh`).
+
+### Automated Backups (Cron)
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add this line — runs daily at 2 AM
+0 2 * * * /path/to/SE_Proj/backend/scripts/backup_db.sh >> /path/to/SE_Proj/backend/logs/backup.log 2>&1
+```
+
+Backup activity is logged to `backend/logs/backup.log`.
 
 ---
 

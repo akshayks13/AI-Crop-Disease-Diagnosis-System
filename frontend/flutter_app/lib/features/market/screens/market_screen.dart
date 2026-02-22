@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/market_provider.dart';
+import '../../../../core/utils/app_logger.dart';
 
 class MarketScreen extends ConsumerStatefulWidget {
   const MarketScreen({super.key});
@@ -23,23 +24,80 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
     final marketState = ref.watch(marketProvider);
     final theme = Theme.of(context);
 
+    // Show location error as snackbar
+    ref.listen<MarketState>(marketProvider, (prev, next) {
+      if (next.locationError != null &&
+          next.locationError != prev?.locationError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.locationError!),
+            backgroundColor: theme.colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Dismiss',
+              textColor: Colors.white,
+              onPressed: () =>
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+            ),
+          ),
+        );
+        AppLogger.warning('Location error shown to user', tag: 'Market');
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Market Prices'),
         actions: [
+          // 📍 Near Me button
+          if (marketState.isLocating)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            Tooltip(
+              message: marketState.isNearMeActive
+                  ? 'Clear location filter'
+                  : 'Show prices near me',
+              child: IconButton(
+                icon: Icon(
+                  marketState.isNearMeActive
+                      ? Icons.location_on
+                      : Icons.location_searching,
+                  color: marketState.isNearMeActive
+                      ? theme.colorScheme.primary
+                      : null,
+                ),
+                onPressed: () {
+                  if (marketState.isNearMeActive) {
+                    ref.read(marketProvider.notifier).clearLocationFilter();
+                  } else {
+                    ref.read(marketProvider.notifier).loadPricesNearMe();
+                  }
+                },
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () =>
-                ref.read(marketProvider.notifier).refresh(),
+            onPressed: () => ref.read(marketProvider.notifier).refresh(),
           ),
         ],
       ),
       body: Column(
         children: [
+          // 📍 LOCATION BANNER
+          if (marketState.isNearMeActive)
+            _buildLocationBanner(marketState, theme),
+
           // 🔍 SEARCH BAR
           Container(
-            padding: const EdgeInsets.all(16),
-            color: theme.scaffoldBackgroundColor, // Seamless with body
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            color: theme.scaffoldBackgroundColor,
             child: TextField(
               controller: _searchController,
               style: theme.textTheme.bodyMedium,
@@ -81,8 +139,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                                 ref.read(marketProvider.notifier).refresh(),
                             child: ListView.builder(
                               padding: const EdgeInsets.all(16),
-                              itemCount:
-                                  marketState.filteredPrices.length,
+                              itemCount: marketState.filteredPrices.length,
                               itemBuilder: (context, index) {
                                 final price =
                                     marketState.filteredPrices[index];
@@ -90,6 +147,50 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                               },
                             ),
                           ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 📍 LOCATION BANNER
+  Widget _buildLocationBanner(MarketState state, ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
+        border: Border(
+          bottom: BorderSide(
+            color: theme.colorScheme.primary.withValues(alpha: 0.2),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.location_on,
+            size: 16,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Showing prices near ${state.locationDisplayName}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () =>
+                ref.read(marketProvider.notifier).clearLocationFilter(),
+            child: Icon(
+              Icons.close,
+              size: 16,
+              color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+            ),
           ),
         ],
       ),
@@ -175,31 +276,49 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                   '/${price.unit}',
                   style: theme.textTheme.bodySmall,
                 ),
+                if (price.minPrice != null && price.maxPrice != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '₹${price.minPrice!.toStringAsFixed(0)}-${price.maxPrice!.toStringAsFixed(0)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: trendColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(trendIcon,
-                          size: 14, color: trendColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        price.changeString,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: trendColor,
+                if (price.changePercent != 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: trendColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(trendIcon,
+                            size: 14, color: trendColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          price.changeString,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: trendColor,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  )
+                else
+                  Text(
+                    'Updated: ${price.recordedAt.day}/${price.recordedAt.month}/${price.recordedAt.year}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
+                      color: theme.hintColor,
+                    ),
                   ),
-                ),
               ],
             ),
           ],
