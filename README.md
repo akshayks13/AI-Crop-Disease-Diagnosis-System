@@ -340,7 +340,14 @@ cd backend
 python scripts/backup_db.py
 ```
 Backups are saved to `backend/backups/` and retained for 7 days.
-See [DEVOPS.md](docs/DEVOPS.md) for restore instructions.
+
+**Automated Backups (Cron):**
+To run automatically every night at 2:00 AM, add this to your system crontab (`crontab -e`):
+```bash
+0 2 * * * /path/to/project/backend/scripts/backup_db.sh >> /path/to/project/backend/logs/backup.log 2>&1
+```
+
+See [DEVOPS.md](docs/DEVOPS.md) for full restore instructions and troubleshooting.
 
 ---
 
