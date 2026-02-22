@@ -54,7 +54,7 @@ void main() {
 
   group('Question Status', () {
     test('question statuses should be correct', () {
-      final statuses = ['OPEN', 'RESOLVED', 'CLOSED'];
+      final statuses = ['OPEN', 'ANSWERED', 'CLOSED'];
       expect(statuses.length, 3);
     });
   });

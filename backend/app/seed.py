@@ -141,7 +141,7 @@ async def seed_questions(session: AsyncSession) -> None:
         Question(
             farmer_id=farmer.id,
             question_text="My tomato plants have dark spots on the leaves with yellow rings around them. What disease is this and how do I treat it?",
-            status=QuestionStatus.RESOLVED,
+            status=QuestionStatus.ANSWERED,
             created_at=datetime.utcnow() - timedelta(days=5),
         ),
         Question(

@@ -134,7 +134,22 @@ class MarketNotifier extends StateNotifier<MarketState> {
   final ApiClient _api;
 
   MarketNotifier(this._api) : super(MarketState()) {
-    loadPrices();
+    // Auto-detect location and load nearby prices on first open
+    _initWithLocation();
+  }
+
+  /// Try to detect location first; fall back to all prices if it fails
+  Future<void> _initWithLocation() async {
+    if (kIsWeb) {
+      // Web doesn't support location, just load all prices
+      await loadPrices();
+      return;
+    }
+    await loadPricesNearMe();
+    // If location detection failed, ensure we still have prices
+    if (state.prices.isEmpty && state.locationFilter == null) {
+      await loadPrices();
+    }
   }
 
   Future<void> loadPrices({String? location}) async {

@@ -456,3 +456,38 @@ async def rate_answer(
     answer.rating = rating
     
     return {"message": "Rating submitted", "rating": rating}
+
+
+@questions_router.put("/{question_id}/close", response_model=dict)
+async def close_question(
+    question_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Close a question (farmer only). No more answers will be expected."""
+    try:
+        q_uuid = uuid.UUID(question_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid question ID format"
+        )
+
+    result = await db.execute(
+        select(Question).where(
+            Question.id == q_uuid,
+            Question.farmer_id == current_user.id
+        )
+    )
+    question = result.scalar_one_or_none()
+
+    if not question:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Question not found"
+        )
+
+    question.status = QuestionStatus.CLOSED
+    question.updated_at = datetime.utcnow()
+
+    return {"message": "Question closed", "status": "CLOSED"}

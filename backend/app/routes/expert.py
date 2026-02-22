@@ -82,13 +82,14 @@ async def update_expert_profile(
 async def get_open_questions(
     page: int = 1,
     page_size: int = 20,
-    status_filter: str = "OPEN",
+    status_filter: str = "ALL",
     current_user: User = Depends(require_approved_expert),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Get open questions for expert to answer.
+    Get questions for expert to answer.
     
+    By default shows OPEN and ANSWERED questions (not CLOSED).
     Only accessible to approved experts.
     """
     # Build query
@@ -96,13 +97,18 @@ async def get_open_questions(
     count_query = select(func.count(Question.id))
     
     # Apply status filter
-    try:
-        status_enum = QuestionStatus(status_filter.upper())
-        query = query.where(Question.status == status_enum)
-        count_query = count_query.where(Question.status == status_enum)
-    except ValueError:
-        query = query.where(Question.status == QuestionStatus.OPEN)
-        count_query = count_query.where(Question.status == QuestionStatus.OPEN)
+    if status_filter.upper() == "ALL":
+        # Show both OPEN and ANSWERED (exclude CLOSED)
+        query = query.where(Question.status.in_([QuestionStatus.OPEN, QuestionStatus.ANSWERED]))
+        count_query = count_query.where(Question.status.in_([QuestionStatus.OPEN, QuestionStatus.ANSWERED]))
+    else:
+        try:
+            status_enum = QuestionStatus(status_filter.upper())
+            query = query.where(Question.status == status_enum)
+            count_query = count_query.where(Question.status == status_enum)
+        except ValueError:
+            query = query.where(Question.status.in_([QuestionStatus.OPEN, QuestionStatus.ANSWERED]))
+            count_query = count_query.where(Question.status.in_([QuestionStatus.OPEN, QuestionStatus.ANSWERED]))
     
     # Get total
     total = (await db.execute(count_query)).scalar()
@@ -260,7 +266,7 @@ async def submit_answer(
     """
     Submit an answer to a farmer's question.
     
-    - Marks question as RESOLVED after first answer
+    - Marks question as ANSWERED after first answer
     - Multiple experts can answer the same question
     """
     question_id = answer_data.get("question_id")
@@ -319,8 +325,9 @@ async def submit_answer(
     )
     db.add(answer)
     
-    # Mark question as resolved
-    question.status = QuestionStatus.RESOLVED
+    # Auto-move to ANSWERED if this is the first answer
+    if question.status == QuestionStatus.OPEN:
+        question.status = QuestionStatus.ANSWERED
     question.updated_at = datetime.utcnow()
     
     await db.flush()
@@ -334,6 +341,54 @@ async def submit_answer(
         "message": "Answer submitted successfully"
     }
 
+
+@router.put("/answer/{answer_id}", response_model=dict)
+async def edit_answer(
+    answer_id: str,
+    answer_data: dict,
+    current_user: User = Depends(require_approved_expert),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Edit an existing answer (author only).
+    """
+    answer_text = answer_data.get("answer_text", "")
+
+    if len(answer_text) < 10:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="answer_text must be at least 10 characters"
+        )
+
+    try:
+        a_uuid = uuid.UUID(answer_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid answer ID"
+        )
+
+    result = await db.execute(
+        select(Answer).where(
+            Answer.id == a_uuid,
+            Answer.expert_id == current_user.id
+        )
+    )
+    answer = result.scalar_one_or_none()
+
+    if not answer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Answer not found or you are not the author"
+        )
+
+    answer.answer_text = answer_text
+
+    return {
+        "id": str(answer.id),
+        "answer_text": answer.answer_text,
+        "message": "Answer updated successfully"
+    }
 
 # ============== Expert Statistics ==============
 

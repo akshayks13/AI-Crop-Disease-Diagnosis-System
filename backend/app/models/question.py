@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class QuestionStatus(str, Enum):
     """Question status enumeration."""
     OPEN = "OPEN"
-    RESOLVED = "RESOLVED"
+    ANSWERED = "ANSWERED"
     CLOSED = "CLOSED"
 
 
@@ -32,7 +32,7 @@ class Question(Base):
         farmer_id: Reference to farmer who asked
         media_path: Optional image reference
         question_text: The question content
-        status: Current status (OPEN, RESOLVED, CLOSED)
+        status: Current status (OPEN, ANSWERED, CLOSED)
         created_at: Question timestamp
     """
     __tablename__ = "questions"
