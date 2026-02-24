@@ -7,6 +7,9 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../config/routes.dart';
 import '../../../../core/services/ml_service.dart';
+import '../../../../core/api/dss_service.dart';
+import '../../../../core/api/api_client.dart';
+import '../../weather/services/weather_service.dart';
 
 /// Diagnosis screen with camera capture and voice symptom input
 class DiagnosisScreen extends ConsumerStatefulWidget {
@@ -134,6 +137,45 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
       // Attach symptoms description to result if provided
       if (_symptomsController.text.trim().isNotEmpty) {
         result['farmer_symptoms'] = _symptomsController.text.trim();
+      }
+
+      // Fetch weather + DSS advisory in parallel
+      try {
+        final weatherFuture = WeatherService().getCurrentWeather();
+        final weather = await weatherFuture;
+
+        final dssService = ref.read(dssServiceProvider);
+        final dssResult = await dssService.getAdvisory(
+          diseaseLabel: result['disease_id'] ?? '',
+          temperature: weather.temp,
+          humidity: weather.humidity,
+        );
+
+        // Merge DSS advisory into the result
+        result['dss_advisory'] = dssResult;
+
+        // Persist DSS advisory + TFLite data to backend for history
+        if (result['id'] != null) {
+          try {
+            final api = ref.read(apiClientProvider);
+            await api.post(
+              '/diagnosis/${result['id']}/save-advisory',
+              data: {
+                'disease_id': result['disease_id'],
+                'dss_advisory': dssResult,
+                'disease': result['disease'],
+                'plant': result['plant'],
+                'confidence': result['confidence'],
+                'severity': result['severity'],
+              },
+            );
+          } catch (_) {
+            // Non-critical — don't block navigation
+          }
+        }
+      } catch (e) {
+        // DSS is supplementary — don't block navigation if it fails
+        print('DSS advisory fetch failed: $e');
       }
 
       if (mounted) {

@@ -5,7 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../../../../config/routes.dart';
 import '../../../../config/theme.dart';
 import '../../../../core/api/api_client.dart';
-import '../../../../core/api/agronomy_service.dart';
+import '../../../../core/api/dss_service.dart';
 import '../../weather/services/weather_service.dart';
 
 /// Diagnosis result screen with treatment recommendations
@@ -25,13 +25,17 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
   bool _isRatingSubmitting = false;
   
   // Environmental context and validation
-  bool _showContextForm = false;
-  bool _isValidating = false;
-  Map<String, dynamic>? _validationResult;
   final _temperatureController = TextEditingController();
   final _humidityController = TextEditingController();
-  String? _selectedSeason;
-  String? _selectedRegion;
+
+  // DSS Advisory
+  Map<String, dynamic>? _dssAdvisory;
+  bool _showFarmerInput = false;
+  bool _isDssLoading = false;
+  String _irrigationLevel = 'Moderate';
+  bool _waterlogged = false;
+  bool _fertilizerRecent = false;
+  bool _firstCycle = false;
 
   // Weather data
   WeatherData? _weatherData;
@@ -44,6 +48,10 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
     // Initialize rating if available given in result (from history)
     if (widget.result['rating'] != null) {
       _userRating = widget.result['rating'] is int ? widget.result['rating'] : int.tryParse(widget.result['rating'].toString()) ?? 0;
+    }
+    // Load DSS advisory if pre-fetched
+    if (widget.result['dss_advisory'] != null) {
+      _dssAdvisory = widget.result['dss_advisory'] as Map<String, dynamic>;
     }
     _fetchWeather();
   }
@@ -60,10 +68,40 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
           _humidityController.text = weather.humidity.toString();
           _isLoadingWeather = false;
         });
+
+        // Auto-fetch DSS advisory if not already present (e.g. from history)
+        if (_dssAdvisory == null && widget.result['disease_id'] != null) {
+          _fetchDssAdvisory(weather);
+        }
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoadingWeather = false);
-      // Silently fail — weather is supplementary, not critical
+      if (mounted) {
+        setState(() => _isLoadingWeather = false);
+        // Still try to fetch DSS without weather data
+        if (_dssAdvisory == null && widget.result['disease_id'] != null) {
+          _fetchDssAdvisory(null);
+        }
+      }
+    }
+  }
+
+  Future<void> _fetchDssAdvisory(WeatherData? weather) async {
+    setState(() => _isDssLoading = true);
+    try {
+      final dssService = ref.read(dssServiceProvider);
+      final result = await dssService.getAdvisory(
+        diseaseLabel: widget.result['disease_id'],
+        temperature: weather?.temp,
+        humidity: weather?.humidity,
+      );
+      if (mounted) {
+        setState(() {
+          _dssAdvisory = result;
+          _isDssLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isDssLoading = false);
     }
   }
 
@@ -112,48 +150,7 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
     return speech;
   }
 
-  Future<void> _validateDiagnosis() async {
-    if (_isValidating) return;
 
-    // Validate required fields
-    final diseaseId = widget.result['disease_id'];
-    if (diseaseId == null || diseaseId.toString().isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Disease ID not found in diagnosis result')),
-        );
-      }
-      return;
-    }
-
-    setState(() => _isValidating = true);
-
-    try {
-      final agronomyService = ref.read(agronomyServiceProvider);
-      
-      final result = await agronomyService.validateDiagnosis(
-        diseaseId: diseaseId.toString(),
-        temperature: double.tryParse(_temperatureController.text),
-        humidity: double.tryParse(_humidityController.text),
-        season: _selectedSeason,
-        region: _selectedRegion,
-      );
-
-      if (mounted) {
-        setState(() => _validationResult = result);
-      }
-    } catch (e) {
-       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Validation failed: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isValidating = false);
-      }
-    }
-  }
 
   Future<void> _submitRating(int rating) async {
     if (_isRatingSubmitting) return;
@@ -188,9 +185,12 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final disease = widget.result['disease'] ?? 'Unknown';
+    final plant = widget.result['plant'] ?? '';
     final severity = widget.result['severity'] ?? 'moderate';
-    final confidence = (widget.result['confidence'] as num?)?.toDouble() ?? 0.0;
-    final severityColor = AppTheme.getSeverityColor(severity);
+    final rawConfidence = (widget.result['confidence'] as num?)?.toDouble() ?? 0.0;
+    final confidence = rawConfidence <= 1.0 ? rawConfidence * 100 : rawConfidence;
+    final isHealthy = widget.result['is_healthy'] == true;
+    final severityColor = isHealthy ? Colors.green.shade600 : AppTheme.getSeverityColor(severity);
 
     return Scaffold(
       appBar: AppBar(
@@ -230,10 +230,23 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Plant name
+                  if (plant.isNotEmpty)
+                    Text(
+                      plant,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withOpacity(0.9),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  if (plant.isNotEmpty)
+                    const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(
-                        _getSeverityIcon(severity),
+                        isHealthy ? Icons.check_circle : _getSeverityIcon(severity),
                         color: Colors.white,
                         size: 32,
                       ),
@@ -255,13 +268,13 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
                     children: [
                       _InfoChip(
                         label: 'Severity',
-                        value: severity.toUpperCase(),
+                        value: isHealthy ? 'NONE' : severity.toUpperCase(),
                         icon: Icons.warning_amber_rounded,
                       ),
                       const SizedBox(width: 12),
                       _InfoChip(
                         label: 'Confidence',
-                        value: '${(confidence * 100).toInt()}%',
+                        value: '${confidence.toInt()}%',
                         icon: Icons.analytics,
                       ),
                     ],
@@ -277,242 +290,8 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
 
             const SizedBox(height: 16),
 
-            // Environmental Context & Validation
-            GestureDetector(
-              onTap: () => setState(() => _showContextForm = !_showContextForm),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.wb_sunny, color: AppTheme.primaryGreen),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Validate with Environmental Context',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.green.shade800,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      _showContextForm ? Icons.expand_less : Icons.expand_more,
-                      color: AppTheme.primaryGreen,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            if (_showContextForm) ...{
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Enter Environmental Data', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _temperatureController,
-                            decoration: InputDecoration(
-                              labelText: 'Temperature (°C)',
-                              hintText: '25',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: _humidityController,
-                            decoration: InputDecoration(
-                              labelText: 'Humidity (%)',
-                              hintText: '75',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: _selectedSeason,
-                      decoration: InputDecoration(
-                        labelText: 'Season',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                      items: ['Kharif', 'Rabi', 'Zaid', 'Summer', 'Winter']
-                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                          .toList(),
-                      onChanged: (v) => setState(() => _selectedSeason = v),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: _isValidating ? null : _validateDiagnosis,
-                      icon: _isValidating
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.check_circle),
-                      label: Text(_isValidating ? 'Validating...' : 'Validate Diagnosis'),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: Size(double.infinity, 44),
-                        backgroundColor: AppTheme.primaryGreen,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            },
-
-            if (_validationResult != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.analytics, color: Colors.blue.shade700),
-                        const SizedBox(width: 8),
-                        Text('Validation Result', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade800)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Original: ${((_validationResult!['original_confidence'] ?? 0.8) * 100).toInt()}%'),
-                        Icon(Icons.arrow_forward, size: 16),
-                        Text(
-                          'Adjusted: ${((_validationResult!['adjusted_confidence'] ?? 0.8) * 100).toInt()}%',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade700),
-                        ),
-                      ],
-                    ),
-                    if (_validationResult!['warnings'] != null && (_validationResult!['warnings'] as List).isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      ...(_validationResult!['warnings'] as List).map((w) => Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Row(
-                              children: [
-                                Icon(Icons.info_outline, size: 14, color: Colors.orange.shade700),
-                                const SizedBox(width: 6),
-                                Expanded(child: Text(w.toString(), style: TextStyle(fontSize: 12, color: Colors.orange.shade800))),
-                              ],
-                            ),
-                          )),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 24),
-
-            // Warning if present
-            if (widget.result['warnings'] != null) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.warning, color: Colors.red.shade700),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        widget.result['warnings'],
-                        style: TextStyle(color: Colors.red.shade800),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // Treatment steps
-            _SectionTitle(title: 'Treatment Steps', icon: Icons.checklist),
-            const SizedBox(height: 12),
-            _TreatmentSteps(
-              steps: (widget.result['treatment_steps'] as List?)
-                      ?.cast<Map<String, dynamic>>() ??
-                  [],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Chemical options
-            if ((widget.result['chemical_options'] as List?)?.isNotEmpty ?? false) ...[
-              _SectionTitle(title: 'Chemical Treatment', icon: Icons.science),
-              const SizedBox(height: 12),
-              _TreatmentOptions(
-                options: (widget.result['chemical_options'] as List)
-                    .cast<Map<String, dynamic>>(),
-                color: Colors.blue,
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // Organic options
-            if ((widget.result['organic_options'] as List?)?.isNotEmpty ?? false) ...[
-              _SectionTitle(title: 'Organic Treatment', icon: Icons.eco),
-              const SizedBox(height: 12),
-              _TreatmentOptions(
-                options: (widget.result['organic_options'] as List)
-                    .cast<Map<String, dynamic>>(),
-                color: AppTheme.primaryGreen,
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // Prevention
-            if (widget.result['prevention'] != null) ...[
-              _SectionTitle(title: 'Prevention', icon: Icons.shield),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-                child: Text(widget.result['prevention']),
-              ),
-            ],
+            // ── DSS Advisory Section ─────────────────────────────────
+            _buildDssAdvisorySection(theme),
 
             const SizedBox(height: 16),
             
@@ -730,6 +509,387 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
         return Icons.help;
     }
   }
+
+  // ── DSS Advisory Section ────────────────────────────────────────────
+
+  Widget _buildDssAdvisorySection(ThemeData theme) {
+    if (_dssAdvisory == null && !_isDssLoading) {
+      // No DSS data available — show nothing (ML fallback is already shown)
+      return const SizedBox.shrink();
+    }
+
+    if (_isDssLoading) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.teal.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.teal.shade100),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.teal.shade700)),
+            const SizedBox(width: 12),
+            Text('Updating advisory...', style: TextStyle(color: Colors.teal.shade700)),
+          ],
+        ),
+      );
+    }
+
+    final advisory = _dssAdvisory!;
+    final riskScore = (advisory['risk_score'] as num?)?.toDouble() ?? 0.0;
+    final riskLevel = advisory['risk_level'] ?? 'Unknown';
+    final season = advisory['season'] ?? '';
+    final diseaseType = advisory['disease_type'] ?? '';
+    final treatments = advisory['treatment_options'] as Map<String, dynamic>? ?? {};
+    final chemical = treatments['chemical'] as Map<String, dynamic>? ?? {};
+    final organic = treatments['organic'] as Map<String, dynamic>? ?? {};
+    final irrigationAdvice = advisory['irrigation_advice'] ?? '';
+    final rotationAdvice = advisory['crop_rotation_advice'] ?? '';
+    final explanation = advisory['explanation'] ?? '';
+
+    Color riskColor;
+    IconData riskIcon;
+    if (riskLevel == 'High') {
+      riskColor = Colors.red.shade700;
+      riskIcon = Icons.warning_amber_rounded;
+    } else if (riskLevel == 'Moderate') {
+      riskColor = Colors.orange.shade700;
+      riskIcon = Icons.info_outline;
+    } else {
+      riskColor = Colors.green.shade700;
+      riskIcon = Icons.check_circle_outline;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionTitle(title: 'DSS Advisory', icon: Icons.psychology),
+        const SizedBox(height: 12),
+
+        // Risk Assessment Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [riskColor.withOpacity(0.1), riskColor.withOpacity(0.05)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: riskColor.withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(riskIcon, color: riskColor, size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Risk Level: $riskLevel',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: riskColor),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: riskColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${(riskScore * 100).toInt()}%',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: riskColor, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Risk progress bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: riskScore,
+                  minHeight: 8,
+                  backgroundColor: Colors.grey.shade200,
+                  color: riskColor,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  _DssChip(label: 'Season', value: season, icon: Icons.calendar_today),
+                  const SizedBox(width: 8),
+                  _DssChip(label: 'Type', value: diseaseType, icon: Icons.bug_report),
+                ],
+              ),
+              if (explanation.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(explanation, style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontStyle: FontStyle.italic)),
+              ],
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // DSS Treatment Options
+        if (chemical['name'] != null && chemical['name'] != 'None') ...[
+          _SectionTitle(title: 'Chemical Treatment (DSS)', icon: Icons.science),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.shade100),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.medication_outlined, color: Colors.blue.shade700, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(chemical['name'] ?? '', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade800)),
+                      const SizedBox(height: 4),
+                      Text('Dosage: ${chemical['dosage'] ?? 'N/A'}', style: TextStyle(fontSize: 13, color: Colors.blue.shade600)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        if (organic['name'] != null && organic['name'] != 'None') ...[
+          _SectionTitle(title: 'Organic Treatment (DSS)', icon: Icons.eco),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.green.shade100),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.spa_outlined, color: Colors.green.shade700, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(organic['name'] ?? '', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green.shade800)),
+                      const SizedBox(height: 4),
+                      Text('Dosage: ${organic['dosage'] ?? 'N/A'}', style: TextStyle(fontSize: 13, color: Colors.green.shade600)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Irrigation & Rotation Advice
+        if (irrigationAdvice.isNotEmpty || rotationAdvice.isNotEmpty) ...[
+          _SectionTitle(title: 'Prevention & Advice', icon: Icons.shield),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (irrigationAdvice.isNotEmpty) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.water_drop_outlined, size: 18, color: Colors.blue.shade600),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Irrigation', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.blue.shade800)),
+                            const SizedBox(height: 2),
+                            Text(irrigationAdvice, style: const TextStyle(fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (irrigationAdvice.isNotEmpty && rotationAdvice.isNotEmpty)
+                  const Divider(height: 20),
+                if (rotationAdvice.isNotEmpty) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.autorenew, size: 18, color: Colors.orange.shade600),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Crop Rotation', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.orange.shade800)),
+                            const SizedBox(height: 2),
+                            Text(rotationAdvice, style: const TextStyle(fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // ── Farmer Input Refinement ──────────────────────────────────
+        _buildFarmerInputRefinement(theme),
+      ],
+    );
+  }
+
+  Widget _buildFarmerInputRefinement(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _showFarmerInput = !_showFarmerInput),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.teal.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.teal.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.tune, color: Colors.teal.shade700, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Refine Advisory with Farm Details',
+                    style: TextStyle(fontWeight: FontWeight.w600, color: Colors.teal.shade800, fontSize: 14),
+                  ),
+                ),
+                Icon(
+                  _showFarmerInput ? Icons.expand_less : Icons.expand_more,
+                  color: Colors.teal.shade700,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        if (_showFarmerInput) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.teal.shade100),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Farm Conditions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.teal.shade800)),
+                const SizedBox(height: 14),
+
+                // Irrigation level dropdown
+                DropdownButtonFormField<String>(
+                  value: _irrigationLevel,
+                  decoration: const InputDecoration(
+                    labelText: 'Irrigation Level',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  items: ['Low', 'Moderate', 'Frequent']
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _irrigationLevel = v ?? 'Moderate'),
+                ),
+                const SizedBox(height: 12),
+
+                // Toggle switches
+                _FarmToggle(
+                  label: 'Field waterlogged recently?',
+                  value: _waterlogged,
+                  onChanged: (v) => setState(() => _waterlogged = v),
+                ),
+                _FarmToggle(
+                  label: 'Fertilizer applied recently?',
+                  value: _fertilizerRecent,
+                  onChanged: (v) => setState(() => _fertilizerRecent = v),
+                ),
+                _FarmToggle(
+                  label: 'First crop cycle in this soil?',
+                  value: _firstCycle,
+                  onChanged: (v) => setState(() => _firstCycle = v),
+                ),
+
+                const SizedBox(height: 14),
+                ElevatedButton.icon(
+                  onPressed: _isDssLoading ? null : _refreshDssAdvisory,
+                  icon: _isDssLoading
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.refresh),
+                  label: Text(_isDssLoading ? 'Updating...' : 'Update Advisory'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 44),
+                    backgroundColor: Colors.teal,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _refreshDssAdvisory() async {
+    if (_isDssLoading) return;
+    setState(() => _isDssLoading = true);
+
+    try {
+      final dssService = ref.read(dssServiceProvider);
+      final result = await dssService.getAdvisory(
+        diseaseLabel: widget.result['disease_id'] ?? '',
+        temperature: _weatherData?.temp,
+        humidity: _weatherData?.humidity,
+        irrigation: _irrigationLevel,
+        waterlogged: _waterlogged,
+        fertilizerRecent: _fertilizerRecent,
+        firstCycle: _firstCycle,
+      );
+      if (mounted) {
+        setState(() => _dssAdvisory = result);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update advisory: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDssLoading = false);
+    }
+  }
 }
 
 class _WeatherStat extends StatelessWidget {
@@ -944,3 +1104,66 @@ class _DetailRow extends StatelessWidget {
     );
   }
 }
+
+class _DssChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+
+  const _DssChip({required this.label, required this.value, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.grey.shade700),
+          const SizedBox(width: 4),
+          Text(
+            '$label: $value',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.grey.shade800),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FarmToggle extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _FarmToggle({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: const TextStyle(fontSize: 14)),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: Colors.teal,
+          ),
+        ],
+      ),
+    );
+  }
+}
+

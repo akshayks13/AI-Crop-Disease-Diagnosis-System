@@ -5,7 +5,7 @@ import uuid
 from typing import Optional, List
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
@@ -60,6 +60,56 @@ async def predict_disease(
     )
     
     return result
+
+
+@router.post("/{diagnosis_id}/save-advisory", response_model=dict)
+async def save_diagnosis_advisory(
+    diagnosis_id: str,
+    body: dict = Body(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Save DSS advisory and disease_id for an existing diagnosis.
+    Called by the Flutter app after on-device TFLite prediction + DSS call.
+    """
+    from sqlalchemy import select, update
+    
+    # Verify the diagnosis belongs to the user
+    query = select(Diagnosis).where(
+        Diagnosis.id == diagnosis_id,
+        Diagnosis.user_id == current_user.id,
+    )
+    result = await db.execute(query)
+    diagnosis = result.scalar_one_or_none()
+    
+    if not diagnosis:
+        raise HTTPException(status_code=404, detail="Diagnosis not found")
+    
+    # Update fields
+    update_data = {}
+    if "disease_id" in body:
+        update_data["disease_id"] = body["disease_id"]
+    if "dss_advisory" in body:
+        update_data["dss_advisory"] = body["dss_advisory"]
+    if "disease" in body:
+        update_data["disease"] = body["disease"]
+    if "plant" in body:
+        update_data["crop_type"] = body["plant"]
+    if "confidence" in body:
+        update_data["confidence"] = body["confidence"]
+    if "severity" in body:
+        update_data["severity"] = body["severity"]
+    
+    if update_data:
+        stmt = (
+            update(Diagnosis)
+            .where(Diagnosis.id == diagnosis_id)
+            .values(**update_data)
+        )
+        await db.execute(stmt)
+    
+    return {"status": "ok", "updated_fields": list(update_data.keys())}
 
 
 @router.get("/history", response_model=dict)
@@ -161,6 +211,66 @@ async def rate_diagnosis(
     await db.commit()
     
     return {"message": "Rating submitted", "rating": rating}
+
+
+# ============== DSS Advisory Endpoint ==============
+
+@router.post("/dss-advisory", response_model=dict)
+async def get_dss_advisory(
+    request_body: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get DSS (Decision Support System) advisory for a diagnosed disease.
+
+    Accepts the TFLite disease label and optional weather/farmer inputs,
+    returns risk-scored treatment recommendations.
+
+    Request body:
+    {
+        "disease_label": "apple_apple_scab",
+        "temperature": 28,
+        "humidity": 75,
+        "irrigation": "Moderate",
+        "waterlogged": false,
+        "fertilizer_recent": false,
+        "first_cycle": false
+    }
+    """
+    from app.services.dss_service import get_dss_service
+
+    disease_label = request_body.get("disease_label")
+    if not disease_label:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="disease_label is required"
+        )
+
+    weather = {
+        "temperature": request_body.get("temperature", 25),
+        "humidity": request_body.get("humidity", 60),
+    }
+
+    farmer_answers = {
+        "irrigation": request_body.get("irrigation", "Moderate"),
+        "waterlogged": request_body.get("waterlogged", False),
+        "fertilizer_recent": request_body.get("fertilizer_recent", False),
+        "first_cycle": request_body.get("first_cycle", False),
+    }
+
+    try:
+        dss = get_dss_service()
+        result = dss.generate_recommendation(
+            disease_label=disease_label,
+            weather=weather,
+            farmer_answers=farmer_answers,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"DSS advisory generation failed: {str(e)}"
+        )
 
 
 # ============== Question Endpoints ==============

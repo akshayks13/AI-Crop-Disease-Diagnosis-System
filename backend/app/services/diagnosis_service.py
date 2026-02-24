@@ -41,6 +41,8 @@ class DiagnosisService:
         user_id: uuid.UUID,
         crop_type: Optional[str] = None,
         location: Optional[str] = None,
+        disease_id: Optional[str] = None,
+        dss_advisory: Optional[Dict[str, Any]] = None,
         db: Optional[AsyncSession] = None,
     ) -> Dict[str, Any]:
         """
@@ -52,6 +54,8 @@ class DiagnosisService:
             user_id: User requesting diagnosis
             crop_type: Optional crop type
             location: Optional location
+            disease_id: Optional TFLite label (e.g. 'apple_apple_scab')
+            dss_advisory: Optional DSS advisory data to store
             db: Optional database session
             
         Returns:
@@ -92,6 +96,8 @@ class DiagnosisService:
                 treatment=treatment_json,
                 prevention=treatment_plan.prevention,
                 warnings=treatment_plan.warnings,
+                disease_id=disease_id,
+                dss_advisory=dss_advisory,
                 additional_diseases={
                     "predictions": prediction.additional_predictions
                 } if prediction.additional_predictions else None,
@@ -108,6 +114,7 @@ class DiagnosisService:
             "severity": prediction.severity,
             "confidence": prediction.confidence,
             "crop_type": crop_type,
+            "disease_id": disease_id,
             "treatment_steps": treatment_plan.treatment_steps,
             "chemical_options": treatment_plan.chemical_options,
             "organic_options": treatment_plan.organic_options,
@@ -115,6 +122,7 @@ class DiagnosisService:
             "prevention": treatment_plan.prevention,
             "additional_predictions": prediction.additional_predictions,
             "media_path": image_path,
+            "dss_advisory": dss_advisory,
         }
         
         # Add validation warning if applicable

@@ -187,11 +187,16 @@ class AppTheme {
   static Color getSeverityColor(String severity) {
     switch (severity.toLowerCase()) {
       case 'mild':
+      case 'low':
         return mildSeverity;
       case 'moderate':
+      case 'medium':
         return moderateSeverity;
       case 'severe':
+      case 'high':
         return severeSeverity;
+      case 'none':
+        return Colors.teal;
       default:
         return moderateSeverity;
     }

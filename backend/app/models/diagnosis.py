@@ -99,6 +99,18 @@ class Diagnosis(Base):
         nullable=True,
     )
     
+    # TFLite label (e.g. 'apple_apple_scab') for DSS lookup
+    disease_id: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    
+    # DSS advisory snapshot (JSON) — stored at diagnosis time
+    dss_advisory: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+    
     # Diagnosis Rating
     rating: Mapped[Optional[int]] = mapped_column(
         nullable=True,
@@ -127,9 +139,18 @@ class Diagnosis(Base):
     
     def to_response_dict(self) -> Dict[str, Any]:
         """Convert to API response format."""
+        # Derive plant name from disease_id if available
+        plant = None
+        if self.disease_id:
+            parts = self.disease_id.split('_')
+            if len(parts) >= 2:
+                plant = parts[0].replace('_', ' ').title()
+        
         return {
             "id": str(self.id),
             "disease": self.disease,
+            "disease_id": self.disease_id,
+            "plant": plant or self.crop_type or '',
             "severity": self.severity,
             "confidence": self.confidence,
             "crop_type": self.crop_type,
@@ -139,5 +160,6 @@ class Diagnosis(Base):
             "organic_options": self.treatment.get("organic", []),
             "warnings": self.warnings,
             "prevention": self.prevention,
+            "dss_advisory": self.dss_advisory,
             "created_at": self.created_at.isoformat(),
         }
