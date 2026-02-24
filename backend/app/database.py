@@ -53,6 +53,24 @@ async def init_db() -> None:
     """Initialize database tables."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        
+        # Migrate: add new columns to existing tables (create_all won't do this)
+        import sqlalchemy as sa
+        try:
+            await conn.execute(sa.text(
+                "ALTER TABLE diagnoses ADD COLUMN disease_id VARCHAR(255)"
+            ))
+            logger.info("Added disease_id column to diagnoses table")
+        except Exception:
+            pass  # Column already exists
+        
+        try:
+            await conn.execute(sa.text(
+                "ALTER TABLE diagnoses ADD COLUMN dss_advisory JSON"
+            ))
+            logger.info("Added dss_advisory column to diagnoses table")
+        except Exception:
+            pass  # Column already exists
 
 
 # Setup logger
