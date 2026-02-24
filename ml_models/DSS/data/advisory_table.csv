@@ -1,0 +1,7 @@
+disease_type,chemical_name,chemical_dosage,organic_name,organic_dosage,irrigation_advice,crop_rotation_advice,humidity_threshold,temp_min,temp_max,season_trigger,season_multiplier
+Fungal,Mancozeb or Carbendazim,2g per liter water,Neem oil,3ml per liter water,Avoid overhead irrigation and improve air circulation,Rotate with non-host crops next season,75,18,32,Kharif,1.3
+Bacterial,Copper oxychloride,3g per liter water,Bacillus subtilis bio-control,5g per liter water,Improve drainage and avoid splash irrigation,Rotate and avoid planting same crop consecutively,70,22,35,Kharif,1.2
+Viral,None (Control vectors),N/A,Neem oil,3ml per liter water,Remove infected plants and control whiteflies,Rotate and remove infected residues from soil,60,25,40,Zaid,1.15
+Pest,Imidacloprid or Spinosad,0.5ml per liter water,Neem oil,5ml per liter water,Monitor regularly and avoid excess nitrogen,Rotate with resistant crop varieties,50,20,38,Zaid,1.2
+Nutrient,Urea or balanced NPK,1kg per 100L foliar spray,Compost or Vermicompost,Apply around root zone,Balanced fertilization and soil health improvement,Rotate with legumes to improve soil nitrogen,0,0,45,Rabi,1.1
+Healthy,None,None,None,None,Maintain regular monitoring,Practice crop rotation annually to prevent soil fatigue,0,0,50,None,1.0
