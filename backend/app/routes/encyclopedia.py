@@ -9,6 +9,7 @@ from sqlalchemy import select, func, or_
 
 from app.database import get_db
 from app.auth.dependencies import get_current_user, require_admin
+from app.config import get_settings
 from app.models.user import User
 from app.models.encyclopedia import CropInfo, DiseaseInfo
 from app.models.pest import PestInfo
@@ -21,8 +22,10 @@ from app.schemas.encyclopedia import (
     DiseaseInfoResponse,
     DiseaseInfoListResponse,
 )
+from app.services.redis_service import get_redis_service
 
 router = APIRouter(prefix="/encyclopedia", tags=["Encyclopedia"])
+_CACHE_PREFIX = "encyclopedia:"
 
 
 # ============== Crop Info Endpoints ==============
@@ -36,12 +39,21 @@ async def get_crops(
 ):
     """
     Get list of crops in the encyclopedia.
-    
+
     - Optional search by name
     - Filter by season (Rabi/Kharif)
+    - Cached in Redis for 24 hours
     """
+    settings = get_settings()
+    redis = get_redis_service()
+    cache_key = f"{_CACHE_PREFIX}crops:{search or ''}:{season or ''}"
+
+    cached = await redis.get(cache_key)
+    if cached is not None:
+        return cached
+
     query = select(CropInfo)
-    
+
     if search:
         query = query.where(
             or_(
@@ -49,16 +61,16 @@ async def get_crops(
                 CropInfo.scientific_name.ilike(f"%{search}%"),
             )
         )
-    
+
     if season:
         query = query.where(CropInfo.season.ilike(f"%{season}%"))
-    
+
     query = query.order_by(CropInfo.name.asc())
-    
+
     result = await db.execute(query)
     crops = result.scalars().all()
-    
-    return {
+
+    response = {
         "crops": [
             {
                 "id": str(crop.id),
@@ -80,6 +92,9 @@ async def get_crops(
         ],
         "total": len(crops),
     }
+    if response["total"] > 0:  # Never cache empty — prevents stale empty-result poisoning
+        await redis.set(cache_key, response, ttl=settings.cache_ttl_encyclopedia)
+    return response
 
 
 @router.get("/crops/{crop_id}", response_model=CropInfoResponse)
@@ -160,6 +175,7 @@ async def create_crop_info(
 ):
     """
     Add a crop to the encyclopedia (Admin only).
+    Invalidates all crop cache entries.
     """
     # Check for duplicate
     existing = await db.execute(
@@ -167,7 +183,7 @@ async def create_crop_info(
     )
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Crop with this name already exists")
-    
+
     new_crop = CropInfo(
         name=crop_data.name,
         scientific_name=crop_data.scientific_name,
@@ -182,11 +198,14 @@ async def create_crop_info(
         common_diseases=crop_data.common_diseases,
         image_url=crop_data.image_url,
     )
-    
+
     db.add(new_crop)
     await db.commit()
     await db.refresh(new_crop)
-    
+
+    # Invalidate encyclopedia cache
+    await get_redis_service().delete_pattern(f"{_CACHE_PREFIX}crops:*")
+
     return {
         "id": str(new_crop.id),
         "name": new_crop.name,
@@ -217,13 +236,18 @@ async def get_diseases(
 ):
     """
     Get list of diseases in the encyclopedia.
-    
-    - Optional search by name
-    - Filter by affected crop
-    - Filter by severity level
+    Cached in Redis for 24 hours.
     """
+    settings = get_settings()
+    redis = get_redis_service()
+    cache_key = f"{_CACHE_PREFIX}diseases:{search or ''}:{crop or ''}:{severity or ''}"
+
+    cached = await redis.get(cache_key)
+    if cached is not None:
+        return cached
+
     query = select(DiseaseInfo)
-    
+
     if search:
         query = query.where(
             or_(
@@ -231,23 +255,23 @@ async def get_diseases(
                 DiseaseInfo.scientific_name.ilike(f"%{search}%"),
             )
         )
-    
+
     if severity:
         query = query.where(DiseaseInfo.severity_level.ilike(severity))
-    
+
     query = query.order_by(DiseaseInfo.name.asc())
-    
+
     result = await db.execute(query)
     diseases = result.scalars().all()
-    
+
     # Filter by crop if specified (JSONB contains check)
     if crop:
         diseases = [
             d for d in diseases
             if d.affected_crops and any(crop.lower() in c.lower() for c in d.affected_crops)
         ]
-    
-    return {
+
+    response = {
         "diseases": [
             {
                 "id": str(disease.id),
@@ -270,6 +294,9 @@ async def get_diseases(
         ],
         "total": len(diseases),
     }
+    if response["total"] > 0:  # Never cache empty — prevents stale empty-result poisoning
+        await redis.set(cache_key, response, ttl=settings.cache_ttl_encyclopedia)
+    return response
 
 
 @router.get("/diseases/{disease_id}", response_model=DiseaseInfoResponse)
@@ -316,6 +343,7 @@ async def create_disease_info(
 ):
     """
     Add a disease to the encyclopedia (Admin only).
+    Invalidates all disease cache entries.
     """
     new_disease = DiseaseInfo(
         name=disease_data.name,
@@ -333,11 +361,14 @@ async def create_disease_info(
         environmental_warnings=disease_data.environmental_warnings,
         image_url=disease_data.image_url,
     )
-    
+
     db.add(new_disease)
     await db.commit()
     await db.refresh(new_disease)
-    
+
+    # Invalidate encyclopedia cache
+    await get_redis_service().delete_pattern(f"{_CACHE_PREFIX}diseases:*")
+
     return {
         "id": str(new_disease.id),
         "name": new_disease.name,
@@ -368,10 +399,16 @@ async def get_pests(
 ):
     """
     Get list of pests in the encyclopedia.
-    - Optional search by name or scientific name
-    - Filter by severity level
-    - Filter by affected crop
+    Cached in Redis for 24 hours.
     """
+    settings = get_settings()
+    redis = get_redis_service()
+    cache_key = f"{_CACHE_PREFIX}pests:{search or ''}:{severity or ''}:{crop or ''}"
+
+    cached = await redis.get(cache_key)
+    if cached is not None:
+        return cached
+
     query = select(PestInfo)
 
     if search:
@@ -397,7 +434,7 @@ async def get_pests(
             if p.affected_crops and any(crop.lower() in c.lower() for c in p.affected_crops)
         ]
 
-    return {
+    response = {
         "pests": [
             {
                 "id": str(pest.id),
@@ -420,6 +457,9 @@ async def get_pests(
         ],
         "total": len(pests),
     }
+    if response["total"] > 0:  # Never cache empty — prevents stale empty-result poisoning
+        await redis.set(cache_key, response, ttl=settings.cache_ttl_encyclopedia)
+    return response
 
 
 @router.get("/pests/{pest_id}")
@@ -462,7 +502,7 @@ async def create_pest_info(
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Add a pest to the encyclopedia (Admin only)."""
+    """Add a pest to the encyclopedia (Admin only). Invalidates pest cache."""
     new_pest = PestInfo(
         name=pest_data.get("name"),
         scientific_name=pest_data.get("scientific_name"),
@@ -483,5 +523,8 @@ async def create_pest_info(
     db.add(new_pest)
     await db.commit()
     await db.refresh(new_pest)
+
+    # Invalidate encyclopedia pest cache
+    await get_redis_service().delete_pattern(f"{_CACHE_PREFIX}pests:*")
 
     return {"id": str(new_pest.id), "name": new_pest.name, "message": "Pest created successfully"}

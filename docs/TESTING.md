@@ -310,6 +310,9 @@ pytest --cov=app --cov-report=html
 
 # Run only async tests
 pytest -m asyncio
+
+# Redis vs PostgreSQL latency benchmark (requires Redis running)
+venv/bin/python tests/test_redis_latency.py
 ```
 
 **Expected Output:**

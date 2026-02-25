@@ -10,9 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from app.database import get_db
+from app.config import get_settings
 from app.models.user import User, UserRole, UserStatus
 from app.models.question import Question, QuestionStatus, Answer
 from app.auth.dependencies import get_current_user, require_approved_expert, require_expert
+from app.services.redis_service import get_redis_service
 
 router = APIRouter(prefix="/expert", tags=["Expert"])
 
@@ -639,17 +641,25 @@ async def get_trending_diseases(
     current_user: User = Depends(require_approved_expert),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get trending diseases based on diagnosis frequency."""
+    """Get trending diseases based on diagnosis frequency. Cached in Redis for 15 min."""
     from app.models.diagnosis import Diagnosis
     from datetime import timedelta
-    
+
+    settings = get_settings()
+    redis = get_redis_service()
+    cache_key = f"expert:trending:{period}:{limit}"
+
+    cached = await redis.get(cache_key)
+    if cached is not None:
+        return cached
+
     # Build date filter
     date_filter = None
     if period == "week":
         date_filter = datetime.utcnow() - timedelta(days=7)
     elif period == "month":
         date_filter = datetime.utcnow() - timedelta(days=30)
-    
+
     # Query diagnoses grouped by disease
     query = (
         select(
@@ -660,13 +670,13 @@ async def get_trending_diseases(
         .order_by(func.count(Diagnosis.id).desc())
         .limit(limit)
     )
-    
+
     if date_filter:
         query = query.where(Diagnosis.created_at >= date_filter)
-    
+
     result = await db.execute(query)
     rows = result.all()
-    
+
     trending = []
     for disease_name, count in rows:
         if disease_name:
@@ -674,7 +684,7 @@ async def get_trending_diseases(
                 "disease_name": disease_name,
                 "diagnosis_count": count,
             })
-    
+
     # Also get question counts per disease keyword
     for item in trending[:5]:  # Top 5
         keyword = item["disease_name"].split()[0] if item["disease_name"] else ""
@@ -685,11 +695,13 @@ async def get_trending_diseases(
                 )
             )).scalar()
             item["question_count"] = q_count
-    
-    return {
+
+    response = {
         "period": period,
         "trending": trending,
     }
+    await redis.set(cache_key, response, ttl=settings.cache_ttl_trending)
+    return response
 
 
 # ============== Expert Community Posts ==============

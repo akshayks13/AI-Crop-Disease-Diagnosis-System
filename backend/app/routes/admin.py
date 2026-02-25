@@ -10,12 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
 from app.database import get_db
+from app.config import get_settings
 from app.models.user import User, UserRole, UserStatus
 from app.models.diagnosis import Diagnosis
 from app.models.question import Question, QuestionStatus, Answer
 from app.models.system import SystemLog, DailyStats
 from app.auth.dependencies import require_admin
 from app.services.storage_service import get_storage_service
+from app.services.redis_service import get_redis_service
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -27,10 +29,18 @@ async def get_dashboard(
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get admin dashboard overview."""
+    """Get admin dashboard overview. Cached in Redis for 5 min."""
+    settings = get_settings()
+    redis = get_redis_service()
+    cache_key = "admin:dashboard"
+
+    cached = await redis.get(cache_key)
+    if cached is not None:
+        return cached
+
     today = datetime.utcnow().date()
     week_ago = today - timedelta(days=7)
-    
+
     # User counts (excluding admins)
     total_users = (await db.execute(
         select(func.count(User.id)).where(User.role != UserRole.ADMIN)
@@ -47,7 +57,7 @@ async def get_dashboard(
             User.status == UserStatus.PENDING
         )
     )).scalar()
-    
+
     # Diagnosis counts
     total_diagnoses = (await db.execute(
         select(func.count(Diagnosis.id))
@@ -62,7 +72,7 @@ async def get_dashboard(
             func.date(Diagnosis.created_at) >= week_ago
         )
     )).scalar()
-    
+
     # Question counts
     total_questions = (await db.execute(
         select(func.count(Question.id))
@@ -73,11 +83,11 @@ async def get_dashboard(
     answered_questions = (await db.execute(
         select(func.count(Question.id)).where(Question.status == QuestionStatus.ANSWERED)
     )).scalar()
-    
+
     # Storage stats
     storage = get_storage_service()
     storage_stats = storage.get_storage_stats()
-    
+
     # Recent signups (last 7 days)
     recent_signups = (await db.execute(
         select(func.count(User.id)).where(
@@ -87,8 +97,8 @@ async def get_dashboard(
             )
         )
     )).scalar()
-    
-    return {
+
+    response = {
         "metrics": {
             "total_users": total_users,
             "total_farmers": total_farmers,
@@ -106,8 +116,10 @@ async def get_dashboard(
             "recent_signups": recent_signups,
             "open_questions": open_questions,
         },
-        "system_health": "healthy",  # Could be enhanced with actual health checks
+        "system_health": "healthy",
     }
+    await redis.set(cache_key, response, ttl=settings.cache_ttl_admin_dashboard)
+    return response
 
 
 @router.get("/metrics/daily", response_model=dict)
@@ -116,39 +128,49 @@ async def get_daily_metrics(
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get daily metrics for charts."""
+    """Get daily metrics for charts. Cached in Redis for 1 min."""
+    settings = get_settings()
+    redis = get_redis_service()
+    cache_key = f"admin:daily_metrics:{days}"
+
+    cached = await redis.get(cache_key)
+    if cached is not None:
+        return cached
+
     today = datetime.utcnow().date()
     metrics = []
-    
+
     for i in range(days):
         date = today - timedelta(days=i)
-        
+
         diagnoses = (await db.execute(
             select(func.count(Diagnosis.id)).where(
                 func.date(Diagnosis.created_at) == date
             )
         )).scalar()
-        
+
         questions = (await db.execute(
             select(func.count(Question.id)).where(
                 func.date(Question.created_at) == date
             )
         )).scalar()
-        
+
         signups = (await db.execute(
             select(func.count(User.id)).where(
                 func.date(User.created_at) == date
             )
         )).scalar()
-        
+
         metrics.append({
             "date": date.isoformat(),
             "diagnoses": diagnoses,
             "questions": questions,
             "signups": signups,
         })
-    
-    return {"metrics": list(reversed(metrics))}
+
+    response = {"metrics": list(reversed(metrics))}
+    await redis.set(cache_key, response, ttl=settings.cache_ttl_admin_metrics)
+    return response
 
 
 # ============== Questions Management ==============

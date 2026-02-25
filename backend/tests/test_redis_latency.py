@@ -1,87 +1,151 @@
 """
-Redis latency test — compares DB vs Redis cache response times.
+Redis latency benchmark — fully standalone, no `app` module imports.
+
+Compares raw PostgreSQL query time vs Redis GET time across multiple
+endpoints' cache patterns to prove caching ROI.
 
 Usage:
-    cd backend
-    source venv/bin/activate
-    PYTHONPATH=. python tests/test_redis_latency.py
+    cd <project-root>/backend
+    venv/bin/python tests/test_redis_latency.py
 
-Requires the backend database to be running locally.
-Does NOT require the FastAPI server — talks to DB and Redis directly.
+Override env vars if needed:
+    DATABASE_URL=postgresql+asyncpg://... REDIS_URL=redis://... venv/bin/python tests/test_redis_latency.py
 """
+from __future__ import annotations  # Python 3.9 compat for `X | Y` type hints
 import asyncio
+import json
+import os
 import time
-from statistics import mean
+from pathlib import Path
+from statistics import mean, stdev
+
+# ── Load .env manually (no pydantic-settings needed) ─────────────────────────
+_env_path = Path(__file__).parent.parent / ".env"
+if _env_path.exists():
+    for line in _env_path.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, _, v = line.partition("=")
+            os.environ.setdefault(k.strip(), v.strip())
+
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql+asyncpg://postgres:postgres@localhost:5432/crop_diagnosis",
+)
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+RUNS = 15  # number of timed iterations per benchmark
 
 
+# ── Benchmark helpers ─────────────────────────────────────────────────────────
 
-async def measure_db_latency(n_runs: int = 10) -> list[float]:
-    """Measure raw PostgreSQL query latency (SELECT all crops)."""
-    from app.database import AsyncSessionLocal
-    from app.models.encyclopedia import CropInfo
-    from sqlalchemy import select
+def _fmt(ms_list: list[float]) -> str:
+    avg = mean(ms_list)
+    sd = stdev(ms_list) if len(ms_list) > 1 else 0
+    return f"avg {avg:6.2f}ms  min {min(ms_list):5.2f}ms  max {max(ms_list):5.2f}ms  σ {sd:4.2f}ms"
 
-    timings = []
-    async with AsyncSessionLocal() as db:
-        for _ in range(n_runs):
+
+async def bench_postgres(label: str, sql: str, n: int = RUNS) -> list[float] | None:
+    """Time a raw SQL query against Postgres using asyncpg directly."""
+    try:
+        import asyncpg  # type: ignore
+        # Normalise URL: asyncpg expects 'postgresql://' not 'postgresql+asyncpg://'
+        url = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+        conn = await asyncpg.connect(url)
+        timings = []
+        for _ in range(n):
             t0 = time.perf_counter()
-            result = await db.execute(select(CropInfo))
-            result.scalars().all()
-            timings.append((time.perf_counter() - t0) * 1000)  # → ms
-    return timings
+            await conn.fetch(sql)
+            timings.append((time.perf_counter() - t0) * 1000)
+        await conn.close()
+        return timings
+    except Exception as e:
+        print(f"    ❌ {label} PostgreSQL error: {e}")
+        return None
 
 
-async def measure_redis_latency(n_runs: int = 10) -> list[float]:
-    """Measure Redis GET latency (after one warm-up SET)."""
-    from app.services.redis_service import RedisService
+async def bench_redis_get(label: str, payload: dict, n: int = RUNS) -> list[float] | None:
+    """Time a Redis GET after writing a typical cache payload."""
+    try:
+        import redis.asyncio as aioredis  # type: ignore
+        r = aioredis.from_url(REDIS_URL, decode_responses=True)
+        key = f"bench:{label}"
+        await r.set(key, json.dumps(payload), ex=60)
+        timings = []
+        for _ in range(n):
+            t0 = time.perf_counter()
+            val = await r.get(key)
+            _ = json.loads(val)  # include JSON parse time (same as prod)
+            timings.append((time.perf_counter() - t0) * 1000)
+        await r.delete(key)
+        await r.aclose()
+        return timings
+    except Exception as e:
+        print(f"    ❌ {label} Redis error: {e}")
+        return None
 
-    redis = RedisService(redis_url="redis://localhost:6379/0")
-    payload = {"crops": [{"name": f"Crop{i}", "season": "Rabi"} for i in range(20)], "total": 20}
 
-    # Warm up — write to Redis
-    await redis.set("latency_test:crops", payload, ttl=60)
+def print_comparison(label: str, db: list[float] | None, cache: list[float] | None):
+    print(f"\n  📊 {label}")
+    if db:
+        print(f"     DB     → {_fmt(db)}")
+    if cache:
+        print(f"     Redis  → {_fmt(cache)}")
+    if db and cache:
+        speedup = mean(db) / mean(cache)
+        saved = mean(db) - mean(cache)
+        print(f"     🚀  {speedup:.1f}x faster  |  saves ~{saved:.1f}ms per cached hit")
 
-    timings = []
-    for _ in range(n_runs):
-        t0 = time.perf_counter()
-        val = await redis.get("latency_test:crops")
-        timings.append((time.perf_counter() - t0) * 1000)
 
-    await redis.delete("latency_test:crops")
-    await redis.close()
-    return timings
-
+# ── Benchmarks ────────────────────────────────────────────────────────────────
 
 async def main():
-    RUNS = 10
-    print(f"\n{'='*55}")
-    print(f"  Redis vs PostgreSQL Latency Comparison ({RUNS} runs each)")
-    print(f"{'='*55}\n")
+    print(f"\n{'━'*62}")
+    print(f"  Redis vs PostgreSQL Latency Benchmark  ({RUNS} runs each)")
+    print(f"  DB:    {DATABASE_URL[:55]}...")
+    print(f"  Redis: {REDIS_URL}")
+    print(f"{'━'*62}")
 
-    print("⏳ Measuring PostgreSQL query latency...")
-    try:
-        db_times = await measure_db_latency(RUNS)
-        print(f"  ✅ PostgreSQL — avg: {mean(db_times):.2f}ms  "
-              f"min: {min(db_times):.2f}ms  max: {max(db_times):.2f}ms")
-    except Exception as e:
-        db_times = []
-        print(f"  ❌ PostgreSQL error: {e}")
+    benchmarks = [
+        (
+            "encyclopedia/crops  [SELECT all crops]",
+            "SELECT * FROM crop_encyclopedia",
+            {"crops": [{"id": str(i), "name": f"Crop{i}", "season": "Rabi"} for i in range(20)], "total": 20},
+        ),
+        (
+            "encyclopedia/diseases  [SELECT all diseases]",
+            "SELECT * FROM disease_encyclopedia",
+            {"diseases": [{"id": str(i), "name": f"Disease{i}", "severity": "moderate"} for i in range(25)], "total": 25},
+        ),
+        (
+            "admin/dashboard  [12 COUNT queries simulated]",
+            # Simulate the sequence of count queries with a single query of sub-selects (since asyncpg doesn't return multiple statement results well)
+            "SELECT (SELECT COUNT(*) FROM users) as u, (SELECT COUNT(*) FROM diagnoses) as d, (SELECT COUNT(*) FROM questions) as q",
+            {"metrics": {"total_users": 42, "total_diagnoses": 300, "open_questions": 5, "pending_experts": 2}},
+        ),
+        (
+            "expert/trending-diseases  [GROUP BY diagnoses]",
+            "SELECT disease, COUNT(*) as cnt FROM diagnoses GROUP BY disease ORDER BY cnt DESC LIMIT 10",
+            {"period": "week", "trending": [{"disease_name": f"Disease{i}", "count": 10 - i} for i in range(10)]},
+        ),
+    ]
 
-    print("\n⏳ Measuring Redis GET latency...")
-    try:
-        redis_times = await measure_redis_latency(RUNS)
-        print(f"  ✅ Redis        — avg: {mean(redis_times):.2f}ms  "
-              f"min: {min(redis_times):.2f}ms  max: {max(redis_times):.2f}ms")
-    except Exception as e:
-        redis_times = []
-        print(f"  ❌ Redis error: {e}")
+    all_results = []
+    for label, sql, payload in benchmarks:
+        db_t, redis_t = await asyncio.gather(
+            bench_postgres(label, sql),
+            bench_redis_get(label, payload),
+        )
+        print_comparison(label, db_t, redis_t)
+        if db_t and redis_t:
+            all_results.append((mean(db_t), mean(redis_t)))
 
-    if db_times and redis_times:
-        speedup = mean(db_times) / mean(redis_times)
-        saved_ms = mean(db_times) - mean(redis_times)
-        print(f"\n{'='*55}")
-        print(f"  🚀 Redis is {speedup:.1f}x faster — saves ~{saved_ms:.1f}ms per request")
-        print(f"{'='*55}\n")
+    if all_results:
+        overall_db = mean(r[0] for r in all_results)
+        overall_redis = mean(r[1] for r in all_results)
+        print(f"\n{'━'*62}")
+        print(f"  OVERALL  DB avg: {overall_db:.2f}ms  │  Redis avg: {overall_redis:.2f}ms")
+        print(f"  Overall speedup: {overall_db / overall_redis:.1f}x  │  avg saving: {overall_db - overall_redis:.1f}ms/req")
+        print(f"{'━'*62}\n")
 
 
 if __name__ == "__main__":

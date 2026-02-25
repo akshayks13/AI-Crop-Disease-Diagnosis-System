@@ -30,7 +30,14 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # Redis Cache
-    redis_url: str = ""  # e.g. redis://localhost:6379/0 — leave empty to disable Redis
+    redis_url: str = ""              # e.g. redis://localhost:6379/0 — leave empty to disable
+    redis_max_connections: int = 10  # connection pool size
+
+    # Cache TTLs (seconds) — tune per feature type
+    cache_ttl_encyclopedia: int = 86400  # 24 h — static reference data (crops/diseases/pests)
+    cache_ttl_trending: int = 900        # 15 min — expert trending diseases
+    cache_ttl_admin_dashboard: int = 300 # 5 min — admin overview metrics
+    cache_ttl_admin_metrics: int = 60    # 1 min — admin daily chart data
 
     # External APIs
     agmarknet_api_key: str = ""

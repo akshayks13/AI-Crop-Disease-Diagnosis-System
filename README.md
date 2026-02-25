@@ -249,6 +249,10 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
+# Start Redis (Required for caching)
+# Make sure Docker is running on your machine first
+docker run -d --name crop_diagnosis_redis -p 6379:6379 redis:7-alpine
+
 # Configure environment
 cp .env.example .env
 # Edit .env with your database credentials:

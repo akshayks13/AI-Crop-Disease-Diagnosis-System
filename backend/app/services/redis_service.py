@@ -44,15 +44,18 @@ class RedisService:
         """Attempt to create the Redis client (lazy; no I/O at init time)."""
         try:
             import redis.asyncio as aioredis  # type: ignore[import]
+            from app.config import get_settings
+            max_conn = getattr(get_settings(), "redis_max_connections", 10)
             self._client = aioredis.from_url(
                 self._url,
                 encoding="utf-8",
                 decode_responses=True,
+                max_connections=max_conn,
                 socket_connect_timeout=2,
                 socket_timeout=2,
             )
             self._available = True
-            logger.info(f"[Redis] Client created for {self._url}")
+            logger.info(f"[Redis] Client created for {self._url} (max_connections={max_conn})")
         except Exception as exc:
             logger.warning(f"[Redis] Failed to create client: {exc}")
             self._available = False
