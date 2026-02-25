@@ -108,6 +108,7 @@ Access the apps:
 | Admin Dashboard | Next.js + TypeScript + Tailwind |
 | Backend API | FastAPI + SQLAlchemy |
 | Database | PostgreSQL |
+| Cache | Redis 7 |
 | ML Pipeline | PyTorch + OpenCV |
 | Auth | JWT + RBAC |
 
@@ -373,6 +374,7 @@ See [DEVOPS.md](docs/DEVOPS.md) for full restore instructions and troubleshootin
 | `JWT_SECRET_KEY` | Secret for JWT tokens | `your-secret-key-here` |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:3000` |
 | `DEBUG` | Enable debug mode | `true` or `false` |
+| `REDIS_URL` | Redis connection string (optional) | `redis://localhost:6379/0` |
 | `AGMARKNET_API_KEY` | API Key for OGD Platform (Agmarknet) | `your-api-key` |
 | `AGMARKNET_API_URL` | Agmarknet API Endpoint | `https://api.data.gov.in/resource/...` |
 

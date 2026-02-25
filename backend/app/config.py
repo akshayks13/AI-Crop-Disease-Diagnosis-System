@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     app_name: str = "AI Crop Disease Diagnosis System"
     debug: bool = True
 
+    # Redis Cache
+    redis_url: str = ""  # e.g. redis://localhost:6379/0 — leave empty to disable Redis
+
     # External APIs
     agmarknet_api_key: str = ""
     agmarknet_api_url: str = "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070"

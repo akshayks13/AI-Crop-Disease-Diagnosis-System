@@ -16,13 +16,14 @@ AI-powered crop disease diagnosis platform for farmers with expert consultation,
 │  Auth │ Routes │ Services │ Agronomy       │
 └─────────────────────────────────────────────┘
                     │
-       ┌────────────┴────────────┐
-       ▼                         ▼
-┌──────────────┐        ┌─────────────────┐
-│ ML MODELS    │        │   DATA LAYER    │
-│ • Disease    │        │  PostgreSQL     │
-│ • Treatment  │        │  File Storage   │
-└──────────────┘        └─────────────────┘
+       ┌────────────┼────────────┐
+       ▼            ▼            ▼
+┌──────────────┐ ┌──────────┐ ┌─────────────────┐
+│ ML MODELS    │ │  REDIS   │ │   DATA LAYER    │
+│ • Disease    │ │  Cache   │ │  PostgreSQL     │
+│ • Treatment  │ │  Port    │ │  File Storage   │
+└──────────────┘ │  6379    │ └─────────────────┘
+                 └──────────┘
 ```
 
 ## ML Model Architecture
