@@ -252,6 +252,8 @@ pip install -r requirements.txt
 # Start Redis (Required for caching)
 # Make sure Docker is running on your machine first
 docker run -d --name crop_diagnosis_redis -p 6379:6379 redis:7-alpine
+# View logs: docker logs crop_diagnosis_redis
+# Stop container: docker stop crop_diagnosis_redis
 
 # Configure environment
 cp .env.example .env

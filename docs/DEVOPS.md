@@ -149,6 +149,8 @@ cd SE_Proj
 
 # Start Redis via Docker (Required for caching)
 docker run -d --name crop_diagnosis_redis -p 6379:6379 redis:7-alpine
+# View logs: docker logs crop_diagnosis_redis
+# Stop container: docker stop crop_diagnosis_redis
 
 # Backend setup
 cd backend
