@@ -1,8 +1,8 @@
 /// API Configuration Constants
 class ApiConfig {
   // Base URL - change for production
- static const String baseUrl = 'https://subepithelial-shenika-unaddible.ngrok-free.dev';
-  
+ static const String baseUrl =
+      String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');  
   // Auth endpoints
   static const String login = '/auth/login';
   static const String register = '/auth/register';
