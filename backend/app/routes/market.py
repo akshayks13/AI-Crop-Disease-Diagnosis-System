@@ -437,7 +437,7 @@ async def get_market_debug_status(
     current_time = datetime.now().timestamp()
 
     cache_info = []
-    for key, entry in _market_cache.items():
+    for key, entry in _mem_cache.items():
         age_seconds = current_time - entry["timestamp"]
         cache_info.append({
             "cache_key": key,
@@ -452,7 +452,7 @@ async def get_market_debug_status(
         "api_key_preview": f"{api_key[:8]}...{api_key[-4:]}" if api_key and len(api_key) > 12 else "NOT SET",
         "api_url": settings.agmarknet_api_url,
         "cache_duration_seconds": CACHE_DURATION_SECONDS,
-        "cache_entries": len(_market_cache),
+        "cache_entries": len(_mem_cache),
         "cache_details": cache_info,
     }
 
@@ -478,7 +478,6 @@ async def clear_market_cache(
     global _mem_rate_limited_until
     _mem_rate_limited_until = 0
 
-    total = redis_deleted + mem_count
     return {
         "message": f"Cache cleared. {redis_deleted} Redis key(s) + {mem_count} in-memory entry(ies) removed.",
         "redis_available": redis.is_available,
