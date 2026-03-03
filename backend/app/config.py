@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     )
     
     # Database
-    database_url: str = "postgresql+asyncpg://postgres:12345@127.0.0.1:5433/crop_diagnosis"
+    database_url: str
     
     # JWT Configuration
     jwt_secret_key: str = "your-secret-key-change-in-production"
