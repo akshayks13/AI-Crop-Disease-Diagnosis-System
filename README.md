@@ -52,6 +52,7 @@ Access the apps:
 
 ### For Farmers
 - **AI Diagnosis**: Upload crop images for instant disease detection
+- **Disease Outbreak Map**: Interactive map showing geo-tagged disease outbreaks in real-time
 - **Treatment Plans**: Get detailed chemical and organic treatment options
 - **Farm Management**: Track crops, growth progress, and manage farm tasks
 - **Market Prices**: View real-time commodity prices from **Agmarknet** (Government of India) with fallback to local database

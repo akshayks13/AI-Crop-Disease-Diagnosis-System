@@ -55,12 +55,13 @@ Here are the major packages used and **why**:
     *   *Why?* Allows the app to run the disease detection model directly on the phone's CPU/GPU without needing internet (Hybrid approach).
 *   **`image`**: Used for resizing and preprocessing images before sending them to the model.
 
-### 4. Hardware Interaction
+### 4. Hardware & Mapping
 *   **`camera`** (v0.10.5): Accesses the device camera for taking crop photos.
 *   **`image_picker`** (v1.1.2): Selects images from the gallery.
-*   **`geolocator`** (v13.0.0): Gets the user's GPS coordinates for location-based market prices and weather data.
+*   **`geolocator`** (v13.0.0): Gets the user's GPS coordinates for location-based market prices and the disease outbreak map.
 *   **`geocoding`**: Reverse-geocodes GPS coordinates to city/district names for market filtering.
 *   **`permission_handler`** (v12.0.1): Manages camera, location, and microphone permissions.
+*   **`flutter_map`**: Renders the interactive Disease Outbreak Map using OpenStreetMap tiles.
 
 ### 5. Storage
 *   **`flutter_secure_storage`** (v9.0.0): Stores sensitive data like **JWT Tokens** securely in the Keychain/Keystore.
@@ -239,14 +240,15 @@ API_BASE_URL=http://localhost:8000
 ## 📚 Key Features
 
 1.  **AI Diagnosis**: Camera → ML Model → Treatment Plan
-2.  **Voice Input**: Describe symptoms by voice on the Diagnosis screen (`speech_to_text`, `en_IN` locale)
-3.  **Expert Q&A**: Ask questions, rate answers
-4.  **Community Forum**: Posts, comments, likes
-5.  **Farm Management**: Track crops, manage tasks
-6.  **Market Prices**: Real-time commodity prices with **GPS location filter** (auto-detects nearest city)
-7.  **Encyclopedia**: Browse Crops, Diseases & **Pests** (3-tab UI, 8 pests seeded)
-8.  **Multi-Language**: UI in English, Hindi, Tamil, Telugu
-9.  **Accessibility**: TTS & STT for voice interaction
+2.  **Disease Outbreak Map**: Interactive OSM map showing geo-tagged disease markers in the user's region
+3.  **Voice Input**: Describe symptoms by voice on the Diagnosis screen (`speech_to_text`, `en_IN` locale)
+4.  **Expert Q&A**: Ask questions, rate answers
+5.  **Community Forum**: Posts, comments, likes
+6.  **Farm Management**: Track crops, manage tasks
+7.  **Market Prices**: Real-time commodity prices with **GPS location filter** (auto-detects nearest city)
+8.  **Encyclopedia**: Browse Crops, Diseases & **Pests** (3-tab UI, 8 pests seeded)
+9.  **Multi-Language**: UI in English, Hindi, Tamil, Telugu
+10. **Accessibility**: TTS & STT for voice interaction
 
 ## 🪵 Logging
 

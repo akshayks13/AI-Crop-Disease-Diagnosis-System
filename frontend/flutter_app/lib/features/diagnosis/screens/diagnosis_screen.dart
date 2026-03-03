@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../../config/routes.dart';
 import '../../../../core/services/ml_service.dart';
@@ -158,6 +159,19 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
         if (result['id'] != null) {
           try {
             final api = ref.read(apiClientProvider);
+
+            // Capture GPS for outbreak map (non-blocking)
+            double? lat, lng;
+            try {
+              final perm = await Geolocator.checkPermission();
+              if (perm == LocationPermission.whileInUse || perm == LocationPermission.always) {
+                final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.medium)
+                    .timeout(const Duration(seconds: 3));
+                lat = pos.latitude;
+                lng = pos.longitude;
+              }
+            } catch (_) {}
+
             await api.post(
               '/diagnosis/${result['id']}/save-advisory',
               data: {
@@ -167,6 +181,8 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
                 'plant': result['plant'],
                 'confidence': result['confidence'],
                 'severity': result['severity'],
+                if (lat != null) 'latitude': lat,
+                if (lng != null) 'longitude': lng,
               },
             );
           } catch (_) {

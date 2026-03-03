@@ -146,6 +146,31 @@ All endpoints are rate-limited to **60 requests per minute per IP address**.
 }
 ```
 
+### Get Disease Outbreak Map Data
+
+`GET /diagnosis/disease-map?days=30&disease_name=Leaf%20Blight`
+
+> Returns geo-tagged diagnoses for the interactive outbreak map. Publicly accessible.
+
+| Query Param | Type | Required | Description |
+|---|---|---|---|
+| `days` | int | No | Defaults to 30. Filters for recent reports. |
+| `disease_name` | string | No | Filters by specific disease |
+
+```json
+// Response 200
+[
+  {
+    "id": "uuid",
+    "disease": "Leaf Blight",
+    "severity": "severe",
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "created_at": "2024-03-24T10:00:00Z"
+  }
+]
+```
+
 ### Rate Diagnosis
 
 `POST /diagnosis/{id}/rate`

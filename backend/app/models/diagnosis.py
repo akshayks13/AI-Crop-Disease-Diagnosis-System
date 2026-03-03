@@ -68,6 +68,14 @@ class Diagnosis(Base):
         String(255),
         nullable=True,
     )
+    latitude: Mapped[Optional[float]] = mapped_column(
+        Float,
+        nullable=True,
+    )
+    longitude: Mapped[Optional[float]] = mapped_column(
+        Float,
+        nullable=True,
+    )
     
     # Diagnosis results
     disease: Mapped[str] = mapped_column(

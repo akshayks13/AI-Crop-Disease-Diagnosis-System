@@ -69,13 +69,14 @@ classDiagram
         +generate_otp() str
         +to_response_dict() dict
     }
-    
     class Diagnosis {
         -UUID id
         -UUID user_id
         -String disease
         -Float confidence
         -String severity
+        -Float latitude
+        -Float longitude
         -JSON treatment
         -Integer rating
         +to_response_dict() dict

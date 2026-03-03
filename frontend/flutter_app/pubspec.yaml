@@ -69,6 +69,11 @@ dependencies:
   tflite_flutter_plus: ^0.0.1
   geocoding: ^4.0.0
 
+  # Map (Disease Outbreak Map)
+  flutter_map: ^6.1.0
+  flutter_map_cancellable_tile_provider: ^2.0.0
+  latlong2: ^0.9.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

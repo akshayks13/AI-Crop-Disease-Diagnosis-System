@@ -3,7 +3,7 @@ Farmer Routes - Diagnosis and Question Endpoints
 """
 import uuid
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Body
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,6 +29,8 @@ async def predict_disease(
     file: UploadFile = File(..., description="Crop image or video"),
     crop_type: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -38,6 +40,7 @@ async def predict_disease(
     - Accepts JPEG, PNG, WebP images
     - Returns disease name, severity, confidence, and treatment plan
     - Stores diagnosis in history
+    - Optionally accepts GPS coordinates for the outbreak map
     """
     storage = get_storage_service()
     diagnosis_service = get_diagnosis_service()
@@ -58,6 +61,20 @@ async def predict_disease(
         location=location,
         db=db,
     )
+    
+    # Attach GPS coordinates if provided (for disease outbreak map)
+    if latitude is not None and longitude is not None and "id" in result:
+        try:
+            from sqlalchemy import update
+            stmt = (
+                update(Diagnosis)
+                .where(Diagnosis.id == uuid.UUID(result["id"]))
+                .values(latitude=latitude, longitude=longitude)
+            )
+            await db.execute(stmt)
+            await db.commit()
+        except Exception:
+            pass  # Non-critical — don't fail the diagnosis over geo tagging
     
     return result
 
@@ -100,6 +117,10 @@ async def save_diagnosis_advisory(
         update_data["confidence"] = body["confidence"]
     if "severity" in body:
         update_data["severity"] = body["severity"]
+    if "latitude" in body and body["latitude"] is not None:
+        update_data["latitude"] = body["latitude"]
+    if "longitude" in body and body["longitude"] is not None:
+        update_data["longitude"] = body["longitude"]
     
     if update_data:
         stmt = (
@@ -135,6 +156,73 @@ async def get_diagnosis_history(
     )
     
     return result
+
+
+# ============== Disease Outbreak Map ==============
+# NOTE: This MUST be defined BEFORE /{diagnosis_id} routes,
+# otherwise FastAPI treats "disease-map" as a diagnosis_id UUID and returns 400.
+
+
+@router.get("/disease-map", response_model=dict)
+async def get_disease_map(
+    days: int = 30,
+    disease: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get geo-tagged diagnoses for the disease outbreak map.
+
+    Returns diagnoses from the last `days` days that have GPS coordinates.
+    Optionally filters by disease name.
+    No auth required — public data for awareness.
+    """
+    cutoff = datetime.utcnow() - timedelta(days=days)
+
+    query = (
+        select(
+            Diagnosis.disease,
+            Diagnosis.severity,
+            Diagnosis.latitude,
+            Diagnosis.longitude,
+            Diagnosis.crop_type,
+            Diagnosis.created_at,
+        )
+        .where(
+            Diagnosis.latitude.isnot(None),
+            Diagnosis.longitude.isnot(None),
+            Diagnosis.created_at >= cutoff,
+        )
+        .order_by(Diagnosis.created_at.desc())
+        .limit(500)
+    )
+
+    if disease:
+        query = query.where(Diagnosis.disease.ilike(f"%{disease}%"))
+
+    result = await db.execute(query)
+    rows = result.all()
+
+    outbreaks = [
+        {
+            "disease": r.disease,
+            "severity": r.severity,
+            "latitude": r.latitude,
+            "longitude": r.longitude,
+            "crop_type": r.crop_type,
+            "date": r.created_at.isoformat(),
+        }
+        for r in rows
+    ]
+
+    # Collect distinct diseases for filter chips
+    disease_names = sorted({r.disease for r in rows})
+
+    return {
+        "outbreaks": outbreaks,
+        "total": len(outbreaks),
+        "diseases": disease_names,
+        "days": days,
+    }
 
 
 @router.get("/{diagnosis_id}", response_model=dict)
@@ -211,6 +299,7 @@ async def rate_diagnosis(
     await db.commit()
     
     return {"message": "Rating submitted", "rating": rating}
+
 
 
 # ============== DSS Advisory Endpoint ==============
