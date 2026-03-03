@@ -207,7 +207,7 @@ vitest==4.0.18
 | **Validation** | email validation works | valid: `true`, invalid: `false` |
 | **Validation** | password minimum length | `>= 6 characters` |
 | **Validation** | phone number validation | `>= 10 digits` |
-| **Question Status** | statuses are correct | `OPEN, RESOLVED, CLOSED` |
+| **Question Status** | statuses are correct | `OPEN, ANSWERED, CLOSED` |
 | **Farm Management** | growth stages ordered | `GERMINATION → HARVEST` |
 | **Farm Management** | task priorities exist | `LOW, MEDIUM, HIGH` |
 | **Market** | trend types correct | `UP, DOWN, STABLE` |
@@ -310,6 +310,9 @@ pytest --cov=app --cov-report=html
 
 # Run only async tests
 pytest -m asyncio
+
+# Redis vs PostgreSQL latency benchmark (requires Redis running)
+venv/bin/python tests/test_redis_latency.py
 ```
 
 **Expected Output:**

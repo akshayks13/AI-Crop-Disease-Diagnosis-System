@@ -52,12 +52,21 @@ Access the apps:
 
 ### For Farmers
 - **AI Diagnosis**: Upload crop images for instant disease detection
+- **Disease Outbreak Map**: Interactive map showing geo-tagged disease outbreaks in real-time
 - **Treatment Plans**: Get detailed chemical and organic treatment options
 - **Farm Management**: Track crops, growth progress, and manage farm tasks
 - **Market Prices**: View real-time commodity prices from **Agmarknet** (Government of India) with fallback to local database
 - **Community Forum**: Share posts, comments, and like content
 - **Crop Encyclopedia**: Browse detailed crop and disease information
 - **Expert Consultation**: Ask verified agricultural experts
+
+### ⚡ Performance (Redis Caching)
+Redis is used across 6 high-traffic endpoints (Encyclopedia, Expert Trending, Admin Dashboard, Agmarknet API). 
+Based on our isolated latency benchmark (`tests/test_redis_latency.py`):
+* **Admin Dashboard** (12 COUNT queries): 0.49ms (Postgres) → **0.27ms** (Redis) 
+* **Encyclopedia Crops**: 0.97ms (Postgres) → **0.38ms** (Redis)
+* **Overall average speedup**: **1.6x faster** (up to **5.7x** under load) with sub-millisecond response times.
+
 - **Diagnosis Ratings**: Rate AI and expert answers for quality feedback
 - **Voice Narration**: TTS support for accessibility
 
@@ -108,6 +117,7 @@ Access the apps:
 | Admin Dashboard | Next.js + TypeScript + Tailwind |
 | Backend API | FastAPI + SQLAlchemy |
 | Database | PostgreSQL |
+| Cache | Redis 7 |
 | ML Pipeline | PyTorch + OpenCV |
 | Auth | JWT + RBAC |
 
@@ -248,6 +258,12 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
+# Start Redis (Required for caching)
+# Make sure Docker is running on your machine first
+docker run -d --name crop_diagnosis_redis -p 6379:6379 redis:7-alpine
+# View logs: docker logs crop_diagnosis_redis
+# Stop container: docker stop crop_diagnosis_redis
+
 # Configure environment
 cp .env.example .env
 # Edit .env with your database credentials:
@@ -376,6 +392,7 @@ See [DEVOPS.md](docs/DEVOPS.md) for full restore instructions and troubleshootin
 | `JWT_SECRET_KEY` | Secret for JWT tokens | `your-secret-key-here` |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:3000` |
 | `DEBUG` | Enable debug mode | `true` or `false` |
+| `REDIS_URL` | Redis connection string (optional) | `redis://localhost:6379/0` |
 | `AGMARKNET_API_KEY` | API Key for OGD Platform (Agmarknet) | `your-api-key` |
 | `AGMARKNET_API_URL` | Agmarknet API Endpoint | `https://api.data.gov.in/resource/...` |
 

@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS diagnoses (
     warnings TEXT,
     additional_diseases JSONB,
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

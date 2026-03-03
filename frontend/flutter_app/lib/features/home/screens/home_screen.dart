@@ -152,6 +152,13 @@ class HomeScreen extends ConsumerWidget {
                     onTap: () => Navigator.pushNamed(context, AppRoutes.history),
                   ),
                   _ActionCard(
+                    title: 'Disease\nMap',
+                    subtitle: 'Outbreak alerts',
+                    icon: Icons.map,
+                    color: const Color(0xFFE53935), // Red 600
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.diseaseMap),
+                  ),
+                  _ActionCard(
                     title: 'My\nQuestions',
                     subtitle: 'Expert answers',
                     icon: Icons.question_answer,

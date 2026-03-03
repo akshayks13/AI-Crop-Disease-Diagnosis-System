@@ -21,16 +21,24 @@ from app.schemas.market import (
     MarketPriceResponse,
     MarketPriceListResponse,
 )
+from app.services.redis_service import get_redis_service
+
 
 router = APIRouter(prefix="/market", tags=["Market Prices"])
 
-
-# Simple in-memory cache for API data only
-# Format: {"timestamp": float, "data": dict}
-_market_cache = {}
-CACHE_DURATION_SECONDS = 3600  # 1 hour — data.gov.in is rate-limited
-_rate_limited_until: float = 0  # Epoch time until which we skip API calls
+# ── Cache Configuration ──────────────────────────────────────────────────────
+# Redis is the primary cache (shared, persists across restarts).
+# If Redis is unavailable, we fall back to an in-memory dict per-process.
+CACHE_DURATION_SECONDS = 3600  # 1 hour — stays within Agmarknet rate limits
 RATE_LIMIT_BACKOFF_SECONDS = 3600  # Wait 1 hour after a 429
+
+# Redis key prefixes
+_REDIS_CACHE_PREFIX = "market_cache:"
+_REDIS_RATE_LIMIT_KEY = "market_rate_limited_until"
+
+# In-memory fallback (used only when Redis is not available)
+_mem_cache: Dict[str, Dict] = {}
+_mem_rate_limited_until: float = 0
 
 async def fetch_agmarknet_data(
     api_key: str,
@@ -40,42 +48,61 @@ async def fetch_agmarknet_data(
 ) -> Dict[str, Any]:
     """
     Fetch data from Agmarknet API via OGD Platform.
-    Includes aggressive caching (1 hour) to avoid rate limits.
-    Only called when API key is properly configured.
+    Uses Redis for persistent caching (1 hour TTL) to stay within API rate limits.
+    Falls back to in-memory cache when Redis is unavailable.
+    Rate-limit backoff state also persists in Redis across restarts.
     """
-    global _rate_limited_until
+    global _mem_rate_limited_until
+
+    redis = get_redis_service()
     settings = get_settings()
     base_url = settings.agmarknet_api_url
-    
+
     if not base_url:
         return None
-    
-    # Skip API call if we're currently rate-limited
+
     current_time = datetime.now().timestamp()
-    if current_time < _rate_limited_until:
-        remaining = int(_rate_limited_until - current_time)
+
+    # ── Check rate-limit backoff ─────────────────────────────────────────────
+    # Try Redis first; fall back to the in-memory float
+    rate_limited_until: float = _mem_rate_limited_until
+    redis_rl = await redis.get_raw(_REDIS_RATE_LIMIT_KEY)
+    if redis_rl is not None:
+        try:
+            rate_limited_until = float(redis_rl)
+        except ValueError:
+            pass
+
+    if current_time < rate_limited_until:
+        remaining = int(rate_limited_until - current_time)
         print(f"[Agmarknet] Rate limited — skipping API call. {remaining}s remaining in backoff.")
         return None
-        
-    # Generate cache key based on params
-    cache_key = f"{limit}_{offset}_{str(filters)}"
-    
-    # Check cache
-    if cache_key in _market_cache:
-        cached_entry = _market_cache[cache_key]
-        if current_time - cached_entry["timestamp"] < CACHE_DURATION_SECONDS:
-            age = int(current_time - cached_entry['timestamp'])
-            print(f"[Agmarknet] Cache hit (age={age}s). Records: {len(cached_entry['data'].get('records', []))}")
-            return cached_entry["data"]
 
+    # ── Build cache key ──────────────────────────────────────────────────────
+    cache_key_suffix = f"{limit}_{offset}_{str(filters)}"
+    redis_key = f"{_REDIS_CACHE_PREFIX}{cache_key_suffix}"
+
+    # ── Check Redis cache ────────────────────────────────────────────────────
+    cached = await redis.get(redis_key)
+    if cached is not None:
+        print(f"[Agmarknet] Redis cache hit. Records: {len(cached.get('records', []))}")
+        return cached
+
+    # ── Check in-memory fallback cache ───────────────────────────────────────
+    if cache_key_suffix in _mem_cache:
+        entry = _mem_cache[cache_key_suffix]
+        age = current_time - entry["timestamp"]
+        if age < CACHE_DURATION_SECONDS:
+            print(f"[Agmarknet] In-memory cache hit (age={int(age)}s).")
+            return entry["data"]
+
+    # ── Fetch from API ───────────────────────────────────────────────────────
     params = {
         "api-key": api_key,
         "format": "json",
         "limit": limit,
         "offset": offset,
     }
-    
-    # Map internal filters to API filters if possible
     if filters:
         for k, v in filters.items():
             if v:
@@ -83,26 +110,43 @@ async def fetch_agmarknet_data(
 
     async with httpx.AsyncClient() as client:
         try:
-            print(f"Fetching market data from API: {base_url} | limit={limit} offset={offset}")
+            print(f"[Agmarknet] Fetching from API: limit={limit} offset={offset}")
             response = await client.get(base_url, params=params, timeout=20.0)
-            
             print(f"[Agmarknet] Response status: {response.status_code}")
+
             if response.status_code == 200:
                 data = response.json()
-                # Cache successful response for 1 hour to stay within rate limits
-                _market_cache[cache_key] = {
-                    "timestamp": current_time,
-                    "data": data
-                }
+
+                # Store in Redis (with TTL); also store in-memory as fallback
+                stored = await redis.set(redis_key, data, ttl=CACHE_DURATION_SECONDS)
+                if not stored:
+                    # Redis unavailable — use in-memory
+                    _mem_cache[cache_key_suffix] = {
+                        "timestamp": current_time,
+                        "data": data,
+                    }
+                print(f"[Agmarknet] Cached {len(data.get('records', []))} records "
+                      f"({'Redis' if stored else 'in-memory'}).")
                 return data
+
             elif response.status_code == 429:
-                # Rate limited — back off for 1 hour
-                _rate_limited_until = current_time + RATE_LIMIT_BACKOFF_SECONDS
-                print(f"[Agmarknet] Rate limited (429). Backing off for {RATE_LIMIT_BACKOFF_SECONDS}s.")
+                # Persist backoff in Redis; also update in-memory float
+                backoff_until = current_time + RATE_LIMIT_BACKOFF_SECONDS
+                stored = await redis.set_raw(
+                    _REDIS_RATE_LIMIT_KEY,
+                    str(backoff_until),
+                    ttl=RATE_LIMIT_BACKOFF_SECONDS,
+                )
+                if not stored:
+                    _mem_rate_limited_until = backoff_until
+                print(f"[Agmarknet] Rate limited (429). Backed off for {RATE_LIMIT_BACKOFF_SECONDS}s "
+                      f"({'Redis' if stored else 'in-memory'}).")
                 return None
+
             else:
                 print(f"[Agmarknet] Non-200 response ({response.status_code}): {response.text[:200]}")
                 return None
+
         except Exception as e:
             print(f"[Agmarknet] Exception: {type(e).__name__}: {e}")
             return None
@@ -393,7 +437,7 @@ async def get_market_debug_status(
     current_time = datetime.now().timestamp()
 
     cache_info = []
-    for key, entry in _market_cache.items():
+    for key, entry in _mem_cache.items():
         age_seconds = current_time - entry["timestamp"]
         cache_info.append({
             "cache_key": key,
@@ -408,7 +452,7 @@ async def get_market_debug_status(
         "api_key_preview": f"{api_key[:8]}...{api_key[-4:]}" if api_key and len(api_key) > 12 else "NOT SET",
         "api_url": settings.agmarknet_api_url,
         "cache_duration_seconds": CACHE_DURATION_SECONDS,
-        "cache_entries": len(_market_cache),
+        "cache_entries": len(_mem_cache),
         "cache_details": cache_info,
     }
 
@@ -418,12 +462,26 @@ async def clear_market_cache(
     current_user: User = Depends(require_admin),
 ):
     """
-    Clear the in-memory Agmarknet API cache (Admin only).
+    Clear the Agmarknet API cache (Admin only).
+    Clears both the Redis cache and the in-memory fallback.
     Forces a fresh fetch from the API on the next request.
     """
-    count = len(_market_cache)
-    _market_cache.clear()
-    return {"message": f"Cache cleared. {count} entries removed."}
+    redis = get_redis_service()
+
+    # Clear Redis keys matching market_cache:*
+    redis_deleted = await redis.delete_pattern(f"{_REDIS_CACHE_PREFIX}*")
+    await redis.delete(_REDIS_RATE_LIMIT_KEY)  # Also clear backoff
+
+    # Clear in-memory fallback
+    mem_count = len(_mem_cache)
+    _mem_cache.clear()
+    global _mem_rate_limited_until
+    _mem_rate_limited_until = 0
+
+    return {
+        "message": f"Cache cleared. {redis_deleted} Redis key(s) + {mem_count} in-memory entry(ies) removed.",
+        "redis_available": redis.is_available,
+    }
 
 
 @router.delete("/prices/{price_id}", status_code=status.HTTP_204_NO_CONTENT)

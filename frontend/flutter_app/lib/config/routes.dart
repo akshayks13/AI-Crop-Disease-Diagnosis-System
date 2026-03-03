@@ -28,6 +28,7 @@ import '../features/community/screens/community_screen.dart';
 import '../features/encyclopedia/screens/encyclopedia_screen.dart';
 import '../features/farm/screens/farm_screen.dart';
 import '../features/bot/screens/chat_screen.dart';
+import '../features/diagnosis/screens/disease_map_screen.dart';
 
 class AppRoutes {
   // Auth routes
@@ -58,6 +59,7 @@ class AppRoutes {
   static const String encyclopedia = '/encyclopedia';
   static const String farm = '/farm';
   static const String chat = '/chat';
+  static const String diseaseMap = '/disease-map';
   
   // Expert routes
   static const String expertDashboard = '/expert/dashboard';
@@ -129,6 +131,8 @@ class AppRoutes {
         return _slideRoute(const FarmScreen(), settings);
       case chat:
         return _slideRoute(const ChatScreen(), settings);
+      case diseaseMap:
+        return _slideRoute(const DiseaseMapScreen(), settings);
       
       // Expert
       case expertDashboard:

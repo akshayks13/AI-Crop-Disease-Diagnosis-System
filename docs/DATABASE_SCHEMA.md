@@ -50,7 +50,7 @@ erDiagram
         uuid diagnosis_id FK
         text question_text
         varchar media_path
-        enum status "OPEN|RESOLVED|CLOSED"
+        enum status "OPEN|ANSWERED|CLOSED"
         timestamp created_at
         timestamp updated_at
     }
@@ -422,7 +422,7 @@ CREATE INDEX idx_daily_stats_date ON daily_stats(date);
 |------|--------|---------|
 | `UserRole` | FARMER, EXPERT, ADMIN | users.role |
 | `UserStatus` | PENDING, ACTIVE, SUSPENDED | users.status |
-| `QuestionStatus` | OPEN, RESOLVED, CLOSED | questions.status |
+| `QuestionStatus` | OPEN, ANSWERED, CLOSED | questions.status |
 | `GrowthStage` | germination, seedling, vegetative, flowering, fruiting, ripening, harvest | farm_crops.growth_stage |
 | `TaskPriority` | low, medium, high | farm_tasks.priority |
 | `TrendType` | up, down, stable | market_prices.trend |
