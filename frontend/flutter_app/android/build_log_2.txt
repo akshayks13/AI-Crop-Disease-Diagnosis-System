@@ -1,0 +1,436 @@
+Initialized native services in: C:\Users\aswat\.gradle\native
+Initialized jansi services in: C:\Users\aswat\.gradle\native
+Found daemon DaemonInfo{pid=3448, address=[a8d3ac95-91f4-48ba-979c-7e4e97522496 port:65344, addresses:[/127.0.0.1]], state=Idle, lastBusy=1771927734163, context=DefaultDaemonContext[uid=218ba2a0-ee94-4192-b3cb-ab7423209f91,javaHome=C:\Program Files\Eclipse Adoptium\jdk-25.0.1.8-hotspot,javaVersion=25,javaVendor=Eclipse Adoptium,daemonRegistryDir=C:\Users\aswat\.gradle\daemon,pid=3448,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-XX:MaxMetaspaceSize=4G,-XX:ReservedCodeCacheSize=512m,-XX:+HeapDumpOnOutOfMemoryError,-Xmx8G,-Dfile.encoding=UTF-8,-Duser.country=IN,-Duser.language=en,-Duser.variant]} however its context does not match the desired criteria.
+JVM is incompatible.
+Wanted: DaemonRequestContext{jvmCriteria=C:\Program Files\Android\Android Studio\jbr (no JDK specified, using current Java home), daemonOpts=[-XX:MaxMetaspaceSize=4G, -XX:ReservedCodeCacheSize=512m, -XX:+HeapDumpOnOutOfMemoryError, -Xmx8G, -Dfile.encoding=windows-1252, -Duser.country=IN, -Duser.language=en, -Duser.variant], applyInstrumentationAgent=true, nativeServicesMode=ENABLED, priority=NORMAL}
+Actual: DefaultDaemonContext[uid=218ba2a0-ee94-4192-b3cb-ab7423209f91,javaHome=C:\Program Files\Eclipse Adoptium\jdk-25.0.1.8-hotspot,javaVersion=25,javaVendor=Eclipse Adoptium,daemonRegistryDir=C:\Users\aswat\.gradle\daemon,pid=3448,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-XX:MaxMetaspaceSize=4G,-XX:ReservedCodeCacheSize=512m,-XX:+HeapDumpOnOutOfMemoryError,-Xmx8G,-Dfile.encoding=UTF-8,-Duser.country=IN,-Duser.language=en,-Duser.variant]
+
+  Looking for a different daemon...
+The client will now receive all logging from the daemon (pid: 14476). The daemon log file: C:\Users\aswat\.gradle\daemon\8.14\daemon-14476.out.log
+Starting 9th build in daemon [uptime: 14 mins 58.639 secs, performance: 100%, GC rate: 0.00/s, heap usage: 0% of 8 GiB, non-heap usage: 4% of 4 GiB]
+Using 32 worker leases.
+Now considering [C:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\frontend\flutter_app\android, C:\Users\aswat\Develop\flutter\packages\flutter_tools\gradle] as hierarchies to watch
+Watching the file system is configured to be enabled if available
+File system watching is active
+Starting Build
+Now considering [C:\Users\aswat\Develop\flutter\packages\flutter_tools\gradle, C:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\frontend\flutter_app\android] as hierarchies to watch
+
+> Configure project :gradle
+Evaluating project ':gradle' using build file 'C:\Users\aswat\Develop\flutter\packages\flutter_tools\gradle\build.gradle.kts'.
+Resolved plugin [id: 'org.gradle.java-gradle-plugin']
+Resolved plugin [id: 'org.gradle.groovy']
+Resolved plugin [id: 'org.gradle.kotlin.kotlin-dsl', version: '5.2.0']
+Resolved plugin [id: 'org.jetbrains.kotlin.jvm', version: '1.9.20']
+Using Kotlin Gradle Plugin gradle85 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+file or directory 'C:\Users\aswat\Develop\flutter\packages\flutter_tools\gradle\src\main\java', not found
+Resolved plugin [id: 'dev.flutter.flutter-plugin-loader', version: '1.0.0']
+Resolved plugin [id: 'com.android.application', version: '8.11.1', apply: false]
+Resolved plugin [id: 'org.jetbrains.kotlin.android', version: '2.2.20', apply: false]
+Resolve mutations for :gradle:checkKotlinGradlePluginConfigurationErrors (Thread[Execution worker,5,main]) started.
+:gradle:checkKotlinGradlePluginConfigurationErrors (Thread[Execution worker,5,main]) started.
+
+> Task :gradle:checkKotlinGradlePluginConfigurationErrors SKIPPED
+Skipping task ':gradle:checkKotlinGradlePluginConfigurationErrors' as task onlyIf 'errorDiagnostics are present' is false.
+Resolve mutations for :gradle:compileKotlin (Thread[Execution worker,5,main]) started.
+:gradle:compileKotlin (Thread[Execution worker,5,main]) started.
+
+> Task :gradle:compileKotlin UP-TO-DATE
+Caching disabled for task ':gradle:compileKotlin' because:
+  Build cache is disabled
+Skipping task ':gradle:compileKotlin' as it is up-to-date.
+Resolve mutations for :gradle:compileJava (Thread[Execution worker,5,main]) started.
+:gradle:compileJava (Thread[Execution worker,5,main]) started.
+
+> Task :gradle:compileJava NO-SOURCE
+Skipping task ':gradle:compileJava' as it has no source files and no previous output files.
+Resolve mutations for :gradle:compileGroovy (Thread[Execution worker,5,main]) started.
+:gradle:compileGroovy (Thread[Execution worker,5,main]) started.
+
+> Task :gradle:compileGroovy NO-SOURCE
+Skipping task ':gradle:compileGroovy' as it has no source files and no previous output files.
+Resolve mutations for :gradle:pluginDescriptors (Thread[Execution worker,5,main]) started.
+:gradle:pluginDescriptors (Thread[Execution worker,5,main]) started.
+
+> Task :gradle:pluginDescriptors UP-TO-DATE
+Caching disabled for task ':gradle:pluginDescriptors' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':gradle:pluginDescriptors' as it is up-to-date.
+Resolve mutations for :gradle:processResources (Thread[Execution worker,5,main]) started.
+:gradle:processResources (Thread[Execution worker,5,main]) started.
+
+> Task :gradle:processResources UP-TO-DATE
+Caching disabled for task ':gradle:processResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':gradle:processResources' as it is up-to-date.
+Resolve mutations for :gradle:classes (Thread[Execution worker,5,main]) started.
+:gradle:classes (Thread[Execution worker,5,main]) started.
+
+> Task :gradle:classes UP-TO-DATE
+Skipping task ':gradle:classes' as it has no actions.
+Resolve mutations for :gradle:jar (Thread[Execution worker,5,main]) started.
+:gradle:jar (Thread[Execution worker,5,main]) started.
+
+> Task :gradle:jar UP-TO-DATE
+Caching disabled for task ':gradle:jar' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':gradle:jar' as it is up-to-date.
+Settings evaluated using settings file 'C:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\frontend\flutter_app\android\settings.gradle.kts'.
+Projects loaded. Root project using build file 'C:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\frontend\flutter_app\android\build.gradle.kts'.
+Included projects: [root project 'android', project ':app', project ':camera_android', project ':connectivity_plus', project ':flutter_keyboard_visibility_temp_fork', project ':flutter_plugin_android_lifecycle', project ':flutter_secure_storage', project ':flutter_tts', project ':fluttertoast', project ':geocoding_android', project ':geolocator_android', project ':image_picker_android', project ':path_provider_android', project ':permission_handler_android', project ':rive_common', project ':shared_preferences_android', project ':speech_to_text', project ':sqflite_android', project ':tflite_flutter_plus']
+
+> Configure project :app
+Evaluating project ':app' using build file 'C:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\frontend\flutter_app\android\app\build.gradle.kts'.
+Resolved plugin [id: 'com.android.application']
+Resolved plugin [id: 'kotlin-android']
+Resolved plugin [id: 'dev.flutter.flutter-gradle-plugin']
+Using default execution profile
+Build c7dcd52d-b98b-4ff9-97fd-1f3efa144ab3 is started
+Using Kotlin Gradle Plugin gradle813 variant
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [28.2.13676358]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+
+> Configure project :
+Evaluating root project 'android' using build file 'C:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\frontend\flutter_app\android\build.gradle.kts'.
+Caching disabled for Kotlin DSL script compilation (Project/TopLevel/stage1) because:
+  Build cache is disabled
+Caching disabled for Kotlin DSL script compilation (Project/TopLevel/stage2) because:
+  Build cache is disabled
+
+> Configure project :camera_android
+Evaluating project ':camera_android' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\camera_android-0.10.10+14\android\build.gradle'.
+Using default execution profile
+
+> Configure project :connectivity_plus
+Evaluating project ':connectivity_plus' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\connectivity_plus-5.0.2\android\build.gradle'.
+Using default execution profile
+
+> Configure project :flutter_keyboard_visibility_temp_fork
+Evaluating project ':flutter_keyboard_visibility_temp_fork' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\flutter_keyboard_visibility_temp_fork-0.1.5\android\build.gradle'.
+Using default execution profile
+
+> Configure project :flutter_plugin_android_lifecycle
+Evaluating project ':flutter_plugin_android_lifecycle' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\flutter_plugin_android_lifecycle-2.0.33\android\build.gradle'.
+Using default execution profile
+
+> Configure project :flutter_secure_storage
+Evaluating project ':flutter_secure_storage' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\flutter_secure_storage-9.2.4\android\build.gradle'.
+Using default execution profile
+
+> Configure project :flutter_tts
+Evaluating project ':flutter_tts' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\flutter_tts-4.2.5\android\build.gradle'.
+Using default execution profile
+Using Kotlin Gradle Plugin gradle813 variant
+
+> Configure project :fluttertoast
+Evaluating project ':fluttertoast' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\fluttertoast-9.0.0\android\build.gradle'.
+Using default execution profile
+Using Kotlin Gradle Plugin gradle813 variant
+
+> Configure project :geocoding_android
+Evaluating project ':geocoding_android' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\geocoding_android-4.0.1\android\build.gradle'.
+Using default execution profile
+
+> Configure project :geolocator_android
+Evaluating project ':geolocator_android' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\geolocator_android-4.6.2\android\build.gradle'.
+Using default execution profile
+
+> Configure project :image_picker_android
+Evaluating project ':image_picker_android' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\image_picker_android-0.8.13+10\android\build.gradle'.
+Using default execution profile
+
+> Configure project :path_provider_android
+Evaluating project ':path_provider_android' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_android-2.2.22\android\build.gradle'.
+Using default execution profile
+
+> Configure project :permission_handler_android
+Evaluating project ':permission_handler_android' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\permission_handler_android-13.0.1\android\build.gradle'.
+Using default execution profile
+
+> Configure project :rive_common
+Evaluating project ':rive_common' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\rive_common-0.4.15\android\build.gradle'.
+Using default execution profile
+Using Kotlin Gradle Plugin gradle813 variant
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+C/C++: android.ndkVersion from module build.gradle is [25.1.8937393]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\aswat\AppData\Local\Android\sdk
+
+> Configure project :shared_preferences_android
+Evaluating project ':shared_preferences_android' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.4.18\android\build.gradle'.
+Using default execution profile
+Using Kotlin Gradle Plugin gradle813 variant
+
+> Configure project :speech_to_text
+Evaluating project ':speech_to_text' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\speech_to_text-7.3.0\android\build.gradle'.
+Using default execution profile
+Using Kotlin Gradle Plugin gradle813 variant
+
+> Configure project :sqflite_android
+Evaluating project ':sqflite_android' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\sqflite_android-2.4.2+2\android\build.gradle'.
+Using default execution profile
+
+> Configure project :tflite_flutter_plus
+Evaluating project ':tflite_flutter_plus' using build file 'C:\Users\aswat\AppData\Local\Pub\Cache\hosted\pub.dev\tflite_flutter_plus-0.0.1\android\build.gradle'.
+Using default execution profile
+Using Kotlin Gradle Plugin gradle813 variant
+All projects evaluated.
+Task name matched 'assembleDebug'
+Selected primary task 'assembleDebug' from project :
+Adding -Xuse-inline-scopes-numbers Kotlin compiler flag for task :app:compileDebugKotlin
+Tasks to be executed: [task ':app:DebugMinSdkCheck', task ':app:preBuild', task ':app:preDebugBuild', task ':app:mergeDebugNativeDebugMetadata', task ':app:checkKotlinGradlePluginConfigurationErrors', task ':app:compileFlutterBuildDebug', task ':app:packJniLibsflutterBuildDebug', task ':camera_android:preBuild', task ':camera_android:preDebugBuild', task ':camera_android:writeDebugAarMetadata', task ':connectivity_plus:preBuild', task ':connectivity_plus:preDebugBuild', task ':connectivity_plus:writeDebugAarMetadata', task ':flutter_keyboard_visibility_temp_fork:preBuild', task ':flutter_keyboard_visibility_temp_fork:preDebugBuild', task ':flutter_keyboard_visibility_temp_fork:writeDebugAarMetadata', task ':flutter_plugin_android_lifecycle:preBuild', task ':flutter_plugin_android_lifecycle:preDebugBuild', task ':flutter_plugin_android_lifecycle:writeDebugAarMetadata', task ':flutter_secure_storage:preBuild', task ':flutter_secure_storage:preDebugBuild', task ':flutter_secure_storage:writeDebugAarMetadata', task ':flutter_tts:preBuild', task ':flutter_tts:preDebugBuild', task ':flutter_tts:writeDebugAarMetadata', task ':fluttertoast:preBuild', task ':fluttertoast:preDebugBuild', task ':fluttertoast:writeDebugAarMetadata', task ':geocoding_android:preBuild', task ':geocoding_android:preDebugBuild', task ':geocoding_android:writeDebugAarMetadata', task ':geolocator_android:preBuild', task ':geolocator_android:preDebugBuild', task ':geolocator_android:writeDebugAarMetadata', task ':image_picker_android:preBuild', task ':image_picker_android:preDebugBuild', task ':image_picker_android:writeDebugAarMetadata', task ':path_provider_android:preBuild', task ':path_provider_android:preDebugBuild', task ':path_provider_android:writeDebugAarMetadata', task ':permission_handler_android:preBuild', task ':permission_handler_android:preDebugBuild', task ':permission_handler_android:writeDebugAarMetadata', task ':rive_common:preBuild', task ':rive_common:preDebugBuild', task ':rive_common:writeDebugAarMetadata', task ':shared_preferences_android:preBuild', task ':shared_preferences_android:preDebugBuild', task ':shared_preferences_android:writeDebugAarMetadata', task ':speech_to_text:preBuild', task ':speech_to_text:preDebugBuild', task ':speech_to_text:writeDebugAarMetadata', task ':sqflite_android:preBuild', task ':sqflite_android:preDebugBuild', task ':sqflite_android:writeDebugAarMetadata', task ':tflite_flutter_plus:preBuild', task ':tflite_flutter_plus:preDebugBuild', task ':tflite_flutter_plus:writeDebugAarMetadata', task ':app:checkDebugAarMetadata', task ':app:cleanMergeDebugAssets', task ':app:mergeDebugShaders', task ':app:compileDebugShaders', task ':app:generateDebugAssets', task ':camera_android:mergeDebugShaders', task ':camera_android:compileDebugShaders', task ':camera_android:generateDebugAssets', task ':camera_android:mergeDebugAssets', task ':connectivity_plus:mergeDebugShaders', task ':connectivity_plus:compileDebugShaders', task ':connectivity_plus:generateDebugAssets', task ':connectivity_plus:mergeDebugAssets', task ':flutter_keyboard_visibility_temp_fork:mergeDebugShaders', task ':flutter_keyboard_visibility_temp_fork:compileDebugShaders', task ':flutter_keyboard_visibility_temp_fork:generateDebugAssets', task ':flutter_keyboard_visibility_temp_fork:mergeDebugAssets', task ':flutter_plugin_android_lifecycle:mergeDebugShaders', task ':flutter_plugin_android_lifecycle:compileDebugShaders', task ':flutter_plugin_android_lifecycle:generateDebugAssets', task ':flutter_plugin_android_lifecycle:mergeDebugAssets', task ':flutter_secure_storage:mergeDebugShaders', task ':flutter_secure_storage:compileDebugShaders', task ':flutter_secure_storage:generateDebugAssets', task ':flutter_secure_storage:mergeDebugAssets', task ':flutter_tts:mergeDebugShaders', task ':flutter_tts:compileDebugShaders', task ':flutter_tts:generateDebugAssets', task ':flutter_tts:mergeDebugAssets', task ':fluttertoast:mergeDebugShaders', task ':fluttertoast:compileDebugShaders', task ':fluttertoast:generateDebugAssets', task ':fluttertoast:mergeDebugAssets', task ':geocoding_android:mergeDebugShaders', task ':geocoding_android:compileDebugShaders', task ':geocoding_android:generateDebugAssets', task ':geocoding_android:mergeDebugAssets', task ':geolocator_android:mergeDebugShaders', task ':geolocator_android:compileDebugShaders', task ':geolocator_android:generateDebugAssets', task ':geolocator_android:mergeDebugAssets', task ':image_picker_android:mergeDebugShaders', task ':image_picker_android:compileDebugShaders', task ':image_picker_android:generateDebugAssets', task ':image_picker_android:mergeDebugAssets', task ':path_provider_android:mergeDebugShaders', task ':path_provider_android:compileDebugShaders', task ':path_provider_android:generateDebugAssets', task ':path_provider_android:mergeDebugAssets', task ':permission_handler_android:mergeDebugShaders', task ':permission_handler_android:compileDebugShaders', task ':permission_handler_android:generateDebugAssets', task ':permission_handler_android:mergeDebugAssets', task ':rive_common:mergeDebugShaders', task ':rive_common:compileDebugShaders', task ':rive_common:generateDebugAssets', task ':rive_common:mergeDebugAssets', task ':shared_preferences_android:mergeDebugShaders', task ':shared_preferences_android:compileDebugShaders', task ':shared_preferences_android:generateDebugAssets', task ':shared_preferences_android:mergeDebugAssets', task ':speech_to_text:mergeDebugShaders', task ':speech_to_text:compileDebugShaders', task ':speech_to_text:generateDebugAssets', task ':speech_to_text:mergeDebugAssets', task ':sqflite_android:mergeDebugShaders', task ':sqflite_android:compileDebugShaders', task ':sqflite_android:generateDebugAssets', task ':sqflite_android:mergeDebugAssets', task ':tflite_flutter_plus:mergeDebugShaders', task ':tflite_flutter_plus:compileDebugShaders', task ':tflite_flutter_plus:generateDebugAssets', task ':tflite_flutter_plus:mergeDebugAssets', task ':app:mergeDebugAssets', task ':app:copyFlutterAssetsDebug', task ':app:generateDebugResValues', task ':camera_android:generateDebugResValues', task ':camera_android:generateDebugResources', task ':camera_android:packageDebugResources', task ':connectivity_plus:generateDebugResValues', task ':connectivity_plus:generateDebugResources', task ':connectivity_plus:packageDebugResources', task ':flutter_keyboard_visibility_temp_fork:generateDebugResValues', task ':flutter_keyboard_visibility_temp_fork:generateDebugResources', task ':flutter_keyboard_visibility_temp_fork:packageDebugResources', task ':flutter_plugin_android_lifecycle:generateDebugResValues', task ':flutter_plugin_android_lifecycle:generateDebugResources', task ':flutter_plugin_android_lifecycle:packageDebugResources', task ':flutter_secure_storage:generateDebugResValues', task ':flutter_secure_storage:generateDebugResources', task ':flutter_secure_storage:packageDebugResources', task ':flutter_tts:generateDebugResValues', task ':flutter_tts:generateDebugResources', task ':flutter_tts:packageDebugResources', task ':fluttertoast:generateDebugResValues', task ':fluttertoast:generateDebugResources', task ':fluttertoast:packageDebugResources', task ':geocoding_android:generateDebugResValues', task ':geocoding_android:generateDebugResources', task ':geocoding_android:packageDebugResources', task ':geolocator_android:generateDebugResValues', task ':geolocator_android:generateDebugResources', task ':geolocator_android:packageDebugResources', task ':image_picker_android:generateDebugResValues', task ':image_picker_android:generateDebugResources', task ':image_picker_android:packageDebugResources', task ':path_provider_android:generateDebugResValues', task ':path_provider_android:generateDebugResources', task ':path_provider_android:packageDebugResources', task ':permission_handler_android:generateDebugResValues', task ':permission_handler_android:generateDebugResources', task ':permission_handler_android:packageDebugResources', task ':rive_common:generateDebugResValues', task ':rive_common:generateDebugResources', task ':rive_common:packageDebugResources', task ':shared_preferences_android:generateDebugResValues', task ':shared_preferences_android:generateDebugResources', task ':shared_preferences_android:packageDebugResources', task ':speech_to_text:generateDebugResValues', task ':speech_to_text:generateDebugResources', task ':speech_to_text:packageDebugResources', task ':sqflite_android:generateDebugResValues', task ':sqflite_android:generateDebugResources', task ':sqflite_android:packageDebugResources', task ':tflite_flutter_plus:generateDebugResValues', task ':tflite_flutter_plus:generateDebugResources', task ':tflite_flutter_plus:packageDebugResources', task ':app:mapDebugSourceSetPaths', task ':app:generateDebugResources', task ':app:mergeDebugResources', task ':app:packageDebugResources', task ':app:parseDebugLocalResources', task ':app:createDebugCompatibleScreenManifests', task ':app:extractDeepLinksDebug', task ':camera_android:extractDeepLinksDebug', task ':camera_android:processDebugManifest', task ':connectivity_plus:extractDeepLinksDebug', task ':connectivity_plus:processDebugManifest', task ':flutter_keyboard_visibility_temp_fork:extractDeepLinksDebug', task ':flutter_keyboard_visibility_temp_fork:processDebugManifest', task ':flutter_plugin_android_lifecycle:extractDeepLinksDebug', task ':flutter_plugin_android_lifecycle:processDebugManifest', task ':flutter_secure_storage:extractDeepLinksDebug', task ':flutter_secure_storage:processDebugManifest', task ':flutter_tts:extractDeepLinksDebug', task ':flutter_tts:processDebugManifest', task ':fluttertoast:extractDeepLinksDebug', task ':fluttertoast:processDebugManifest', task ':geocoding_android:extractDeepLinksDebug', task ':geocoding_android:processDebugManifest', task ':geolocator_android:extractDeepLinksDebug', task ':geolocator_android:processDebugManifest', task ':image_picker_android:extractDeepLinksDebug', task ':image_picker_android:processDebugManifest', task ':path_provider_android:extractDeepLinksDebug', task ':path_provider_android:processDebugManifest', task ':permission_handler_android:extractDeepLinksDebug', task ':permission_handler_android:processDebugManifest', task ':rive_common:extractDeepLinksDebug', task ':rive_common:processDebugManifest', task ':shared_preferences_android:extractDeepLinksDebug', task ':shared_preferences_android:processDebugManifest', task ':speech_to_text:extractDeepLinksDebug', task ':speech_to_text:processDebugManifest', task ':sqflite_android:extractDeepLinksDebug', task ':sqflite_android:processDebugManifest', task ':tflite_flutter_plus:extractDeepLinksDebug', task ':tflite_flutter_plus:processDebugManifest', task ':app:processDebugMainManifest', task ':app:outputDebugAppLinkSettings', task ':app:processDebugManifest', task ':app:processDebugManifestForPackage', task ':camera_android:compileDebugLibraryResources', task ':camera_android:parseDebugLocalResources', task ':camera_android:generateDebugRFile', task ':connectivity_plus:compileDebugLibraryResources', task ':connectivity_plus:parseDebugLocalResources', task ':connectivity_plus:generateDebugRFile', task ':flutter_keyboard_visibility_temp_fork:compileDebugLibraryResources', task ':flutter_keyboard_visibility_temp_fork:parseDebugLocalResources', task ':flutter_keyboard_visibility_temp_fork:generateDebugRFile', task ':flutter_plugin_android_lifecycle:compileDebugLibraryResources', task ':flutter_plugin_android_lifecycle:parseDebugLocalResources', task ':flutter_plugin_android_lifecycle:generateDebugRFile', task ':flutter_secure_storage:compileDebugLibraryResources', task ':flutter_secure_storage:parseDebugLocalResources', task ':flutter_secure_storage:generateDebugRFile', task ':flutter_tts:compileDebugLibraryResources', task ':flutter_tts:parseDebugLocalResources', task ':flutter_tts:generateDebugRFile', task ':fluttertoast:compileDebugLibraryResources', task ':fluttertoast:parseDebugLocalResources', task ':fluttertoast:generateDebugRFile', task ':geocoding_android:compileDebugLibraryResources', task ':geocoding_android:parseDebugLocalResources', task ':geocoding_android:generateDebugRFile', task ':geolocator_android:compileDebugLibraryResources', task ':geolocator_android:parseDebugLocalResources', task ':geolocator_android:generateDebugRFile', task ':image_picker_android:compileDebugLibraryResources', task ':image_picker_android:parseDebugLocalResources', task ':image_picker_android:generateDebugRFile', task ':path_provider_android:compileDebugLibraryResources', task ':path_provider_android:parseDebugLocalResources', task ':path_provider_android:generateDebugRFile', task ':permission_handler_android:compileDebugLibraryResources', task ':permission_handler_android:parseDebugLocalResources', task ':permission_handler_android:generateDebugRFile', task ':rive_common:compileDebugLibraryResources', task ':rive_common:parseDebugLocalResources', task ':rive_common:generateDebugRFile', task ':shared_preferences_android:compileDebugLibraryResources', task ':shared_preferences_android:parseDebugLocalResources', task ':shared_preferences_android:generateDebugRFile', task ':speech_to_text:compileDebugLibraryResources', task ':speech_to_text:parseDebugLocalResources', task ':speech_to_text:generateDebugRFile', task ':sqflite_android:compileDebugLibraryResources', task ':sqflite_android:parseDebugLocalResources', task ':sqflite_android:generateDebugRFile', task ':tflite_flutter_plus:compileDebugLibraryResources', task ':tflite_flutter_plus:parseDebugLocalResources', task ':tflite_flutter_plus:generateDebugRFile', task ':app:processDebugResources', task ':camera_android:generateDebugBuildConfig', task ':camera_android:javaPreCompileDebug', task ':flutter_plugin_android_lifecycle:javaPreCompileDebug', task ':flutter_plugin_android_lifecycle:compileDebugJavaWithJavac', task ':flutter_plugin_android_lifecycle:bundleLibCompileToJarDebug', task ':camera_android:compileDebugJavaWithJavac', task ':camera_android:bundleLibCompileToJarDebug', task ':connectivity_plus:javaPreCompileDebug', task ':connectivity_plus:compileDebugJavaWithJavac', task ':connectivity_plus:bundleLibCompileToJarDebug', task ':flutter_keyboard_visibility_temp_fork:javaPreCompileDebug', task ':flutter_keyboard_visibility_temp_fork:compileDebugJavaWithJavac', task ':flutter_keyboard_visibility_temp_fork:bundleLibCompileToJarDebug', task ':flutter_secure_storage:generateDebugBuildConfig', task ':flutter_secure_storage:javaPreCompileDebug', task ':flutter_secure_storage:compileDebugJavaWithJavac', task ':flutter_secure_storage:bundleLibCompileToJarDebug', task ':flutter_tts:checkKotlinGradlePluginConfigurationErrors', task ':flutter_tts:compileDebugKotlin', task ':flutter_tts:javaPreCompileDebug', task ':flutter_tts:compileDebugJavaWithJavac', task ':flutter_tts:bundleLibCompileToJarDebug', task ':fluttertoast:checkKotlinGradlePluginConfigurationErrors', task ':fluttertoast:compileDebugKotlin', task ':fluttertoast:javaPreCompileDebug', task ':fluttertoast:compileDebugJavaWithJavac', task ':fluttertoast:bundleLibCompileToJarDebug', task ':geocoding_android:javaPreCompileDebug', task ':geocoding_android:compileDebugJavaWithJavac', task ':geocoding_android:bundleLibCompileToJarDebug', task ':geolocator_android:javaPreCompileDebug', task ':geolocator_android:compileDebugJavaWithJavac', task ':geolocator_android:bundleLibCompileToJarDebug', task ':image_picker_android:javaPreCompileDebug', task ':image_picker_android:compileDebugJavaWithJavac', task ':image_picker_android:bundleLibCompileToJarDebug', task ':path_provider_android:javaPreCompileDebug', task ':path_provider_android:compileDebugJavaWithJavac', task ':path_provider_android:bundleLibCompileToJarDebug', task ':permission_handler_android:javaPreCompileDebug', task ':permission_handler_android:compileDebugJavaWithJavac', task ':permission_handler_android:bundleLibCompileToJarDebug', task ':rive_common:checkKotlinGradlePluginConfigurationErrors', task ':rive_common:compileDebugKotlin', task ':rive_common:javaPreCompileDebug', task ':rive_common:compileDebugJavaWithJavac', task ':rive_common:bundleLibCompileToJarDebug', task ':shared_preferences_android:checkKotlinGradlePluginConfigurationErrors', task ':shared_preferences_android:compileDebugKotlin', task ':shared_preferences_android:javaPreCompileDebug', task ':shared_preferences_android:compileDebugJavaWithJavac', task ':shared_preferences_android:bundleLibCompileToJarDebug', task ':speech_to_text:checkKotlinGradlePluginConfigurationErrors', task ':speech_to_text:compileDebugKotlin', task ':speech_to_text:javaPreCompileDebug', task ':speech_to_text:compileDebugJavaWithJavac', task ':speech_to_text:bundleLibCompileToJarDebug', task ':sqflite_android:javaPreCompileDebug', task ':sqflite_android:compileDebugJavaWithJavac', task ':sqflite_android:bundleLibCompileToJarDebug', task ':tflite_flutter_plus:checkKotlinGradlePluginConfigurationErrors', task ':tflite_flutter_plus:compileDebugKotlin', task ':tflite_flutter_plus:javaPreCompileDebug', task ':tflite_flutter_plus:compileDebugJavaWithJavac', task ':tflite_flutter_plus:bundleLibCompileToJarDebug', task ':app:compileDebugKotlin', task ':app:javaPreCompileDebug', task ':app:compileDebugJavaWithJavac', task ':app:compressDebugAssets', task ':camera_android:bundleLibRuntimeToJarDebug', task ':connectivity_plus:bundleLibRuntimeToJarDebug', task ':flutter_keyboard_visibility_temp_fork:bundleLibRuntimeToJarDebug', task ':image_picker_android:bundleLibRuntimeToJarDebug', task ':flutter_plugin_android_lifecycle:bundleLibRuntimeToJarDebug', task ':flutter_secure_storage:bundleLibRuntimeToJarDebug', task ':flutter_tts:bundleLibRuntimeToJarDebug', task ':fluttertoast:bundleLibRuntimeToJarDebug', task ':geocoding_android:bundleLibRuntimeToJarDebug', task ':geolocator_android:bundleLibRuntimeToJarDebug', task ':path_provider_android:bundleLibRuntimeToJarDebug', task ':permission_handler_android:bundleLibRuntimeToJarDebug', task ':rive_common:bundleLibRuntimeToJarDebug', task ':shared_preferences_android:bundleLibRuntimeToJarDebug', task ':speech_to_text:bundleLibRuntimeToJarDebug', task ':sqflite_android:bundleLibRuntimeToJarDebug', task ':tflite_flutter_plus:bundleLibRuntimeToJarDebug', task ':app:desugarDebugFileDependencies', task ':app:dexBuilderDebug', task ':app:mergeDebugGlobalSynthetics', task ':app:processDebugJavaRes', task ':camera_android:processDebugJavaRes', task ':connectivity_plus:processDebugJavaRes', task ':flutter_keyboard_visibility_temp_fork:processDebugJavaRes', task ':flutter_plugin_android_lifecycle:processDebugJavaRes', task ':flutter_secure_storage:processDebugJavaRes', task ':flutter_tts:processDebugJavaRes', task ':fluttertoast:processDebugJavaRes', task ':geocoding_android:processDebugJavaRes', task ':geolocator_android:processDebugJavaRes', task ':image_picker_android:processDebugJavaRes', task ':path_provider_android:processDebugJavaRes', task ':permission_handler_android:processDebugJavaRes', task ':rive_common:processDebugJavaRes', task ':shared_preferences_android:processDebugJavaRes', task ':speech_to_text:processDebugJavaRes', task ':sqflite_android:processDebugJavaRes', task ':tflite_flutter_plus:processDebugJavaRes', task ':app:mergeDebugJavaResource', task ':app:checkDebugDuplicateClasses', task ':app:mergeExtDexDebug', task ':camera_android:bundleLibRuntimeToDirDebug', task ':connectivity_plus:bundleLibRuntimeToDirDebug', task ':flutter_keyboard_visibility_temp_fork:bundleLibRuntimeToDirDebug', task ':image_picker_android:bundleLibRuntimeToDirDebug', task ':flutter_plugin_android_lifecycle:bundleLibRuntimeToDirDebug', task ':flutter_secure_storage:bundleLibRuntimeToDirDebug', task ':flutter_tts:bundleLibRuntimeToDirDebug', task ':fluttertoast:bundleLibRuntimeToDirDebug', task ':geocoding_android:bundleLibRuntimeToDirDebug', task ':geolocator_android:bundleLibRuntimeToDirDebug', task ':path_provider_android:bundleLibRuntimeToDirDebug', task ':permission_handler_android:bundleLibRuntimeToDirDebug', task ':rive_common:bundleLibRuntimeToDirDebug', task ':shared_preferences_android:bundleLibRuntimeToDirDebug', task ':speech_to_text:bundleLibRuntimeToDirDebug', task ':sqflite_android:bundleLibRuntimeToDirDebug', task ':tflite_flutter_plus:bundleLibRuntimeToDirDebug', task ':app:mergeLibDexDebug', task ':app:mergeProjectDexDebug', task ':app:configureCMakeDebug[arm64-v8a]', task ':app:buildCMakeDebug[arm64-v8a]', task ':app:configureCMakeDebug[armeabi-v7a]', task ':app:buildCMakeDebug[armeabi-v7a]', task ':app:configureCMakeDebug[x86_64]', task ':app:buildCMakeDebug[x86_64]', task ':app:mergeDebugJniLibFolders', task ':camera_android:mergeDebugJniLibFolders', task ':camera_android:mergeDebugNativeLibs', task ':camera_android:copyDebugJniLibsProjectOnly', task ':connectivity_plus:mergeDebugJniLibFolders', task ':connectivity_plus:mergeDebugNativeLibs', task ':connectivity_plus:copyDebugJniLibsProjectOnly', task ':flutter_keyboard_visibility_temp_fork:mergeDebugJniLibFolders', task ':flutter_keyboard_visibility_temp_fork:mergeDebugNativeLibs', task ':flutter_keyboard_visibility_temp_fork:copyDebugJniLibsProjectOnly', task ':flutter_plugin_android_lifecycle:mergeDebugJniLibFolders', task ':flutter_plugin_android_lifecycle:mergeDebugNativeLibs', task ':flutter_plugin_android_lifecycle:copyDebugJniLibsProjectOnly', task ':flutter_secure_storage:mergeDebugJniLibFolders', task ':flutter_secure_storage:mergeDebugNativeLibs', task ':flutter_secure_storage:copyDebugJniLibsProjectOnly', task ':flutter_tts:mergeDebugJniLibFolders', task ':flutter_tts:mergeDebugNativeLibs', task ':flutter_tts:copyDebugJniLibsProjectOnly', task ':fluttertoast:mergeDebugJniLibFolders', task ':fluttertoast:mergeDebugNativeLibs', task ':fluttertoast:copyDebugJniLibsProjectOnly', task ':geocoding_android:mergeDebugJniLibFolders', task ':geocoding_android:mergeDebugNativeLibs', task ':geocoding_android:copyDebugJniLibsProjectOnly', task ':geolocator_android:mergeDebugJniLibFolders', task ':geolocator_android:mergeDebugNativeLibs', task ':geolocator_android:copyDebugJniLibsProjectOnly', task ':image_picker_android:mergeDebugJniLibFolders', task ':image_picker_android:mergeDebugNativeLibs', task ':image_picker_android:copyDebugJniLibsProjectOnly', task ':path_provider_android:mergeDebugJniLibFolders', task ':path_provider_android:mergeDebugNativeLibs', task ':path_provider_android:copyDebugJniLibsProjectOnly', task ':permission_handler_android:mergeDebugJniLibFolders', task ':permission_handler_android:mergeDebugNativeLibs', task ':permission_handler_android:copyDebugJniLibsProjectOnly', task ':rive_common:preProfileBuild', task ':rive_common:configureCMakeDebug[arm64-v8a]', task ':rive_common:buildCMakeDebug[arm64-v8a]', task ':rive_common:configureCMakeDebug[armeabi-v7a]', task ':rive_common:buildCMakeDebug[armeabi-v7a]', task ':rive_common:configureCMakeDebug[x86]', task ':rive_common:buildCMakeDebug[x86]', task ':rive_common:configureCMakeDebug[x86_64]', task ':rive_common:buildCMakeDebug[x86_64]', task ':rive_common:mergeDebugJniLibFolders', task ':rive_common:mergeDebugNativeLibs', task ':rive_common:copyDebugJniLibsProjectOnly', task ':shared_preferences_android:mergeDebugJniLibFolders', task ':shared_preferences_android:mergeDebugNativeLibs', task ':shared_preferences_android:copyDebugJniLibsProjectOnly', task ':speech_to_text:mergeDebugJniLibFolders', task ':speech_to_text:mergeDebugNativeLibs', task ':speech_to_text:copyDebugJniLibsProjectOnly', task ':sqflite_android:mergeDebugJniLibFolders', task ':sqflite_android:mergeDebugNativeLibs', task ':sqflite_android:copyDebugJniLibsProjectOnly', task ':tflite_flutter_plus:mergeDebugJniLibFolders', task ':tflite_flutter_plus:mergeDebugNativeLibs', task ':tflite_flutter_plus:copyDebugJniLibsProjectOnly', task ':app:mergeDebugNativeLibs', task ':app:stripDebugDebugSymbols', task ':app:validateSigningDebug', task ':app:writeDebugAppMetadata', task ':app:writeDebugSigningConfigVersions', task ':app:packageDebug', task ':app:createDebugApkListingFileRedirect', task ':app:assembleDebug', task ':camera_android:stripDebugDebugSymbols', task ':camera_android:copyDebugJniLibsProjectAndLocalJars', task ':camera_android:extractDebugAnnotations', task ':camera_android:extractDeepLinksForAarDebug', task ':camera_android:mergeDebugGeneratedProguardFiles', task ':camera_android:mergeDebugConsumerProguardFiles', task ':camera_android:prepareDebugArtProfile', task ':camera_android:prepareLintJarForPublish', task ':camera_android:mergeDebugJavaResource', task ':camera_android:syncDebugLibJars', task ':camera_android:bundleDebugAar', task ':camera_android:assembleDebug', task ':connectivity_plus:stripDebugDebugSymbols', task ':connectivity_plus:copyDebugJniLibsProjectAndLocalJars', task ':connectivity_plus:extractDebugAnnotations', task ':connectivity_plus:extractDeepLinksForAarDebug', task ':connectivity_plus:mergeDebugGeneratedProguardFiles', task ':connectivity_plus:mergeDebugConsumerProguardFiles', task ':connectivity_plus:prepareDebugArtProfile', task ':connectivity_plus:prepareLintJarForPublish', task ':connectivity_plus:mergeDebugJavaResource', task ':connectivity_plus:syncDebugLibJars', task ':connectivity_plus:bundleDebugAar', task ':connectivity_plus:assembleDebug', task ':flutter_keyboard_visibility_temp_fork:stripDebugDebugSymbols', task ':flutter_keyboard_visibility_temp_fork:copyDebugJniLibsProjectAndLocalJars', task ':flutter_keyboard_visibility_temp_fork:extractDebugAnnotations', task ':flutter_keyboard_visibility_temp_fork:extractDeepLinksForAarDebug', task ':flutter_keyboard_visibility_temp_fork:mergeDebugGeneratedProguardFiles', task ':flutter_keyboard_visibility_temp_fork:mergeDebugConsumerProguardFiles', task ':flutter_keyboard_visibility_temp_fork:prepareDebugArtProfile', task ':flutter_keyboard_visibility_temp_fork:prepareLintJarForPublish', task ':flutter_keyboard_visibility_temp_fork:mergeDebugJavaResource', task ':flutter_keyboard_visibility_temp_fork:syncDebugLibJars', task ':flutter_keyboard_visibility_temp_fork:bundleDebugAar', task ':flutter_keyboard_visibility_temp_fork:assembleDebug', task ':flutter_plugin_android_lifecycle:stripDebugDebugSymbols', task ':flutter_plugin_android_lifecycle:copyDebugJniLibsProjectAndLocalJars', task ':flutter_plugin_android_lifecycle:extractDebugAnnotations', task ':flutter_plugin_android_lifecycle:extractDeepLinksForAarDebug', task ':flutter_plugin_android_lifecycle:mergeDebugGeneratedProguardFiles', task ':flutter_plugin_android_lifecycle:mergeDebugConsumerProguardFiles', task ':flutter_plugin_android_lifecycle:prepareDebugArtProfile', task ':flutter_plugin_android_lifecycle:prepareLintJarForPublish', task ':flutter_plugin_android_lifecycle:mergeDebugJavaResource', task ':flutter_plugin_android_lifecycle:syncDebugLibJars', task ':flutter_plugin_android_lifecycle:bundleDebugAar', task ':flutter_plugin_android_lifecycle:assembleDebug', task ':flutter_secure_storage:stripDebugDebugSymbols', task ':flutter_secure_storage:copyDebugJniLibsProjectAndLocalJars', task ':flutter_secure_storage:extractDebugAnnotations', task ':flutter_secure_storage:extractDeepLinksForAarDebug', task ':flutter_secure_storage:mergeDebugGeneratedProguardFiles', task ':flutter_secure_storage:mergeDebugConsumerProguardFiles', task ':flutter_secure_storage:prepareDebugArtProfile', task ':flutter_secure_storage:prepareLintJarForPublish', task ':flutter_secure_storage:mergeDebugJavaResource', task ':flutter_secure_storage:syncDebugLibJars', task ':flutter_secure_storage:bundleDebugAar', task ':flutter_secure_storage:assembleDebug', task ':flutter_tts:stripDebugDebugSymbols', task ':flutter_tts:copyDebugJniLibsProjectAndLocalJars', task ':flutter_tts:extractDebugAnnotations', task ':flutter_tts:extractDeepLinksForAarDebug', task ':flutter_tts:mergeDebugGeneratedProguardFiles', task ':flutter_tts:mergeDebugConsumerProguardFiles', task ':flutter_tts:prepareDebugArtProfile', task ':flutter_tts:prepareLintJarForPublish', task ':flutter_tts:mergeDebugJavaResource', task ':flutter_tts:syncDebugLibJars', task ':flutter_tts:bundleDebugAar', task ':flutter_tts:assembleDebug', task ':fluttertoast:stripDebugDebugSymbols', task ':fluttertoast:copyDebugJniLibsProjectAndLocalJars', task ':fluttertoast:extractDebugAnnotations', task ':fluttertoast:extractDeepLinksForAarDebug', task ':fluttertoast:mergeDebugGeneratedProguardFiles', task ':fluttertoast:mergeDebugConsumerProguardFiles', task ':fluttertoast:prepareDebugArtProfile', task ':fluttertoast:prepareLintJarForPublish', task ':fluttertoast:mergeDebugJavaResource', task ':fluttertoast:syncDebugLibJars', task ':fluttertoast:bundleDebugAar', task ':fluttertoast:assembleDebug', task ':geocoding_android:stripDebugDebugSymbols', task ':geocoding_android:copyDebugJniLibsProjectAndLocalJars', task ':geocoding_android:extractDebugAnnotations', task ':geocoding_android:extractDeepLinksForAarDebug', task ':geocoding_android:mergeDebugGeneratedProguardFiles', task ':geocoding_android:mergeDebugConsumerProguardFiles', task ':geocoding_android:prepareDebugArtProfile', task ':geocoding_android:prepareLintJarForPublish', task ':geocoding_android:mergeDebugJavaResource', task ':geocoding_android:syncDebugLibJars', task ':geocoding_android:bundleDebugAar', task ':geocoding_android:assembleDebug', task ':geolocator_android:stripDebugDebugSymbols', task ':geolocator_android:copyDebugJniLibsProjectAndLocalJars', task ':geolocator_android:extractDebugAnnotations', task ':geolocator_android:extractDeepLinksForAarDebug', task ':geolocator_android:mergeDebugGeneratedProguardFiles', task ':geolocator_android:mergeDebugConsumerProguardFiles', task ':geolocator_android:prepareDebugArtProfile', task ':geolocator_android:prepareLintJarForPublish', task ':geolocator_android:mergeDebugJavaResource', task ':geolocator_android:syncDebugLibJars', task ':geolocator_android:bundleDebugAar', task ':geolocator_android:assembleDebug', task ':image_picker_android:stripDebugDebugSymbols', task ':image_picker_android:copyDebugJniLibsProjectAndLocalJars', task ':image_picker_android:extractDebugAnnotations', task ':image_picker_android:extractDeepLinksForAarDebug', task ':image_picker_android:mergeDebugGeneratedProguardFiles', task ':image_picker_android:mergeDebugConsumerProguardFiles', task ':image_picker_android:prepareDebugArtProfile', task ':image_picker_android:prepareLintJarForPublish', task ':image_picker_android:mergeDebugJavaResource', task ':image_picker_android:syncDebugLibJars', task ':image_picker_android:bundleDebugAar', task ':image_picker_android:assembleDebug', task ':path_provider_android:stripDebugDebugSymbols', task ':path_provider_android:copyDebugJniLibsProjectAndLocalJars', task ':path_provider_android:extractDebugAnnotations', task ':path_provider_android:extractDeepLinksForAarDebug', task ':path_provider_android:mergeDebugGeneratedProguardFiles', task ':path_provider_android:mergeDebugConsumerProguardFiles', task ':path_provider_android:prepareDebugArtProfile', task ':path_provider_android:prepareLintJarForPublish', task ':path_provider_android:mergeDebugJavaResource', task ':path_provider_android:syncDebugLibJars', task ':path_provider_android:bundleDebugAar', task ':path_provider_android:assembleDebug', task ':permission_handler_android:stripDebugDebugSymbols', task ':permission_handler_android:copyDebugJniLibsProjectAndLocalJars', task ':permission_handler_android:extractDebugAnnotations', task ':permission_handler_android:extractDeepLinksForAarDebug', task ':permission_handler_android:mergeDebugGeneratedProguardFiles', task ':permission_handler_android:mergeDebugConsumerProguardFiles', task ':permission_handler_android:prepareDebugArtProfile', task ':permission_handler_android:prepareLintJarForPublish', task ':permission_handler_android:mergeDebugJavaResource', task ':permission_handler_android:syncDebugLibJars', task ':permission_handler_android:bundleDebugAar', task ':permission_handler_android:assembleDebug', task ':rive_common:stripDebugDebugSymbols', task ':rive_common:copyDebugJniLibsProjectAndLocalJars', task ':rive_common:extractDebugAnnotations', task ':rive_common:extractDeepLinksForAarDebug', task ':rive_common:mergeDebugGeneratedProguardFiles', task ':rive_common:mergeDebugConsumerProguardFiles', task ':rive_common:prepareDebugArtProfile', task ':rive_common:prepareLintJarForPublish', task ':rive_common:mergeDebugJavaResource', task ':rive_common:syncDebugLibJars', task ':rive_common:bundleDebugAar', task ':rive_common:assembleDebug', task ':shared_preferences_android:stripDebugDebugSymbols', task ':shared_preferences_android:copyDebugJniLibsProjectAndLocalJars', task ':shared_preferences_android:extractDebugAnnotations', task ':shared_preferences_android:extractDeepLinksForAarDebug', task ':shared_preferences_android:mergeDebugGeneratedProguardFiles', task ':shared_preferences_android:mergeDebugConsumerProguardFiles', task ':shared_preferences_android:prepareDebugArtProfile', task ':shared_preferences_android:prepareLintJarForPublish', task ':shared_preferences_android:mergeDebugJavaResource', task ':shared_preferences_android:syncDebugLibJars', task ':shared_preferences_android:bundleDebugAar', task ':shared_preferences_android:assembleDebug', task ':speech_to_text:stripDebugDebugSymbols', task ':speech_to_text:copyDebugJniLibsProjectAndLocalJars', task ':speech_to_text:extractDebugAnnotations', task ':speech_to_text:extractDeepLinksForAarDebug', task ':speech_to_text:mergeDebugGeneratedProguardFiles', task ':speech_to_text:mergeDebugConsumerProguardFiles', task ':speech_to_text:prepareDebugArtProfile', task ':speech_to_text:prepareLintJarForPublish', task ':speech_to_text:mergeDebugJavaResource', task ':speech_to_text:syncDebugLibJars', task ':speech_to_text:bundleDebugAar', task ':speech_to_text:assembleDebug', task ':sqflite_android:stripDebugDebugSymbols', task ':sqflite_android:copyDebugJniLibsProjectAndLocalJars', task ':sqflite_android:extractDebugAnnotations', task ':sqflite_android:extractDeepLinksForAarDebug', task ':sqflite_android:mergeDebugGeneratedProguardFiles', task ':sqflite_android:mergeDebugConsumerProguardFiles', task ':sqflite_android:prepareDebugArtProfile', task ':sqflite_android:prepareLintJarForPublish', task ':sqflite_android:mergeDebugJavaResource', task ':sqflite_android:syncDebugLibJars', task ':sqflite_android:bundleDebugAar', task ':sqflite_android:assembleDebug', task ':tflite_flutter_plus:stripDebugDebugSymbols', task ':tflite_flutter_plus:copyDebugJniLibsProjectAndLocalJars', task ':tflite_flutter_plus:extractDebugAnnotations', task ':tflite_flutter_plus:extractDeepLinksForAarDebug', task ':tflite_flutter_plus:mergeDebugGeneratedProguardFiles', task ':tflite_flutter_plus:mergeDebugConsumerProguardFiles', task ':tflite_flutter_plus:prepareDebugArtProfile', task ':tflite_flutter_plus:prepareLintJarForPublish', task ':tflite_flutter_plus:mergeDebugJavaResource', task ':tflite_flutter_plus:syncDebugLibJars', task ':tflite_flutter_plus:bundleDebugAar', task ':tflite_flutter_plus:assembleDebug']
+Tasks that were excluded: []
+work action Parameters of IdentityTransform (Thread[Execution worker Thread 9,5,main]) started.
+work action Parameters of DexingNoClasspathTransform (Thread[Execution worker Thread 9,5,main]) started.
+work action Parameters of DexingOutputSplitTransform (Thread[Execution worker Thread 9,5,main]) started.
+work action Parameters of ClassesDirToClassesTransform (Thread[Execution worker Thread 9,5,main]) started.
+work action Parameters of DexingOutputSplitTransform (Thread[Execution worker Thread 9,5,main]) started.
+Resolve mutations for :app:DebugMinSdkCheck (Thread[Execution worker Thread 15,5,main]) started.
+:app:DebugMinSdkCheck (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:DebugMinSdkCheck
+Caching disabled for task ':app:DebugMinSdkCheck' because:
+  Build cache is disabled
+Task ':app:DebugMinSdkCheck' is not up-to-date because:
+  Task has not declared any outputs despite executing actions.
+Resolve mutations for :app:preBuild (Thread[Execution worker Thread 15,5,main]) started.
+:app:preBuild (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:preBuild UP-TO-DATE
+Skipping task ':app:preBuild' as it has no actions.
+Resolve mutations for :app:preDebugBuild (Thread[Execution worker Thread 15,5,main]) started.
+:app:preDebugBuild (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:preDebugBuild UP-TO-DATE
+Skipping task ':app:preDebugBuild' as it has no actions.
+Resolve mutations for :app:mergeDebugNativeDebugMetadata (Thread[Execution worker Thread 15,5,main]) started.
+:app:mergeDebugNativeDebugMetadata (Thread[Execution worker Thread 15,5,main]) started.
+
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+Skipping task ':app:mergeDebugNativeDebugMetadata' as it has no source files and no previous output files.
+Resolve mutations for :app:checkKotlinGradlePluginConfigurationErrors (Thread[Execution worker Thread 3,5,main]) started.
+:app:checkKotlinGradlePluginConfigurationErrors (Thread[Execution worker Thread 3,5,main]) started.
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+Skipping task ':app:checkKotlinGradlePluginConfigurationErrors' as task onlyIf 'errorDiagnostics are present' is false.
+Resolve mutations for :app:compileFlutterBuildDebug (Thread[Execution worker Thread 3,5,main]) started.
+:app:compileFlutterBuildDebug (Thread[Execution worker Thread 3,5,main]) started.
+
+> Task :app:compileFlutterBuildDebug
+Caching disabled for task ':app:compileFlutterBuildDebug' because:
+  Build cache is disabled
+  Caching has not been enabled for the task
+Task ':app:compileFlutterBuildDebug' is not up-to-date because:
+  Value of input property 'dartDefines' has changed for task ':app:compileFlutterBuildDebug'
+  Value of input property 'fileSystemScheme' has changed for task ':app:compileFlutterBuildDebug'
+  Value of input property 'targetPath' has changed for task ':app:compileFlutterBuildDebug'
+  and more...
+Starting process 'command 'C:\Users\aswat\Develop\flutter\bin\flutter.bat''. Working directory: C:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\frontend\flutter_app Command: C:\Users\aswat\Develop\flutter\bin\flutter.bat --quiet assemble --no-version-check --depfile C:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\frontend\flutter_app\build\app\intermediates\flutter\debug/flutter_build.d --output C:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\frontend\flutter_app\build\app\intermediates\flutter\debug -dTargetFile=lib/main.dart -dTargetPlatform=android -dBuildMode=debug -dTrackWidgetCreation=true -dFlavor= -dAndroidArchs=android-arm android-arm64 android-x64 -dMinSdkVersion=24 debug_android_application
+Successfully started process 'command 'C:\Users\aswat\Develop\flutter\bin\flutter.bat''
+../../../../AppData/Local/Pub/Cache/hosted/pub.dev/tflite_flutter_plus-0.0.1/lib/src/tensor.dart:38:12: Error: The method 'UnmodifiableUint8ListView' isn't defined for the type 'Tensor'.
+ - 'Tensor' is from 'package:tflite_flutter_plus/src/tensor.dart' ('../../../../AppData/Local/Pub/Cache/hosted/pub.dev/tflite_flutter_plus-0.0.1/lib/src/tensor.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'UnmodifiableUint8ListView'.
+    return UnmodifiableUint8ListView(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+> Task :app:compileFlutterBuildDebug FAILED
+Build c7dcd52d-b98b-4ff9-97fd-1f3efa144ab3 is closed
+
+[Incubating] Problems report is available at: file:///C:/Users/aswat/Desktop/AI-Crop-Disease-Diagnosis-System/frontend/flutter_app/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command 'C:\Users\aswat\Develop\flutter\bin\flutter.bat'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 15s
+6 actionable tasks: 2 executed, 4 up-to-date
+Watched directory hierarchies: [C:\Users\aswat\Develop\flutter\packages\flutter_tools\gradle]
