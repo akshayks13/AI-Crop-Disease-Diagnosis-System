@@ -37,6 +37,12 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // include TensorFlow Lite select ops for models using Flex operators
+    // needed when using converted TensorFlow models with unsupported ops
+    dependencies {
+        implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:+'
+    }
 }
 
 flutter {
