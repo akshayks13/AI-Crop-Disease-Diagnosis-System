@@ -313,6 +313,7 @@ async def create_question(
     db.add(question)
     await db.flush()
     await db.refresh(question)
+    await db.commit()
     
     return {
         "id": str(question.id),
@@ -371,6 +372,7 @@ async def create_question_with_file(
     db.add(question)
     await db.flush()
     await db.refresh(question)
+    await db.commit()
     
     return {
         "id": str(question.id),

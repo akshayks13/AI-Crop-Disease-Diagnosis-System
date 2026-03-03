@@ -332,6 +332,7 @@ async def submit_answer(
     
     await db.flush()
     await db.refresh(answer)
+    await db.commit()
     
     return {
         "id": str(answer.id),

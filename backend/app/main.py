@@ -3,6 +3,7 @@ AI Crop Disease Diagnosis System - FastAPI Backend
 
 Main application entry point with all routers and middleware.
 """
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -57,12 +58,11 @@ async def lifespan(app: FastAPI):
     (upload_dir / "videos").mkdir(exist_ok=True)
     (upload_dir / "questions").mkdir(exist_ok=True)
 
-    # Initialize database
-    await init_db()
-    logger.info("Database initialized")
-
-    # Initialize default data
-    await init_data()
+    # Only seed data in non-test environments 
+    if os.getenv("ENVIRONMENT") != "test":
+        #await init_db()
+        logger.info("Database initialized")
+        await init_data()
 
     yield
 
@@ -104,7 +104,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 # Admin dashboard DB logging middleware (unchanged — writes to SystemLog table)
-app.add_middleware(SystemLoggingMiddleware)
+if os.getenv("ENVIRONMENT") != "test":
+    app.add_middleware(SystemLoggingMiddleware)
 
 # CORS
 app.add_middleware(

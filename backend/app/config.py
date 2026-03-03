@@ -1,16 +1,20 @@
 """
 Application Configuration Settings
 """
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings,SettingsConfigDict
 from typing import List
 from functools import lru_cache
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
     
     # Database
-    database_url: str = "postgresql+asyncpg://postgres:password@localhost:5432/crop_diagnosis"
+    database_url: str = "postgresql+asyncpg://postgres:12345@127.0.0.1:5433/crop_diagnosis"
     
     # JWT Configuration
     jwt_secret_key: str = "your-secret-key-change-in-production"
@@ -41,9 +45,7 @@ class Settings(BaseSettings):
             return ["*"]
         return [origin.strip() for origin in self.allowed_origins.split(",")]
     
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    
 
 
 @lru_cache()

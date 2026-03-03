@@ -238,6 +238,7 @@ async def register_user(
     db.add(user)
     await db.flush()
     await db.refresh(user)
+    await db.refresh(user)
     
     return {
         "message": "OTP sent successfully. Please verify your email.",
