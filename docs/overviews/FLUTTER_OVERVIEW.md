@@ -218,6 +218,9 @@ The app auto-detects device language. To switch programmatically, update `_local
 ```bash
 cd frontend/flutter_app
 
+# Generate localization files (Required on first setup)
+flutter gen-l10n
+
 # Web
 flutter run -d chrome
 
