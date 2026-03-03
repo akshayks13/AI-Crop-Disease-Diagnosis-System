@@ -19,6 +19,27 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+subprojects {
+    val proj = this
+    if (proj.hasProperty("android")) {
+        proj.extensions.configure<com.android.build.gradle.BaseExtension>("android") {
+            if (namespace == null) {
+                namespace = "com.cropdiagnosis.${proj.name.replace("-", "_")}"
+            }
+        }
+    } else {
+        proj.afterEvaluate {
+            if (hasProperty("android")) {
+                extensions.configure<com.android.build.gradle.BaseExtension>("android") {
+                    if (namespace == null) {
+                        namespace = "com.cropdiagnosis.${proj.name.replace("-", "_")}"
+                    }
+                }
+            }
+        }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

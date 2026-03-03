@@ -285,6 +285,9 @@ cd frontend/flutter_app
 # Get dependencies
 flutter pub get
 
+# Generate localization files (Required on first setup or branch switch)
+flutter gen-l10n
+
 # Run app
 flutter run
 ```
