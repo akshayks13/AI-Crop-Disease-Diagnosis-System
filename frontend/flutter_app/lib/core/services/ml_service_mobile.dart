@@ -20,16 +20,14 @@ class MLService {
 
 late tfl.Interpreter interpreter;
 
-Future<void> loadModel() async {
+// Change 'loadModel' to 'initialize'
+Future<void> initialize() async {
   try {
-    final options = tfl.InterpreterOptions();
-    // options.addDelegate(tfl.FlexDelegate()); // If supported by your plugin version
-    interpreter = await tfl.Interpreter.fromAsset(
-      'assets/Disease_Classification_v2_compressed.tflite', 
-      options: options
-    );
+    // Double check this path matches exactly where the file is in your project
+    interpreter = await tfl.Interpreter.fromAsset('assets/Disease_Classification_v2_compressed.tflite');
+    print('Model loaded successfully!');
   } catch (e) {
-    print('Load failed: $e');
+    print('Failed to load model: $e');
   }
 }
 

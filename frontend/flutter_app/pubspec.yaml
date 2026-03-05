@@ -11,7 +11,11 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  tflite_flutter: ^0.10.0
+  tflite_flutter:
+    git:
+      url: https://github.com/am15h/tflite_flutter_plugin.git
+      ref: master
+
   flutter_riverpod: ^2.4.9
   dio: ^5.4.0
   connectivity_plus: ^5.0.2

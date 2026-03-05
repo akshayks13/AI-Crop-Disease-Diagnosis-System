@@ -14,13 +14,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+    // Removed the old kotlinOptions { jvmTarget = "17" } block from here
 
     defaultConfig {
         applicationId = "com.cropdiagnosis.flutter_app"
-        minSdk = flutter.minSdkVersion
+        minSdk = flutter.minSdkVersion // TFLite Flex ops usually require 21+
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -31,6 +29,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
     kotlin {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
@@ -39,8 +38,8 @@ android {
 }
 
 dependencies {
-    // No TFLite dependency needed — ML inference is handled by backend API
-    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.12.0' 
+    // FIXED: Added parentheses and double quotes for Kotlin DSL
+    implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.12.0")
 }
 
 flutter {
