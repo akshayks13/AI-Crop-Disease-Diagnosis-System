@@ -16,13 +16,13 @@ async def test_predict():
     print(f"Testing prediction for: {image_path}")
     try:
         prediction = ml_service.predict(image_path)
-        print(f"\n--- PREDICTION RESULT ---")
+        print("\n--- PREDICTION RESULT ---")
         print(f"Disease: {prediction.disease}")
         print(f"Disease ID: {prediction.disease_id}")
         print(f"Confidence: {prediction.confidence}")
         print(f"Severity: {prediction.severity}")
         print(f"Additional: {prediction.additional_predictions}")
-        print(f"-------------------------\n")
+        print("-------------------------\n")
     except Exception as e:
         print(f"Error during prediction: {e}")
         import traceback
