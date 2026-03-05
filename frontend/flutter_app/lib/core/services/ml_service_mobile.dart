@@ -1,140 +1,94 @@
-import 'dart:typed_data';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image/image.dart' as img;
-import 'package:tflite_flutter/tflite_flutter.dart';
 
-import '../constants/disease_labels.dart';
-
-/// ML Service for on-device plant disease classification (Mobile only)
+import '../api/api_config.dart';
+import '../api/api_client.dart';
+import 'package:tflite_flutter/tflite_flutter.dart' as tfl;
+/// ML Service for mobile — uses backend API for disease classification.
+///
+/// The TFLite model uses FlexPad (a TF Select op) which requires the
+/// Flex delegate. Due to incompatibilities between tflite_flutter's
+/// FFI-based initialization and the select-tf-ops AAR in Android, we use
+/// the same backend API approach as the web version. This guarantees
+/// correct results using the full TFLite model on the server.
 class MLService {
   final Ref ref;
-  Interpreter? _interpreter;
-  bool _isInitialized = false;
-
-  static const int _inputSize = 224;
-  static const String _modelPath = 'assets/models/Disease_Classification_v2_compressed.tflite';
 
   MLService(this.ref);
 
-  /// Initialize the TFLite model
-  Future<void> initialize() async {
-    if (_isInitialized) return;
 
-    try {
-      _interpreter = await Interpreter.fromAsset(_modelPath);
-      _isInitialized = true;
-      print('MLService: Model loaded successfully');
-    } catch (e) {
-      print('MLService: Failed to load model - $e');
-      rethrow;
-    }
+
+late tfl.Interpreter interpreter;
+
+Future<void> loadModel() async {
+  try {
+    final options = tfl.InterpreterOptions();
+    // options.addDelegate(tfl.FlexDelegate()); // If supported by your plugin version
+    interpreter = await tfl.Interpreter.fromAsset(
+      'assets/Disease_Classification_v2_compressed.tflite', 
+      options: options
+    );
+  } catch (e) {
+    print('Load failed: $e');
   }
+}
 
-  /// Run inference on an image file
+
+  /// Upload image to backend API for disease prediction
   Future<Map<String, dynamic>> predict(XFile imageFile) async {
-    if (!_isInitialized || _interpreter == null) {
-      await initialize();
-    }
-
     try {
       final bytes = await imageFile.readAsBytes();
-      final input = _preprocessImage(bytes);
 
-      final output = List.filled(1 * diseaseLabels.length, 0.0).reshape([1, diseaseLabels.length]);
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.uploadFileBytes(
+        ApiConfig.predict,
+        bytes: bytes,
+        filename: imageFile.name,
+        fieldName: 'file',
+      );
 
-      _interpreter!.run(input, output);
-
-      final predictions = (output[0] as List<double>);
-      
-      int maxIndex = 0;
-      double maxScore = predictions[0];
-      for (int i = 1; i < predictions.length; i++) {
-        if (predictions[i] > maxScore) {
-          maxScore = predictions[i];
-          maxIndex = i;
-        }
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        return _normalizeResponse(data);
       }
 
-      final label = diseaseLabels[maxIndex];
-      final diseaseInfo = DiseaseInfo.fromLabel(label);
-      final confidence = (maxScore * 100).clamp(0, 100);
-
-      String severity;
-      if (diseaseInfo.isHealthy) {
-        severity = 'none';
-      } else if (confidence >= 80) {
-        severity = 'high';
-      } else if (confidence >= 50) {
-        severity = 'medium';
-      } else {
-        severity = 'low';
-      }
-
-      return {
-        'disease': diseaseInfo.disease,
-        'plant': diseaseInfo.plant,
-        'disease_id': label,
-        'confidence': confidence,
-        'severity': severity,
-        'is_healthy': diseaseInfo.isHealthy,
-        'treatment_steps': _getTreatmentSteps(diseaseInfo),
-      };
+      throw Exception('Prediction API returned ${response.statusCode}');
     } catch (e) {
-      print('MLService: Prediction failed - $e');
+      print('MLService (Mobile): Prediction failed — $e');
       rethrow;
     }
   }
 
-  List<List<List<List<double>>>> _preprocessImage(Uint8List bytes) {
-    final image = img.decodeImage(bytes);
-    if (image == null) throw Exception('Failed to decode image');
-
-    final resized = img.copyResize(image, width: _inputSize, height: _inputSize);
-
-    final input = List.generate(
-      1,
-      (_) => List.generate(
-        _inputSize,
-        (y) => List.generate(
-          _inputSize,
-          (x) {
-            final pixel = resized.getPixel(x, y);
-            return [
-              pixel.r.toDouble(),
-              pixel.g.toDouble(),
-              pixel.b.toDouble(),
-            ];
-          },
-        ),
-      ),
-    );
-
-    return input;
-  }
-
-  List<Map<String, String>> _getTreatmentSteps(DiseaseInfo info) {
-    if (info.isHealthy) {
-      return [
-        {'step': '1', 'description': 'Your plant appears healthy! Continue regular care.'},
-        {'step': '2', 'description': 'Maintain proper watering and sunlight exposure.'},
-        {'step': '3', 'description': 'Monitor regularly for any signs of disease.'},
-      ];
+  /// Normalize backend response to match the format consumed by
+  /// DiagnosisResultScreen. The backend may return slightly different
+  /// keys depending on version, so we normalize defensively.
+  Map<String, dynamic> _normalizeResponse(Map<String, dynamic> data) {
+    // Normalize treatment steps — backend returns `step_number`, result
+    // screen reads `description` from each map element directly.
+    final rawSteps = data['treatment_steps'];
+    if (rawSteps is List) {
+      data['treatment_steps'] = rawSteps.map((s) {
+        if (s is Map<String, dynamic>) {
+          return {
+            // Keep both keys for forward compatibility
+            'step': s['step'] ?? s['step_number'] ?? '',
+            'step_number': s['step_number'] ?? s['step'] ?? '',
+            'description': s['description'] ?? '',
+          };
+        }
+        return s;
+      }).toList();
     }
 
-    return [
-      {'step': '1', 'description': 'Remove affected leaves and dispose properly.'},
-      {'step': '2', 'description': 'Apply appropriate fungicide or pesticide treatment.'},
-      {'step': '3', 'description': 'Improve air circulation around plants.'},
-      {'step': '4', 'description': 'Avoid overhead watering to reduce moisture on leaves.'},
-      {'step': '5', 'description': 'Consult an expert for severe infections.'},
-    ];
+    // Ensure confidence is always a percentage (0–100), not fraction (0–1)
+    final rawConf = (data['confidence'] as num?)?.toDouble() ?? 0.0;
+    data['confidence'] = rawConf <= 1.0 ? rawConf * 100 : rawConf;
+
+    // Ensure is_healthy is a bool
+    data['is_healthy'] = data['is_healthy'] == true;
+
+    return data;
   }
 
-  void dispose() {
-    _interpreter?.close();
-    _interpreter = null;
-    _isInitialized = false;
-  }
+  void dispose() {}
 }
