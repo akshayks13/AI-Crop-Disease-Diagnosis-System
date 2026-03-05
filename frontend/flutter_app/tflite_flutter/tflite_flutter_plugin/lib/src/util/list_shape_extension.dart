@@ -3,7 +3,7 @@ extension ListShape on List {
   ///
   /// [T] is the type of elements in list
   ///
-  /// Returns List<dynamic> if [shape.length] > 5
+  /// Returns `List<dynamic>` if [shape.length] > 5
   /// else returns list with exact type
   ///
   /// Throws [ArgumentError] if number of elements for [shape]
@@ -23,13 +23,13 @@ extension ListShape on List {
     if (dims <= 5) {
       switch (dims) {
         case 2:
-          return this._reshape2<T>(shape);
+          return _reshape2<T>(shape);
         case 3:
-          return this._reshape3<T>(shape);
+          return _reshape3<T>(shape);
         case 4:
-          return this._reshape4<T>(shape);
+          return _reshape4<T>(shape);
         case 5:
-          return this._reshape5<T>(shape);
+          return _reshape5<T>(shape);
       }
     }
 
@@ -76,7 +76,7 @@ extension ListShape on List {
   }
 
   List<List<List<List<T>>>> _reshape4<T>(List<int> shape) {
-    var flatList = this.flatten<T>();
+    var flatList = flatten<T>();
 
     List<List<List<List<T>>>> reshapedList = List.generate(
       shape[0],
@@ -132,14 +132,14 @@ extension ListShape on List {
     var list = this as dynamic;
     var shape = <int>[];
     while (list is List) {
-      shape.add((list as List).length);
+      shape.add(list.length);
       list = list.elementAt(0);
     }
     return shape;
   }
 
   /// Flatten this list, [T] is element type
-  /// if not specified List<dynamic> is returned
+  /// if not specified `List<dynamic>` is returned
   List<T> flatten<T>() {
     var flat = <T>[];
     forEach((e) {
