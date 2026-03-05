@@ -24,7 +24,7 @@ late tfl.Interpreter interpreter;
 Future<void> initialize() async {
   try {
     // Double check this path matches exactly where the file is in your project
-    interpreter = await tfl.Interpreter.fromAsset('assets/Disease_Classification_v2_compressed.tflite');
+    interpreter = await tfl.Interpreter.fromAsset('models/Disease_Classification_v2_compressed.tflite');
     print('Model loaded successfully!');
   } catch (e) {
     print('Failed to load model: $e');
