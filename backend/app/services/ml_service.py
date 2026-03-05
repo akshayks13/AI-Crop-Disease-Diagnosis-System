@@ -60,6 +60,7 @@ CROP_DISEASES = {
 class MLPrediction:
     """ML model prediction result."""
     disease: str
+    disease_id: str
     confidence: float
     severity: str
     severity_score: float
@@ -183,8 +184,11 @@ class MLService:
             f"(confidence: {confidence:.2f}, severity: {severity_label})"
         )
         
+        disease_id = f"{crop_key}_{primary_disease['name']}".lower().replace(" ", "_").replace("-", "_")
+        
         return MLPrediction(
             disease=primary_disease["name"],
+            disease_id=disease_id,
             confidence=round(confidence, 3),
             severity=severity_label,
             severity_score=round(severity_score, 3),
