@@ -123,7 +123,7 @@ class Interpreter {
   ///
   /// Typically used for passing interpreter between isolates.
   factory Interpreter.fromAddress(int address,
-      {bool allocated: false, bool deleted: false}) {
+      {bool allocated = false, bool deleted = false}) {
     final interpreter = Pointer<TfLiteInterpreter>.fromAddress(address);
     return Interpreter._(interpreter)
       .._deleted = deleted

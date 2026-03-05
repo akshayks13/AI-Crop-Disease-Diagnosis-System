@@ -3,22 +3,22 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 /// Wraps a model interpreter.
-class TfLiteInterpreter extends Opaque {}
+base class TfLiteInterpreter extends Opaque {}
 
 /// Wraps customized interpreter configuration options.
-class TfLiteInterpreterOptions extends Opaque {}
+base class TfLiteInterpreterOptions extends Opaque {}
 
 /// Wraps a loaded TensorFlowLite model.
-class TfLiteModel extends Opaque {}
+base class TfLiteModel extends Opaque {}
 
 /// Wraps data associated with a graph tensor.
-class TfLiteTensor extends Opaque {}
+base class TfLiteTensor extends Opaque {}
 
 /// Wraps a TfLiteDelegate
-class TfLiteDelegate extends Opaque {}
+base class TfLiteDelegate extends Opaque {}
 
 /// Wraps Quantization Params
-class TfLiteQuantizationParams extends Struct {
+base class TfLiteQuantizationParams extends Struct {
   @Float()
   external double scale;
 
@@ -32,7 +32,7 @@ class TfLiteQuantizationParams extends Struct {
 }
 
 /// Wraps gpu delegate options for iOS metal delegate
-class TFLGpuDelegateOptions extends Struct {
+base class TFLGpuDelegateOptions extends Struct {
   /// Allows to quantify tensors, downcast values, process in float16 etc.
   @Int32()
   external int allowPrecisionLoss;
@@ -59,7 +59,7 @@ class TFLGpuDelegateOptions extends Struct {
 }
 
 /// Wraps TfLiteGpuDelegateOptionsV2 for android gpu delegate
-class TfLiteGpuDelegateOptionsV2 extends Struct {
+base class TfLiteGpuDelegateOptionsV2 extends Struct {
   @Int32()
   external int isPrecisionLossAllowed;
 
@@ -101,7 +101,7 @@ class TfLiteGpuDelegateOptionsV2 extends Struct {
 }
 
 /// Wraps TfLiteXNNPackDelegateOptions
-class TfLiteXNNPackDelegateOptions extends Struct {
+base class TfLiteXNNPackDelegateOptions extends Struct {
   @Int32()
   external int numThreads;
 
@@ -113,7 +113,7 @@ class TfLiteXNNPackDelegateOptions extends Struct {
 }
 
 // Wraps TfLiteCoreMlDelegateOptions
-class TfLiteCoreMlDelegateOptions extends Struct {
+base class TfLiteCoreMlDelegateOptions extends Struct {
   @Int32()
   external int enabledDevices;
 

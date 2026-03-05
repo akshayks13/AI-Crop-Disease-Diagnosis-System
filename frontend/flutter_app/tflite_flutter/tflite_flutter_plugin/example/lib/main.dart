@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tflite_flutter_plugin_example/classifier.dart';
+import 'classifier.dart';
 
 void main() => runApp(MyApp());
 
