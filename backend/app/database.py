@@ -72,6 +72,31 @@ async def init_db() -> None:
         except Exception:
             pass  # Column already exists
 
+        # New migrations for missing columns
+        try:
+            await conn.execute(sa.text(
+                "ALTER TABLE diagnoses ADD COLUMN latitude FLOAT"
+            ))
+            logger.info("Added latitude column to diagnoses table")
+        except Exception:
+            pass
+
+        try:
+            await conn.execute(sa.text(
+                "ALTER TABLE diagnoses ADD COLUMN longitude FLOAT"
+            ))
+            logger.info("Added longitude column to diagnoses table")
+        except Exception:
+            pass
+
+        try:
+            await conn.execute(sa.text(
+                "ALTER TABLE system_logs ADD COLUMN log_metadata JSON"
+            ))
+            logger.info("Added log_metadata column to system_logs table")
+        except Exception:
+            pass
+
 
 # Setup logger
 logger = logging.getLogger(__name__)
