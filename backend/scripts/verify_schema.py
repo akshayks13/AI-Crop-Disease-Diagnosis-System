@@ -32,5 +32,17 @@ async def verify():
         else:
             print("  [FAIL] Column 'log_metadata' is MISSING.")
 
+        # Check questions table constraint
+        print("\nChecking 'questions' table constraints...")
+        res = await conn.execute(sa.text(
+            "SELECT count(*) FROM information_schema.table_constraints "
+            "WHERE table_name = 'questions' AND constraint_name = 'questions_status_check'"
+        ))
+        count = res.scalar()
+        if count > 0:
+            print("  [OK] Constraint 'questions_status_check' exists.")
+        else:
+            print("  [FAIL] Constraint 'questions_status_check' is MISSING.")
+
 if __name__ == "__main__":
     asyncio.run(verify())

@@ -87,6 +87,8 @@ class MLService:
                 os.path.join(app_dir, "ml_models"),      # legacy: backend/app/ml_models
                 os.path.join(backend_dir, "ml_models"),  # backend/ml_models
                 os.path.join(repo_root, "ml_models"),    # repo-root/ml_models
+                # Add explicit absolute path for Windows dev
+                r"c:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\backend\app\ml_models",
             ]
 
             _, model_path, labels_path = self._resolve_model_assets(
@@ -134,6 +136,8 @@ class MLService:
                 os.path.join(app_dir, "ml_models"),
                 os.path.join(backend_dir, "ml_models"),
                 os.path.join(repo_root, "ml_models"),
+                # Add explicit absolute path for Windows dev
+                r"c:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\backend\app\ml_models",
             ]
 
             _, keras_path, labels_path = self._resolve_model_assets(
@@ -164,19 +168,36 @@ class MLService:
         # Convert /uploads/ URL path to local filesystem path
         if image_path.startswith('/uploads/'):
             settings = get_settings()
-            # Remove /uploads/ prefix and normalize slashes for Windows
-            rel_path = image_path[len('/uploads/'):].replace('\\', '/')
+            # Remove /uploads/ prefix
+            rel_path = image_path[len('/uploads/'):]
+            # Normalize slashes: convert any \ to / then use os.path.join for OS-specific separator
+            rel_path = rel_path.replace('\\', '/')
             local_path = os.path.join(settings.upload_dir, rel_path)
+            # Ensure the path is absolute for reliability
+            local_path = os.path.abspath(local_path)
         else:
-            local_path = image_path
+            local_path = os.path.abspath(image_path)
+            
+        logger.info(f"Preprocessing image from: {local_path}")
+        if not os.path.exists(local_path):
+             raise FileNotFoundError(f"Image not found at {local_path}")
             
         img = Image.open(local_path).convert('RGB')
         img = img.resize((224, 224))
         
-        # Convert to numpy and normalize to [-1, 1]
-        # Insight from user's FaceAuth code: maps 0-255 to -1.0-1.0
+        # Convert to numpy and apply ResNet50 preprocessing
+        # 1. Convert RGB to BGR
+        # 2. Subtract ImageNet mean: [103.939, 116.779, 123.68]
         img_array = np.array(img, dtype=np.float32)
-        img_array = (img_array / 127.5) - 1.0
+        
+        # ResNet50 preprocess_input (mode='caffe') logic:
+        # RGB to BGR
+        img_array = img_array[..., ::-1]
+        
+        # Mean subtraction
+        img_array[..., 0] -= 103.939 # B
+        img_array[..., 1] -= 116.779 # G
+        img_array[..., 2] -= 123.68  # R
         
         # Add batch dimension
         img_array = np.expand_dims(img_array, axis=0)

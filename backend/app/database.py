@@ -51,51 +51,62 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     """Initialize database tables."""
+    import sqlalchemy as sa
+    
+    # Core table creation
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        
-        # Migrate: add new columns to existing tables (create_all won't do this)
-        import sqlalchemy as sa
-        try:
-            await conn.execute(sa.text(
-                "ALTER TABLE diagnoses ADD COLUMN disease_id VARCHAR(255)"
-            ))
-            logger.info("Added disease_id column to diagnoses table")
-        except Exception:
-            pass  # Column already exists
-        
-        try:
-            await conn.execute(sa.text(
-                "ALTER TABLE diagnoses ADD COLUMN dss_advisory JSON"
-            ))
-            logger.info("Added dss_advisory column to diagnoses table")
-        except Exception:
-            pass  # Column already exists
+    
+    # Migration helper: runs a single SQL statement in its own transaction
+    async def run_migration(sql_text: str, success_msg: str):
+        async with engine.begin() as conn:
+            try:
+                await conn.execute(sa.text(sql_text))
+                logger.info(success_msg)
+            except Exception:
+                # Column might already exist, or other non-critical error
+                pass
 
-        # New migrations for missing columns
-        try:
-            await conn.execute(sa.text(
-                "ALTER TABLE diagnoses ADD COLUMN latitude FLOAT"
-            ))
-            logger.info("Added latitude column to diagnoses table")
-        except Exception:
-            pass
+    # Each migration step in its own transaction
+    await run_migration(
+        "ALTER TABLE diagnoses ADD COLUMN disease_id VARCHAR(255)",
+        "Added disease_id column to diagnoses table"
+    )
+    await run_migration(
+        "ALTER TABLE diagnoses ADD COLUMN dss_advisory JSON",
+        "Added dss_advisory column to diagnoses table"
+    )
 
-        try:
-            await conn.execute(sa.text(
-                "ALTER TABLE diagnoses ADD COLUMN longitude FLOAT"
-            ))
-            logger.info("Added longitude column to diagnoses table")
-        except Exception:
-            pass
+    await run_migration(
+        "ALTER TABLE diagnoses ADD COLUMN latitude FLOAT",
+        "Added latitude column to diagnoses table"
+    )
 
+    await run_migration(
+        "ALTER TABLE diagnoses ADD COLUMN longitude FLOAT",
+        "Added longitude column to diagnoses table"
+    )
+
+    await run_migration(
+        "ALTER TABLE system_logs ADD COLUMN log_metadata JSON",
+        "Added log_metadata column to system_logs table"
+    )
+
+    # Update questions status constraint
+    async with engine.begin() as conn:
         try:
+            # First try to drop the existing constraint if it exists
             await conn.execute(sa.text(
-                "ALTER TABLE system_logs ADD COLUMN log_metadata JSON"
+                "ALTER TABLE questions DROP CONSTRAINT IF EXISTS questions_status_check"
             ))
-            logger.info("Added log_metadata column to system_logs table")
-        except Exception:
-            pass
+            # Add the new constraint with all enum values
+            await conn.execute(sa.text(
+                "ALTER TABLE questions ADD CONSTRAINT questions_status_check "
+                "CHECK (status IN ('OPEN', 'ANSWERED', 'CLOSED'))"
+            ))
+            logger.info("Updated questions_status_check constraint")
+        except Exception as e:
+            logger.warning(f"Could not update questions status constraint: {e}")
 
 
 # Setup logger
