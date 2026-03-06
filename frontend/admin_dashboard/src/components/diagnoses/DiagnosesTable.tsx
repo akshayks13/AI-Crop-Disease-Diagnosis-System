@@ -23,6 +23,13 @@ interface DiagnosesTableProps {
 }
 
 export default function DiagnosesTable({ diagnoses, loading, onImageClick }: DiagnosesTableProps) {
+    const resolveImageUrl = (path: string) => {
+        if (path?.startsWith('http://') || path?.startsWith('https://')) {
+            return path;
+        }
+        return `${process.env.NEXT_PUBLIC_API_URL}${path}`;
+    };
+
     const getSeverityColor = (severity: string) => {
         switch (severity?.toLowerCase()) {
             case 'high':
@@ -72,10 +79,10 @@ export default function DiagnosesTable({ diagnoses, loading, onImageClick }: Dia
                         <td className="px-5 py-3">
                             <div
                                 className="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer group"
-                                onClick={() => onImageClick(`${process.env.NEXT_PUBLIC_API_URL}${item.media_path}`)}
+                                onClick={() => onImageClick(resolveImageUrl(item.media_path))}
                             >
                                 <Image
-                                    src={item.media_path?.startsWith('http') ? item.media_path : `${process.env.NEXT_PUBLIC_API_URL}${item.media_path}`}
+                                    src={resolveImageUrl(item.media_path)}
                                     alt={item.disease}
                                     fill
                                     unoptimized
@@ -114,7 +121,7 @@ export default function DiagnosesTable({ diagnoses, loading, onImageClick }: Dia
                         <td className="px-5 py-3 text-right">
                             <button
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-xs font-medium hover:bg-slate-50 hover:text-indigo-600 transition-all"
-                                onClick={() => onImageClick(`${process.env.NEXT_PUBLIC_API_URL}${item.media_path}`)}
+                                onClick={() => onImageClick(resolveImageUrl(item.media_path))}
                             >
                                 <Eye size={14} /> View
                             </button>

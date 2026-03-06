@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     # Storage
     upload_dir: str = "./uploads"
     max_file_size_mb: int = 10
+    cloudinary_cloud_name: str = ""
+    cloudinary_api_key: str = ""
+    cloudinary_api_secret: str = ""
+    cloudinary_secure: bool = True
+    cloudinary_folder: str = "crop_diagnosis"
     
     # CORS
     allowed_origins: str = "http://localhost:3000,http://localhost:8080"

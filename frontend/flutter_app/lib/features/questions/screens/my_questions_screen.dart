@@ -78,6 +78,13 @@ class _QuestionCard extends ConsumerStatefulWidget {
 }
 
 class _QuestionCardState extends ConsumerState<_QuestionCard> {
+  String _resolveImageUrl(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    return '${ApiConfig.baseUrl}$path';
+  }
+
   final Map<String, int> _ratings = {}; // answerId -> rating
   final Set<String> _submitting = {}; // answerIds being submitted
 
@@ -217,7 +224,7 @@ class _QuestionCardState extends ConsumerState<_QuestionCard> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
-                  '${ApiConfig.baseUrl}$mediaPath',
+                  _resolveImageUrl(mediaPath),
                   width: double.infinity,
                   height: 180,
                   fit: BoxFit.cover,

@@ -27,6 +27,13 @@ class _AskExpertScreenState extends ConsumerState<AskExpertScreen> {
 
   final ImagePicker _picker = ImagePicker();
 
+  String _resolveImageUrl(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    return '${ApiConfig.baseUrl}$path';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -181,7 +188,7 @@ class _AskExpertScreenState extends ConsumerState<AskExpertScreen> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
-                            '${ApiConfig.baseUrl}${widget.diagnosisInfo!['media_path']}',
+                            _resolveImageUrl(widget.diagnosisInfo!['media_path'] as String),
                             width: 60,
                             height: 60,
                             fit: BoxFit.cover,

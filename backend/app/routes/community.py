@@ -4,7 +4,6 @@ Community Routes - API endpoints for community forum
 import uuid
 from typing import Optional
 from datetime import datetime
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,10 +24,9 @@ from app.schemas.community import (
     CommentResponse,
     LikeResponse,
 )
-from app.config import get_settings
+from app.services.storage_service import get_storage_service
 
 router = APIRouter(prefix="/community", tags=["Community Forum"])
-settings = get_settings()
 
 
 @router.get("/posts", response_model=PostListResponse)
@@ -232,21 +230,14 @@ async def create_post_with_image(
     Create a new community post with optional image attachment.
     """
     image_path = None
+    storage = get_storage_service()
     
     if image and image.filename:
-        # Save image
-        upload_dir = Path(settings.upload_dir) / "community"
-        upload_dir.mkdir(parents=True, exist_ok=True)
-        
-        ext = Path(image.filename).suffix
-        filename = f"{uuid.uuid4()}{ext}"
-        filepath = upload_dir / filename
-        
-        content_bytes = await image.read()
-        with open(filepath, "wb") as f:
-            f.write(content_bytes)
-        
-        image_path = f"/uploads/community/{filename}"
+        image_path, _ = await storage.save_upload(
+            file=image,
+            user_id=current_user.id,
+            category="community",
+        )
     
     # Check if user is expert
     from app.models.user import UserRole, UserStatus
