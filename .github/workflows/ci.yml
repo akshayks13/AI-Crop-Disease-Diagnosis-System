@@ -163,9 +163,18 @@ jobs:
         working-directory: backend
         run: pip install -r requirements.txt
 
-      - name: Run database migrations
+      - name: Create database tables
         working-directory: backend
-        run: alembic upgrade head
+        run: |
+          python -c "
+          import asyncio
+          from app.database import engine, Base
+          import app.models.user, app.models.question, app.models.diagnosis, app.models.market
+          async def main():
+              async with engine.begin() as conn:
+                  await conn.run_sync(Base.metadata.create_all)
+          asyncio.run(main())
+          "
 
       - name: Seed database (admin user + test data)
         working-directory: backend
