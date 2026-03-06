@@ -10,6 +10,6 @@ export default defineConfig({
             'node_modules/**',
             '.next/**',
         ],
-        environment: 'jsdom',
+        environment: 'node',
     },
 });
