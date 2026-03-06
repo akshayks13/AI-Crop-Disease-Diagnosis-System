@@ -11,8 +11,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  tflite_flutter:
-    path: tflite_flutter/tflite_flutter_plugin
+
 
   flutter_riverpod: ^2.4.9
   dio: ^5.4.0
