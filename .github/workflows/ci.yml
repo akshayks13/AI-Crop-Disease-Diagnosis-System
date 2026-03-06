@@ -181,10 +181,10 @@ jobs:
         run: |
           python -c "
           import asyncio
-          from app.database import engine, Base, AsyncSessionLocal
+          from app.database import engine, Base, async_session_maker
           from app.seed import seed_database
           async def main():
-              async with AsyncSessionLocal() as session:
+              async with async_session_maker() as session:
                   await seed_database(session)
           asyncio.run(main())
           "
