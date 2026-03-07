@@ -87,8 +87,6 @@ class MLService:
                 os.path.join(app_dir, "ml_models"),      # legacy: backend/app/ml_models
                 os.path.join(backend_dir, "ml_models"),  # backend/ml_models
                 os.path.join(repo_root, "ml_models"),    # repo-root/ml_models
-                # Add explicit absolute path for Windows dev
-                r"c:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\backend\app\ml_models",
             ]
 
             _, model_path, labels_path = self._resolve_model_assets(
@@ -136,8 +134,6 @@ class MLService:
                 os.path.join(app_dir, "ml_models"),
                 os.path.join(backend_dir, "ml_models"),
                 os.path.join(repo_root, "ml_models"),
-                # Add explicit absolute path for Windows dev
-                r"c:\Users\aswat\Desktop\AI-Crop-Disease-Diagnosis-System\backend\app\ml_models",
             ]
 
             _, keras_path, labels_path = self._resolve_model_assets(
