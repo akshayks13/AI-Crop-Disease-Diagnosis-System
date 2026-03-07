@@ -2,7 +2,7 @@
 Authentication Routes - Login, Register, and Token Refresh
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -26,6 +26,15 @@ from app.models.user import User, UserRole, UserStatus
 # Setup router and logger
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 from app.auth.utils import generate_and_send_otp
+
+
+def _is_otp_expired(user: User) -> bool:
+    """Check whether stored OTP is expired based on configured TTL."""
+    settings = get_settings()
+    if not user.otp_created_at:
+        return True
+    expiry_time = user.otp_created_at + timedelta(minutes=settings.otp_expire_minutes)
+    return datetime.utcnow() > expiry_time
 
 
 # ============== Schemas ==============
@@ -140,7 +149,13 @@ async def forgot_password(
         return {"message": "If email exists, OTP sent."}
     
     # Generate OTP
-    otp = generate_and_send_otp(user.email)
+    try:
+        otp = generate_and_send_otp(user.email)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to send OTP right now. Please try again later."
+        ) from exc
     
     user.otp_code = otp
     user.otp_created_at = datetime.utcnow()
@@ -170,10 +185,25 @@ async def reset_password(
             detail="User not found"
         )
         
-    if not user.otp_code or user.otp_code != request.otp:
+    if not user.otp_code:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired OTP"
+            detail="OTP not found. Please request a new OTP."
+        )
+
+    if _is_otp_expired(user):
+        user.otp_code = None
+        user.otp_created_at = None
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP expired. Please request a new OTP."
+        )
+
+    if user.otp_code != request.otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid OTP"
         )
     
     # Update password
@@ -204,19 +234,59 @@ async def register_user(
     existing = await db.execute(
         select(User).where(User.email == request.email)
     )
-    if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered"
-        )
-    
+    existing_user = existing.scalar_one_or_none()
+    if existing_user:
+        if existing_user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already registered"
+            )
+
+        # Existing but unverified user: refresh details and resend OTP
+        try:
+            otp = generate_and_send_otp(request.email)
+        except RuntimeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Unable to send OTP right now. Please try again later."
+            ) from exc
+
+        refreshed_status = UserStatus.ACTIVE
+        if request.role == UserRole.EXPERT:
+            refreshed_status = UserStatus.PENDING
+
+        existing_user.password_hash = hash_password(request.password)
+        existing_user.full_name = request.full_name
+        existing_user.phone = request.phone
+        existing_user.role = request.role
+        existing_user.status = refreshed_status
+        existing_user.expertise_domain = request.expertise_domain
+        existing_user.qualification = request.qualification
+        existing_user.experience_years = request.experience_years
+        existing_user.location = request.location
+        existing_user.otp_code = otp
+        existing_user.otp_created_at = datetime.utcnow()
+
+        await db.commit()
+
+        return {
+            "message": "Account exists but is not verified. A new OTP has been sent.",
+            "email": existing_user.email,
+        }
+
     # Determine initial status
     initial_status = UserStatus.ACTIVE
     if request.role == UserRole.EXPERT:
         initial_status = UserStatus.PENDING
     
     # Generate OTP
-    otp = generate_and_send_otp(request.email)
+    try:
+        otp = generate_and_send_otp(request.email)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to send OTP right now. Please try again later."
+        ) from exc
     
     # Create user
     user = User(
@@ -267,7 +337,22 @@ async def verify_otp(
         # If already verified, ensure we return tokens
         pass 
         
-    if user.otp_code and user.otp_code != request.otp:
+    if not user.otp_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP not found. Please request a new OTP."
+        )
+
+    if _is_otp_expired(user):
+        user.otp_code = None
+        user.otp_created_at = None
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP expired. Please request a new OTP."
+        )
+
+    if user.otp_code != request.otp:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid OTP"
