@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -191,7 +192,7 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
         }
       } catch (e) {
         // DSS is supplementary — don't block navigation if it fails
-        print('DSS advisory fetch failed: $e');
+        debugPrint('DSS advisory fetch failed: $e');
       }
 
       if (mounted) {
@@ -202,10 +203,30 @@ class _DiagnosisScreenState extends ConsumerState<DiagnosisScreen> {
         );
       }
     } catch (e) {
+      String errorMessage = 'Error analyzing image';
+      if (e is DioException) {
+        final status = e.response?.statusCode;
+        final data = e.response?.data;
+        String? detail;
+        if (data is Map && data['detail'] != null) {
+          detail = data['detail'].toString();
+        }
+
+        if (detail != null && detail.isNotEmpty) {
+          errorMessage = detail;
+        } else if (status != null) {
+          errorMessage = 'Server error ($status). Please try again.';
+        } else {
+          errorMessage = 'Network error. Check backend URL and connectivity.';
+        }
+      } else {
+        errorMessage = e.toString();
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error analyzing image: $e'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
           ),
         );

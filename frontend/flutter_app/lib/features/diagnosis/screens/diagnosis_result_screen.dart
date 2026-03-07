@@ -264,14 +264,15 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Row(
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
                     children: [
                       _InfoChip(
                         label: 'Severity',
                         value: isHealthy ? 'NONE' : severity.toUpperCase(),
                         icon: Icons.warning_amber_rounded,
                       ),
-                      const SizedBox(width: 12),
                       _InfoChip(
                         label: 'Confidence',
                         value: '${confidence.toInt()}%',
@@ -423,7 +424,9 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
           children: [
             Icon(Icons.cloud_off, size: 18, color: Colors.grey.shade500),
             const SizedBox(width: 10),
-            Text('Weather unavailable (location permission needed)', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            Expanded(
+              child: Text('Weather unavailable (location permission needed)', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            ),
           ],
         ),
       );
@@ -466,9 +469,12 @@ class _DiagnosisResultScreenState extends ConsumerState<DiagnosisResultScreen> {
             children: [
               Icon(Icons.wb_sunny_outlined, color: Colors.blue.shade700, size: 18),
               const SizedBox(width: 8),
-              Text(
-                'Current Weather · ${w.cityName}',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade800, fontSize: 13),
+              Expanded(
+                child: Text(
+                  'Current Weather · ${w.cityName}',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade800, fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

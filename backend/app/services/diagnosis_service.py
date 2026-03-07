@@ -96,7 +96,7 @@ class DiagnosisService:
                 treatment=treatment_json,
                 prevention=treatment_plan.prevention,
                 warnings=treatment_plan.warnings,
-                disease_id=disease_id,
+                disease_id=disease_id or prediction.disease_id,
                 dss_advisory=dss_advisory,
                 additional_diseases={
                     "predictions": prediction.additional_predictions
@@ -114,7 +114,7 @@ class DiagnosisService:
             "severity": prediction.severity,
             "confidence": prediction.confidence,
             "crop_type": crop_type,
-            "disease_id": disease_id,
+            "disease_id": disease_id or prediction.disease_id,
             "treatment_steps": treatment_plan.treatment_steps,
             "chemical_options": treatment_plan.chemical_options,
             "organic_options": treatment_plan.organic_options,
