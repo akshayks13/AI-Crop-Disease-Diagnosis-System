@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field, validator
 from sqlalchemy import select
@@ -25,7 +25,7 @@ from app.models.user import User, UserRole, UserStatus
 
 # Setup router and logger
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-from app.auth.utils import generate_and_send_otp
+from app.auth.utils import generate_otp, send_otp_background
 
 
 def _is_otp_expired(user: User) -> bool:
@@ -132,6 +132,7 @@ class ResetPasswordRequest(BaseModel):
 @router.post("/forgot-password", status_code=status.HTTP_200_OK)
 async def forgot_password(
     request: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -148,14 +149,9 @@ async def forgot_password(
         # But for this project, we'll return success anyway
         return {"message": "If email exists, OTP sent."}
     
-    # Generate OTP
-    try:
-        otp = generate_and_send_otp(user.email)
-    except RuntimeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Unable to send OTP right now. Please try again later."
-        ) from exc
+    # Generate OTP and schedule background email delivery
+    otp = generate_otp()
+    background_tasks.add_task(send_otp_background, user.email, otp)
     
     user.otp_code = otp
     user.otp_created_at = datetime.utcnow()
@@ -222,6 +218,7 @@ async def reset_password(
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_user(
     request: UserRegisterRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -243,13 +240,8 @@ async def register_user(
             )
 
         # Existing but unverified user: refresh details and resend OTP
-        try:
-            otp = generate_and_send_otp(request.email)
-        except RuntimeError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Unable to send OTP right now. Please try again later."
-            ) from exc
+        otp = generate_otp()
+        background_tasks.add_task(send_otp_background, request.email, otp)
 
         refreshed_status = UserStatus.ACTIVE
         if request.role == UserRole.EXPERT:
@@ -279,14 +271,9 @@ async def register_user(
     if request.role == UserRole.EXPERT:
         initial_status = UserStatus.PENDING
     
-    # Generate OTP
-    try:
-        otp = generate_and_send_otp(request.email)
-    except RuntimeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Unable to send OTP right now. Please try again later."
-        ) from exc
+    # Generate OTP and schedule background email delivery
+    otp = generate_otp()
+    background_tasks.add_task(send_otp_background, request.email, otp)
     
     # Create user
     user = User(

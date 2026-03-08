@@ -45,12 +45,47 @@ def _send_otp_email(email: str, otp: str) -> None:
             server.login(settings.smtp_username.strip(), _normalized_smtp_password())
         server.send_message(msg)
 
+def generate_otp() -> str:
+    """Generate a 6-digit OTP string."""
+    return "".join([str(random.randint(0, 9)) for _ in range(6)])
+
+
+def send_otp_background(email: str, otp: str) -> None:
+    """
+    Send OTP email in a background task.  Never raises — errors are logged only.
+    If SMTP is not configured and DEBUG is on, prints the OTP to stdout.
+    """
+    smtp_ready = bool(
+        settings.smtp_host and
+        settings.smtp_port and
+        (settings.smtp_from_email or settings.smtp_username)
+    )
+
+    if smtp_ready:
+        try:
+            _send_otp_email(email, otp)
+            logger.info(f"OTP email sent to {email}")
+        except Exception as exc:
+            logger.error(f"Failed to send OTP email to {email}: {exc}")
+        return
+
+    if settings.debug:
+        print("\n" + "=" * 44)
+        print(f"OTP for {email}: {otp}")
+        print("=" * 44 + "\n")
+        logger.warning(f"SMTP not configured; OTP printed to stdout for {email} (debug mode)")
+        return
+
+    logger.error(f"SMTP not configured; OTP email NOT sent to {email}")
+
+
 def generate_and_send_otp(email: str) -> str:
     """
-    Generate a 6-digit OTP and send it.
+    Generate a 6-digit OTP and send it synchronously.
+    Kept for backward compatibility — prefer generate_otp() + BackgroundTasks.
     Returns the generated OTP.
     """
-    otp = "".join([str(random.randint(0, 9)) for _ in range(6)])
+    otp = generate_otp()
 
     smtp_ready = bool(
         settings.smtp_host and
@@ -76,5 +111,3 @@ def generate_and_send_otp(email: str) -> str:
         return otp
 
     raise RuntimeError("SMTP is not configured for OTP delivery")
-    
-    return otp

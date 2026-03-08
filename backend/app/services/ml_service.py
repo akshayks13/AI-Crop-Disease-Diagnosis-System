@@ -68,91 +68,77 @@ class MLService:
             f"model: {model_filename}, labels: {labels_filename}"
         )
     
+    def _candidate_dirs(self) -> List[str]:
+        """Return candidate ml_models directories in search order."""
+        current_file = os.path.abspath(__file__)
+        app_dir = os.path.dirname(os.path.dirname(current_file))
+        backend_dir = os.path.dirname(app_dir)
+        repo_root = os.path.dirname(backend_dir)
+        return [
+            os.path.join(app_dir, "ml_models"),      # backend/app/ml_models  ← committed
+            os.path.join(backend_dir, "ml_models"),  # backend/ml_models
+            os.path.join(repo_root, "ml_models"),    # repo-root/ml_models
+        ]
+
     def _load_model(self) -> None:
-        """Load the TFLite model and labels."""
+        """
+        Load the ML model for disease inference.
+
+        Strategy (server has full TensorFlow installed):
+          1. Keras v2  — most accurate, large file (only present if committed/LFS)
+          2. Keras v1  — smaller (2.9 MB), committed to backend/app/ml_models
+          3. TFLite    — last resort; may fail on Flex ops (SELECT_TF_OPS models)
+        """
+        import traceback
+        candidate_dirs = self._candidate_dirs()
+
+        # ── 1. Try Keras models (preferred on server with full TF) ──────────
+        for keras_filename in (
+            "Disease_Classification_v2.keras",
+            "Disease_Classification_v1.keras",
+        ):
+            try:
+                import tensorflow as tf
+                _, keras_path, labels_path = self._resolve_model_assets(
+                    candidate_dirs=candidate_dirs,
+                    model_filename=keras_filename,
+                    labels_filename="labels.txt",
+                )
+                with open(labels_path, "r") as f:
+                    self.labels = [l.strip() for l in f if l.strip()]
+                self.keras_model = tf.keras.models.load_model(keras_path, compile=False)
+                logger.info(f"SUCCESS: Loaded Keras model '{keras_filename}'. Labels: {len(self.labels)}")
+                return
+            except FileNotFoundError:
+                continue  # not available in any candidate dir, try next
+            except Exception as e:
+                logger.warning(f"Keras load failed for '{keras_filename}': {e}")
+                logger.debug(traceback.format_exc())
+                continue
+
+        # ── 2. Fallback: TFLite (may fail on Flex/SELECT_TF_OPS models) ─────
         try:
             import tensorflow as tf
-            
-            # Resolve ml_models directory from known project layouts.
-            # Typical repo layout:
-            #   <repo>/backend/app/services/ml_service.py
-            #   <repo>/ml_models/*
-            current_file = os.path.abspath(__file__)
-            services_dir = os.path.dirname(current_file)
-            app_dir = os.path.dirname(services_dir)
-            backend_dir = os.path.dirname(app_dir)
-            repo_root = os.path.dirname(backend_dir)
-
-            candidate_dirs = [
-                os.path.join(app_dir, "ml_models"),      # legacy: backend/app/ml_models
-                os.path.join(backend_dir, "ml_models"),  # backend/ml_models
-                os.path.join(repo_root, "ml_models"),    # repo-root/ml_models
-            ]
-
             _, model_path, labels_path = self._resolve_model_assets(
                 candidate_dirs=candidate_dirs,
                 model_filename="Disease_Classification_v2_compressed.tflite",
                 labels_filename="labels.txt",
             )
-            
-            logger.info(f"Attempting to load TFLite model from: {model_path}")
-            
-            if not os.path.exists(model_path):
-                raise FileNotFoundError(f"Model file not found at {model_path}")
-            if not os.path.exists(labels_path):
-                raise FileNotFoundError(f"Labels file not found at {labels_path}")
-
-            # Load labels
             with open(labels_path, "r") as f:
-                self.labels = [line.strip() for line in f.readlines() if line.strip()]
-            
-            # Load TFLite model
+                self.labels = [l.strip() for l in f if l.strip()]
+            logger.info(f"Attempting TFLite load from: {model_path}")
             self.interpreter = tf.lite.Interpreter(model_path=model_path)
             self.interpreter.allocate_tensors()
             self.input_details = self.interpreter.get_input_details()
             self.output_details = self.interpreter.get_output_details()
-            
-            logger.info(f"SUCCESS: Loaded TFLite model. Labels count: {len(self.labels)}")
+            logger.info(f"SUCCESS: Loaded TFLite model. Labels: {len(self.labels)}")
         except Exception as e:
-            logger.error(f"CRITICAL: Failed to load TFLite model: {str(e)}")
-            import traceback
+            logger.error(f"CRITICAL: All model loading strategies failed. Last error: {e}")
             logger.error(traceback.format_exc())
-            self._load_keras_fallback()
 
     def _load_keras_fallback(self) -> None:
-        """Fallback to Keras model if TFLite cannot initialize (e.g., Flex ops)."""
-        try:
-            import tensorflow as tf
-
-            current_file = os.path.abspath(__file__)
-            services_dir = os.path.dirname(current_file)
-            app_dir = os.path.dirname(services_dir)
-            backend_dir = os.path.dirname(app_dir)
-            repo_root = os.path.dirname(backend_dir)
-
-            candidate_dirs = [
-                os.path.join(app_dir, "ml_models"),
-                os.path.join(backend_dir, "ml_models"),
-                os.path.join(repo_root, "ml_models"),
-            ]
-
-            _, keras_path, labels_path = self._resolve_model_assets(
-                candidate_dirs=candidate_dirs,
-                model_filename="Disease_Classification_v2.keras",
-                labels_filename="labels.txt",
-            )
-
-            # Ensure labels are available even if TFLite failed before loading them.
-            if not self.labels:
-                with open(labels_path, "r") as f:
-                    self.labels = [line.strip() for line in f.readlines() if line.strip()]
-
-            self.keras_model = tf.keras.models.load_model(keras_path, compile=False)
-            logger.info("SUCCESS: Loaded Keras fallback model")
-        except Exception as e:
-            logger.error(f"CRITICAL: Failed to load Keras fallback model: {str(e)}")
-            import traceback
-            logger.error(traceback.format_exc())
+        """Kept for compatibility — logic now lives in _load_model."""
+        self._load_model()
     
     def _preprocess_image(self, image_path: str) -> Any:
         """Preprocess image for model inference."""
@@ -216,9 +202,9 @@ class MLService:
         """Predict disease from crop image using TFLite model."""
         import numpy as np
         
-        if self.interpreter is None or self.input_details is None:
-            # Try reloading once if it failed at startup
-            logger.info("TFLite interpreter not initialized. Attempting reload...")
+        if self.interpreter is None and self.keras_model is None:
+            # Try reloading once if startup load failed entirely
+            logger.info("No model loaded. Attempting reload...")
             self._load_model()
 
         preprocessed = self._preprocess_image(image_path)
