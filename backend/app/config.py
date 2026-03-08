@@ -17,10 +17,16 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
+    otp_expire_minutes: int = 5
     
     # Storage
     upload_dir: str = "./uploads"
     max_file_size_mb: int = 10
+    cloudinary_cloud_name: str = ""
+    cloudinary_api_key: str = ""
+    cloudinary_api_secret: str = ""
+    cloudinary_secure: bool = True
+    cloudinary_folder: str = "crop_diagnosis"
     
     # CORS
     allowed_origins: str = "http://localhost:3000,http://localhost:8080"
@@ -42,6 +48,16 @@ class Settings(BaseSettings):
     # External APIs
     agmarknet_api_key: str = ""
     agmarknet_api_url: str = "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070"
+
+    # Email / OTP delivery
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
+    smtp_from_name: str = "AI Crop Disease Diagnosis"
+    smtp_use_tls: bool = True
+    smtp_use_ssl: bool = False
     
     @property
     def cors_origins(self) -> List[str]:

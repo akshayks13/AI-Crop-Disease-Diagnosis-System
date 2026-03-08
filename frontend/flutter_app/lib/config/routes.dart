@@ -82,12 +82,18 @@ class AppRoutes {
       case register:
         return _slideRoute(const RegisterScreen(), settings);
       case otp:
-        final email = settings.arguments as String;
+        final email = settings.arguments as String?;
+        if (email == null || email.isEmpty) {
+          return _slideRoute(const LoginScreen(), settings);
+        }
         return _slideRoute(OtpScreen(email: email), settings);
       case forgotPassword:
         return _slideRoute(const ForgotPasswordScreen(), settings);
       case resetPassword:
-        final email = settings.arguments as String;
+        final email = settings.arguments as String?;
+        if (email == null || email.isEmpty) {
+          return _slideRoute(const ForgotPasswordScreen(), settings);
+        }
         return _slideRoute(ResetPasswordScreen(email: email), settings);
       
       // Main

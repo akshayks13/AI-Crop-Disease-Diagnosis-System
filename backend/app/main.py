@@ -37,6 +37,11 @@ from app.routes.encyclopedia import router as encyclopedia_router
 from app.middleware.logging import SystemLoggingMiddleware
 
 settings = get_settings()
+cloudinary_enabled = all([
+    settings.cloudinary_cloud_name,
+    settings.cloudinary_api_key,
+    settings.cloudinary_api_secret,
+])
 
 # ── Rate Limiter ──────────────────────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
@@ -50,12 +55,13 @@ async def lifespan(app: FastAPI):
     """
     logger.info("Starting up AI Crop Disease Diagnosis System...")
 
-    # Create upload directories
-    upload_dir = Path(settings.upload_dir)
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    (upload_dir / "images").mkdir(exist_ok=True)
-    (upload_dir / "videos").mkdir(exist_ok=True)
-    (upload_dir / "questions").mkdir(exist_ok=True)
+    # Create local upload directories only when Cloudinary is not configured
+    if not cloudinary_enabled:
+        upload_dir = Path(settings.upload_dir)
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        (upload_dir / "images").mkdir(exist_ok=True)
+        (upload_dir / "videos").mkdir(exist_ok=True)
+        (upload_dir / "questions").mkdir(exist_ok=True)
 
     # Initialize database
     await init_db()
@@ -160,7 +166,7 @@ app.include_router(agronomy_router)
 
 # Mount static files for uploads
 uploads_path = Path(settings.upload_dir)
-if uploads_path.exists():
+if not cloudinary_enabled and uploads_path.exists():
     app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
 
