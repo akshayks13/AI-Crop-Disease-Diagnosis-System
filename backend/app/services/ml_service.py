@@ -142,46 +142,50 @@ class MLService:
     
     def _preprocess_image(self, image_path: str) -> Any:
         """Preprocess image for model inference."""
-        from PIL import Image
-        import numpy as np
+        import io
         import os
+        import urllib.request
+
+        import numpy as np
+        from PIL import Image
         from app.config import get_settings
-        
-        # Convert /uploads/ URL path to local filesystem path
-        if image_path.startswith('/uploads/'):
-            settings = get_settings()
-            # Remove /uploads/ prefix
-            rel_path = image_path[len('/uploads/'):]
-            # Normalize slashes: convert any \ to / then use os.path.join for OS-specific separator
-            rel_path = rel_path.replace('\\', '/')
-            local_path = os.path.join(settings.upload_dir, rel_path)
-            # Ensure the path is absolute for reliability
-            local_path = os.path.abspath(local_path)
+
+        # Remote URL (Cloudinary or any https/http) — download into memory
+        if image_path.startswith("https://") or image_path.startswith("http://"):
+            logger.info(f"Downloading image for inference: {image_path}")
+            try:
+                with urllib.request.urlopen(image_path, timeout=30) as resp:
+                    img_bytes = resp.read()
+            except Exception as exc:
+                raise FileNotFoundError(
+                    f"Failed to download image from {image_path}: {exc}"
+                ) from exc
+            img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+
         else:
-            local_path = os.path.abspath(image_path)
-            
-        logger.info(f"Preprocessing image from: {local_path}")
-        if not os.path.exists(local_path):
-             raise FileNotFoundError(f"Image not found at {local_path}")
-            
-        img = Image.open(local_path).convert('RGB')
+            # Convert /uploads/ URL path to local filesystem path
+            if image_path.startswith("/uploads/"):
+                settings = get_settings()
+                rel_path = image_path[len("/uploads/"):].replace("\\", "/")
+                local_path = os.path.abspath(
+                    os.path.join(settings.upload_dir, rel_path)
+                )
+            else:
+                local_path = os.path.abspath(image_path)
+
+            logger.info(f"Preprocessing image from: {local_path}")
+            if not os.path.exists(local_path):
+                raise FileNotFoundError(f"Image not found at {local_path}")
+            img = Image.open(local_path).convert("RGB")
+
         img = img.resize((224, 224))
-        
         # Convert to numpy and apply ResNet50 preprocessing
-        # 1. Convert RGB to BGR
-        # 2. Subtract ImageNet mean: [103.939, 116.779, 123.68]
+        # RGB to BGR then subtract ImageNet mean
         img_array = np.array(img, dtype=np.float32)
-        
-        # ResNet50 preprocess_input (mode='caffe') logic:
-        # RGB to BGR
         img_array = img_array[..., ::-1]
-        
-        # Mean subtraction
-        img_array[..., 0] -= 103.939 # B
-        img_array[..., 1] -= 116.779 # G
-        img_array[..., 2] -= 123.68  # R
-        
-        # Add batch dimension
+        img_array[..., 0] -= 103.939  # B
+        img_array[..., 1] -= 116.779  # G
+        img_array[..., 2] -= 123.68   # R
         img_array = np.expand_dims(img_array, axis=0)
         return img_array
     
