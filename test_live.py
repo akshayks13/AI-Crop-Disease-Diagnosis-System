@@ -87,7 +87,7 @@ else:
 
 # ── 3. Register new user ─────────────────────────────────────
 section("3. Register new user (background OTP)")
-new_email = "rendertest_bgv1@example.com"
+new_email = "rendertest_march08@example.com"
 s, d = req(
     "POST",
     "/auth/register",
@@ -124,33 +124,17 @@ if not token:
     raise SystemExit(1)
 
 # ── 6. ML diagnosis (file upload) ────────────────────────────
-section("6. ML Diagnosis  /diagnosis/predict  (file upload)")
-# Use a locally available crop image from previous uploads
-local_img = "/Users/akshayks/Desktop/SE_Proj/backend/uploads/images/53bc36f5-1bf6-4a0c-9774-f8f7f046e4ed_20260307_032815_52834794.png"
-if os.path.exists(local_img):
-    with open(local_img, "rb") as f:
-        img_bytes = f.read()
-    print(f"  Using local image ({len(img_bytes)} bytes)")
-else:
-    # Minimal 1x1 white JPEG as fallback (still valid, just a plain leaf-less image)
-    import base64
-    small_jpg_b64 = (
-        "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8U"
-        "HRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgN"
-        "DRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy"
-        "MjL/wAARCAABAAEDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABgUE/8QAIhAAAQME"
-        "AgMAAAAAAAAAAAAAAQIDBREEEiExQf/EABUBAQEAAAAAAAAAAAAAAAAAAAEC/8QAFBEBAAAA"
-        "AAAAAAAAAAAAAAAAA//aAAwDAQACEQMRAD8AjfZ9tOpRqJhLEq3VDr7bbSUobSFKUogAADkk"
-        "nNFFAH//2Q=="
-    )
-    img_bytes = base64.b64decode(small_jpg_b64)
-    print(f"  Using inline fallback JPEG ({len(img_bytes)} bytes)")
+section("6. ML Diagnosis  /diagnosis/predict  (apple_scab.jpeg)")
+local_img = "/Users/akshayks/Desktop/SE_Proj/apple_scab.jpeg"
+with open(local_img, "rb") as f:
+    img_bytes = f.read()
+print(f"  Using apple_scab.jpeg ({len(img_bytes)} bytes)")
 
 try:
     s, d = req_multipart(
         "/diagnosis/predict",
         fields={"crop_type": "general"},
-        files={"file": ("crop.png", img_bytes, "image/png")},
+        files={"file": ("apple_scab.jpeg", img_bytes, "image/jpeg")},
         token=token,
         timeout=120,
     )
