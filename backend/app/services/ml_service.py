@@ -105,7 +105,7 @@ class MLService:
                     labels_filename="labels.txt",
                 )
                 with open(labels_path, "r") as f:
-                    self.labels = [l.strip() for l in f if l.strip()]
+                    self.labels = [line.strip() for line in f if line.strip()]
                 self.keras_model = tf.keras.models.load_model(keras_path, compile=False)
                 logger.info(f"SUCCESS: Loaded Keras model '{keras_filename}'. Labels: {len(self.labels)}")
                 return
@@ -125,7 +125,7 @@ class MLService:
                 labels_filename="labels.txt",
             )
             with open(labels_path, "r") as f:
-                self.labels = [l.strip() for l in f if l.strip()]
+                self.labels = [line.strip() for line in f if line.strip()]
             logger.info(f"Attempting TFLite load from: {model_path}")
             self.interpreter = tf.lite.Interpreter(model_path=model_path)
             self.interpreter.allocate_tensors()
