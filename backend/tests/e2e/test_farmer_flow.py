@@ -26,7 +26,7 @@ async def test_farmer_question_flow(client, register_and_login_farmer):
         headers=headers
     )
 
-    assert create_response.status_code in [200, 201]
+    assert create_response.status_code == 201
 
     my_questions = await client.get(
         "/questions",
