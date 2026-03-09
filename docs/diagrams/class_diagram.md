@@ -59,7 +59,10 @@ classDiagram
         -String media_type
         -String crop_type
         -String location
+        -Float latitude
+        -Float longitude
         -String disease
+        -String disease_id
         -String severity
         -Float confidence
         -JSON treatment
@@ -67,6 +70,7 @@ classDiagram
         -String warnings
         -Integer rating
         -JSON additional_diseases
+        -JSON dss_advisory
         -DateTime created_at
         +to_response_dict() dict
         +update_rating(rating) void
@@ -297,6 +301,53 @@ classDiagram
         +get_symptom_list() List<str>
     }
     
+    %% ==================== PEST ENCYCLOPEDIA ====================
+    class PestInfo {
+        -UUID id
+        -String name
+        -String scientific_name
+        -JSON affected_crops
+        -String description
+        -JSON symptoms
+        -String appearance
+        -String damage_type
+        -String life_cycle
+        -JSON control_methods
+        -JSON organic_control
+        -JSON chemical_control
+        -JSON prevention
+        -String severity_level
+        -String image_url
+        -DateTime created_at
+        -DateTime updated_at
+        +get_all(filter) List
+        +get_detail(id) PestInfo
+        +create(data) PestInfo
+    }
+
+    class DamageType {
+        <<enum>>
+        SUCKING
+        CHEWING
+        BORING
+    }
+
+    %% ==================== DSS ENGINE ====================
+    class DSSAdvisory {
+        <<dataclass>>
+        +str disease_label
+        +str crop
+        +str disease
+        +str season
+        +str disease_type
+        +float risk_score
+        +str risk_level
+        +str risk_justification
+        +List treatment_options
+        +str irrigation_advice
+        +str crop_rotation_advice
+    }
+
     %% ==================== AGRONOMY INTELLIGENCE ====================
     class DiagnosticRule {
         -UUID id
@@ -439,4 +490,6 @@ classDiagram
 
     Diagnosis --> MLPrediction : contains
     Diagnosis --> TreatmentPlan : contains
+    Diagnosis --> DSSAdvisory : snapshot
+    PestInfo ..> DamageType
 ```

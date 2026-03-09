@@ -51,7 +51,7 @@ backend/
 │   ├── app.log             # All logs (JSON, rotating 10MB, 7-day retention)
 │   └── errors.log          # Errors only (JSON, rotating 5MB, 30-day retention)
 ├── backups/                # DB backup dumps (gitignored)
-├── tests/                  # Pytest test suite (58 tests)
+├── tests/                  # Pytest test suite (59 tests)
 ├── requirements.txt        # Python dependencies
 └── alembic.ini             # Alembic configuration
 ```
@@ -90,7 +90,11 @@ Structured file logging using **loguru** (completely separate from admin DB logs
 ### 4. **Services (`app/services/`)**
 Business logic layer.
 *   **Why?**: Keeps routes thin and testable
-*   **Example**: `DiagnosisService` handles ML model interaction and data persistence
+*   **`DiagnosisService`**: Handles diagnosis history, pagination, and advisory storage
+*   **`DSSService`**: CSV-based Decision Support System — parses disease label, computes risk score, returns advisory with treatment options and cultural advice
+*   **`MLService`**: Thin wrapper for server-side image handling; on-device TFLite runs classification in Flutter
+*   **`RedisService`**: Cache helper — admin dashboard (5 min TTL), encyclopedia (24 h), market prices (1 h), daily metrics (1 min)
+*   **`AgmarknetService`** (via `market.py`): Fetches real-time mandi prices from OGD Platform API with Redis → in-memory → API → DB fallback chain and 429 rate-limit backoff
 
 ### 5. **Dependencies (`app/core/deps.py` or `app/api/deps.py`)**
 Reusable dependency injection.
@@ -114,7 +118,7 @@ Reusable dependency injection.
 ## 🧪 Testing
 
 **Framework**: Pytest with async support
-**Total Tests**: 58 (across 10 test files)
+**Total Tests**: 59 (across 10 test files)
 
 ### Running Tests
 ```bash
@@ -150,7 +154,7 @@ pytest --cov=app --cov-report=html
 | `test_market.py` | 4 | Prices, Filters, Pagination |
 | `test_encyclopedia.py` | 5 | Crops, Diseases, Search |
 | `test_admin.py` | 9 | Dashboard, User Management |
-| `test_expert.py` | 9 | Questions, Answers, Stats |
+| `test_expert.py` | 10 | Questions, Answers, Stats |
 | `test_agronomy.py` | 4 | Rules, Constraints, Patterns |
 
 ---
