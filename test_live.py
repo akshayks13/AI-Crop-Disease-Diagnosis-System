@@ -6,8 +6,18 @@ import io
 import mimetypes
 import os
 import uuid
+import time
+from pathlib import Path
 
-BASE = "https://ai-crop-disease-diagnosis-system-aumh.onrender.com"
+# Load .env from project root (same directory as this file)
+_env_path = Path(__file__).parent / ".env"
+if _env_path.exists():
+    from dotenv import load_dotenv
+    load_dotenv(_env_path)
+
+BASE = os.environ.get("LIVE_API_URL", "").rstrip("/")
+if not BASE:
+    raise SystemExit("ERROR: Set LIVE_API_URL in your .env file (see .env.example at project root)")
 
 
 def req(method, path, body=None, token=None, timeout=30):
@@ -67,9 +77,23 @@ def section(title):
     print("=" * 55)
 
 
+# ── 0. Wake-up (Render free tier spins down after inactivity) ─
+section("0. Wake-up ping (up to 120 s for cold start)")
+print("  Pinging /health — waiting for Render to wake up...", flush=True)
+for attempt in range(1, 9):
+    s, d = req("GET", "/health", timeout=20)
+    if s == 200:
+        print(f"  Awake after attempt {attempt}  {d}")
+        break
+    print(f"  Attempt {attempt}: HTTP {s} — retrying in 15 s...", flush=True)
+    time.sleep(15)
+else:
+    print("  Could not reach server after 8 attempts. Is the Render service deployed?")
+    raise SystemExit(1)
+
 # ── 1. Health ───────────────────────────────────────────────
 section("1. Health")
-s, d = req("GET", "/health")
+s, d = req("GET", "/health", timeout=15)
 print(f"  HTTP {s}  {d}")
 
 # ── 2. Login farmer1 (get token) ────────────────────────────
