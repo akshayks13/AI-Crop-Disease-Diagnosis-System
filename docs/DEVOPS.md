@@ -170,14 +170,98 @@ uvicorn app.main:app --reload --port 8000
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://...` |
-| `JWT_SECRET` | Secret key for JWT tokens | Random 32+ char string |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://...` |
+| `JWT_SECRET_KEY` | Secret key for JWT tokens | Random 32+ char string |
 | `JWT_ALGORITHM` | JWT algorithm | `HS256` |
-| `ENVIRONMENT` | Runtime environment | `production` |
-| `ALLOWED_ORIGINS` | CORS allowed origins | `https://example.com` |
-| `ML_MODEL_PATH` | Path to TFLite models | `/app/ml_models` |
-| `REDIS_URL` | Redis connection string (optional) | `redis://redis:6379/0` |
-| `AGMARKNET_API_KEY` | API key for live market prices | `your-api-key` |
+| `DEBUG` | Runtime mode | `false` |
+| `ALLOWED_ORIGINS` | CORS allowed origins | `https://your-admin.vercel.app,https://your-app.web.app` |
+| `REDIS_URL` | Redis connection string | `redis://redis:6379/0` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name | `your-cloud` |
+| `CLOUDINARY_API_KEY` | Cloudinary API key | from dashboard |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret | from dashboard |
+| `CLOUDINARY_FOLDER` | Upload folder prefix | `crop_diagnosis` |
+| `AGMARKNET_API_KEY` | OGD Platform key for market prices | `your-api-key` |
+
+---
+
+---
+
+## Production Deployment
+
+Each component is deployed to a different platform:
+
+| Component | Platform | Notes |
+|-----------|----------|-------|
+| **Backend (FastAPI)** | [Render](https://render.com) | Free-tier web service, auto-deploy on `main` push |
+| **Admin Dashboard (Next.js)** | [Vercel](https://vercel.com) | Root dir: `frontend/admin_dashboard`, auto-deploy |
+| **Flutter Web** | [Firebase Hosting](https://firebase.google.com/docs/hosting) | `flutter build web --release` → `firebase deploy` |
+| **PostgreSQL** | Render Managed DB | Provisioned alongside the backend web service |
+| **Redis** | Render Redis (or Upstash) | Set `REDIS_URL` env var on Render |
+
+### Backend — Render
+
+1. Create a new **Web Service** on Render.
+2. Connect the GitHub repo; set **Root Directory** to `backend`.
+3. **Build command**: `pip install -r requirements.txt`
+4. **Start command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+5. Add environment variables (see table below).
+
+Required environment variables on Render:
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Render PostgreSQL connection string (`postgresql+asyncpg://...`) |
+| `JWT_SECRET_KEY` | Random 32+ character secret |
+| `REDIS_URL` | Redis connection string |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret |
+| `AGMARKNET_API_KEY` | OGD Platform API key for market prices |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins (Vercel + Firebase URLs) |
+| `DEBUG` | `false` |
+
+### Admin Dashboard — Vercel
+
+1. Import the GitHub repo on Vercel.
+2. Set **Root Directory** to `frontend/admin_dashboard`.
+3. Framework preset: **Next.js** (auto-detected).
+4. Add `NEXT_PUBLIC_API_URL=https://<your-render-app>.onrender.com`.
+
+Deploys automatically on every push to `main`.
+
+### Flutter Web — Firebase Hosting
+
+```bash
+# One-time setup
+firebase login
+firebase init hosting   # public dir: build/web, rewrite all to index.html
+
+# Build and deploy
+flutter build web --release
+firebase deploy --only hosting
+```
+
+Config is in `firebase.json` at the repo root.
+
+---
+
+## File Storage — Cloudinary
+
+User-uploaded images (diagnosis photos, community posts, question attachments) are stored on **Cloudinary** in production. Local disk storage is used as a fallback when Cloudinary credentials are not set.
+
+| Setting | Env Variable | Description |
+|---------|-------------|-------------|
+| Cloud name | `CLOUDINARY_CLOUD_NAME` | Your Cloudinary cloud |
+| API key | `CLOUDINARY_API_KEY` | Found in Cloudinary dashboard |
+| API secret | `CLOUDINARY_API_SECRET` | Found in Cloudinary dashboard |
+| Folder | `CLOUDINARY_FOLDER` | Default: `crop_diagnosis` |
+
+Images are organised by upload category:
+- `crop_diagnosis/diagnosis/` — disease diagnosis images
+- `crop_diagnosis/community/` — community post media
+- `crop_diagnosis/questions/` — question attachments
+
+When `CLOUDINARY_CLOUD_NAME` is empty, files are saved locally under `backend/uploads/`.
 
 ---
 
@@ -198,22 +282,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Build and push Docker images
+
+      - name: Deploy backend to Render
+        run: echo "Render auto-deploys from GitHub — no manual step needed"
+
+      - name: Deploy admin dashboard to Vercel
+        run: echo "Vercel auto-deploys from GitHub — no manual step needed"
+
+      - name: Build Flutter Web & deploy to Firebase
         run: |
-          docker build -t backend:${{ github.sha }} ./backend
-          docker push registry/backend:${{ github.sha }}
-      
-      - name: Deploy to server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            cd /opt/cropdiag
-            docker-compose pull
-            docker-compose up -d
+          flutter pub get
+          flutter build web --release
+          firebase deploy --only hosting --token ${{ secrets.FIREBASE_TOKEN }}
+        working-directory: frontend/flutter_app
 ```
 
 ---
