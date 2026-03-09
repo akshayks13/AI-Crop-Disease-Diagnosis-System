@@ -2,26 +2,36 @@
 
 An AI-powered agricultural solution that helps farmers diagnose crop diseases using image analysis and provides treatment recommendations with expert consultation.
 
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=flat&logo=fastapi&logoColor=white)
+![Flutter](https://img.shields.io/badge/Flutter-3.38+-02569B?style=flat&logo=flutter&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat&logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat&logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=flat&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat&logo=redis&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-Keras%20%2F%20TFLite-FF6F00?style=flat&logo=tensorflow&logoColor=white)
+![Cloudinary](https://img.shields.io/badge/Cloudinary-Media%20Storage-3448C5?style=flat&logo=cloudinary&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white)
+![Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=flat&logo=render&logoColor=white)
+![Vercel](https://img.shields.io/badge/Admin-Vercel-000000?style=flat&logo=vercel&logoColor=white)
+![Firebase](https://img.shields.io/badge/Flutter%20Web-Firebase-FFCA28?style=flat&logo=firebase&logoColor=black)
+
 
 ## Table of Contents
 
 - [Quick Start](#quick-start)
 - [Overview](#overview)
 - [Application URLs](#application-urls)
+- [Production Deployment](#production-deployment)
 - [Running the Application](#running-the-application)
   - [Backend](#backend)
   - [Frontend](#frontend)
 - [Environment Variables](#environment-variables)
-  - [Backend Configuration](#backend-configuration)
-  - [Frontend Configuration](#frontend-configuration)
 - [Testing](#testing)
-  - [Backend Tests](#backend-tests)
-  - [Frontend Tests](#frontend-tests)
-  - [End-to-End Tests](#end-to-end-tests)
 - [Database Seeding](#database-seeding)
+- [Database Backups](#database-backups)
 - [API Overview](#api-overview)
 - [Development Guidelines](#development-guidelines)
-- [Important Notes](#important-notes)
 
 ---
 
@@ -51,14 +61,15 @@ Access the apps:
 ### Features
 
 ### For Farmers
-- **AI Diagnosis**: Upload crop images for instant disease detection
-- **Disease Outbreak Map**: Interactive map showing geo-tagged disease outbreaks in real-time
-- **Treatment Plans**: Get detailed chemical and organic treatment options
-- **Farm Management**: Track crops, growth progress, and manage farm tasks
-- **Market Prices**: View real-time commodity prices from **Agmarknet** (Government of India) with fallback to local database
-- **Community Forum**: Share posts, comments, and like content
-- **Crop Encyclopedia**: Browse detailed crop and disease information
-- **Expert Consultation**: Ask verified agricultural experts
+- **AI Diagnosis**: Upload crop images — backend runs Keras/TFLite model server-side and returns disease label, confidence, and severity
+- **DSS Advisory**: Decision Support System generates risk-scored treatment advisories (cultural + chemical + organic) from the disease label
+- **Disease Outbreak Map**: Interactive OpenStreetMap showing geo-tagged disease outbreaks in real-time
+- **Treatment Plans**: Detailed chemical and organic treatment options with step-by-step instructions
+- **Farm Management**: Track crops, auto-calculated growth progress, and manage farm tasks
+- **Market Prices**: Real-time commodity prices from **Agmarknet** (Government of India) with Redis → in-memory → DB fallback
+- **Community Forum**: Share posts, comments, and like content — filter by category or expert-only
+- **Encyclopedia**: Browse Crops, Diseases & **Pests** (3-tab UI with IPM controls, damage type, life cycle)
+- **Expert Consultation**: Ask verified agricultural experts questions with file attachments
 
 ### ⚡ Performance (Redis Caching)
 Redis is used across 6 high-traffic endpoints (Encyclopedia, Expert Trending, Admin Dashboard, Agmarknet API). 
@@ -101,6 +112,13 @@ Based on our isolated latency benchmark (`tests/test_redis_latency.py`):
 | [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Contribution guidelines |
 | [CI_CD.md](docs/CI_CD.md) | CI/CD pipeline configuration |
 
+### Component Overviews
+| Overview | Description |
+|----------|-------------|
+| [BACKEND_OVERVIEW.md](docs/overviews/BACKEND_OVERVIEW.md) | Backend architecture, services, and scripts |
+| [FLUTTER_OVERVIEW.md](docs/overviews/FLUTTER_OVERVIEW.md) | Flutter app architecture and packages |
+| [ADMIN_DASHBOARD_OVERVIEW.md](docs/overviews/ADMIN_DASHBOARD_OVERVIEW.md) | Admin dashboard features and deployment |
+
 ### UML Diagrams
 | Diagram | Description |
 |---------|-------------|
@@ -113,24 +131,43 @@ Based on our isolated latency benchmark (`tests/test_redis_latency.py`):
 
 | Component | Technology |
 |-----------|------------|
-| Mobile App | Flutter + Riverpod |
-| Admin Dashboard | Next.js + TypeScript + Tailwind |
-| Backend API | FastAPI + SQLAlchemy |
-| Database | PostgreSQL |
+| Mobile App | Flutter 3.38+ + Riverpod |
+| Admin Dashboard | Next.js 16 + TypeScript + Tailwind CSS |
+| Backend API | FastAPI + SQLAlchemy 2.0 (async) |
+| Database | PostgreSQL 15 |
 | Cache | Redis 7 |
-| ML Pipeline | PyTorch + OpenCV |
+| ML Inference | TensorFlow / Keras + TFLite (server-side) |
+| DSS Engine | CSV-based advisory engine (Python) |
+| File Storage | Cloudinary (production) / Local disk (dev) |
+| Market Data | Agmarknet — OGD Platform API |
 | Auth | JWT + RBAC |
+| Hosting — Backend | Render |
+| Hosting — Admin | Vercel |
+| Hosting — Flutter Web | Firebase Hosting |
 
 ---
 
 ## Application URLs
 
-| Application | Local URL | Docker URL | Description |
-|-------------|-----------|------------|-------------|
-| **Backend API** | `http://localhost:8000` | `http://localhost:8000` | FastAPI Server & Swagger Docs |
-| **Admin Dashboard** | `http://localhost:3000` | `http://localhost:3000` | Web Dashboard for Admins |
-| **Flutter App** | `n/a` (Mobile) | `http://localhost:8080` | Crop Diagnosis App (Web Version) |
-| **Database** | `localhost:5432` | `localhost:5432` | PostgreSQL Database |
+| Application | Local URL | Description |
+|-------------|-----------|-------------|
+| **Backend API** | `http://localhost:8000` | FastAPI Server & Swagger Docs (`/docs`) |
+| **Admin Dashboard** | `http://localhost:3000` | Web Dashboard for Admins |
+| **Flutter Web** | `http://localhost:8080` | Crop Diagnosis App (Docker) |
+| **Database** | `localhost:5432` | PostgreSQL |
+| **Redis** | `localhost:6379` | Cache |
+
+---
+
+## Production Deployment
+
+| Component | Platform | Auto-deploys on `main` push |
+|-----------|----------|-----------------------------|
+| **Backend (FastAPI)** | [Render](https://render.com) | ✅ |
+| **Admin Dashboard (Next.js)** | [Vercel](https://vercel.com) | ✅ |
+| **Flutter Web** | [Firebase Hosting](https://firebase.google.com/docs/hosting) | Manual (`firebase deploy`) |
+
+See [DEVOPS.md](docs/DEVOPS.md) for environment variable setup and step-by-step deployment instructions.
 
 ---
 
@@ -149,7 +186,7 @@ Based on our isolated latency benchmark (`tests/test_redis_latency.py`):
 │   │   ├── database.py     # DB connection & session
 │   │   ├── seed.py         # Database seeding
 │   │   └── main.py         # App entry point
-│   ├── tests/              # Pytest integration tests (58 tests)
+│   ├── tests/              # Pytest integration tests (59 tests)
 │   └── requirements.txt
 ├── frontend/
 │   ├── flutter_app/        # Mobile App (Flutter + Riverpod)
@@ -390,30 +427,33 @@ See [DEVOPS.md](docs/DEVOPS.md) for full restore instructions and troubleshootin
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://user:pass@localhost:5432/crop_diagnosis` |
 | `JWT_SECRET_KEY` | Secret for JWT tokens | `your-secret-key-here` |
-| `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:3000` |
+| `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:3000,http://localhost:8080` |
 | `DEBUG` | Enable debug mode | `true` or `false` |
 | `REDIS_URL` | Redis connection string (optional) | `redis://localhost:6379/0` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name (production uploads) | `your-cloud` |
+| `CLOUDINARY_API_KEY` | Cloudinary API key | from Cloudinary dashboard |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret | from Cloudinary dashboard |
 | `AGMARKNET_API_KEY` | API Key for OGD Platform (Agmarknet) | `your-api-key` |
-| `AGMARKNET_API_URL` | Agmarknet API Endpoint | `https://api.data.gov.in/resource/...` |
+| `AGMARKNET_API_URL` | Agmarknet API endpoint | `https://api.data.gov.in/resource/...` |
+
+> When `CLOUDINARY_CLOUD_NAME` is empty, uploads are saved locally under `backend/uploads/`.
 
 ---
 
 ## ML Model
 
-The system uses a simulated ML model for development. To integrate a real model:
+The backend loads a **Keras model** at startup (`Disease_Classification_v2.keras`) and falls back to TFLite (`Disease_Classification_v2_compressed.tflite`) if the Keras model is unavailable. Inference runs entirely server-side — the Flutter app uploads the image to `POST /diagnosis/predict` and receives the full diagnosis result.
 
-1. Train a PyTorch model on crop disease dataset
-2. Update `backend/app/services/ml_service.py`
-3. Replace the `predict()` method with actual inference
+The **DSS Advisory Engine** (`backend/app/services/dss_service.py`) then takes the disease label and generates a risk-scored advisory using CSV tables covering 19 crops and 38+ disease categories.
 
 ---
 
 ## App Screens
 
 - **Auth**: Splash, Login, Register, OTP Verification, Forgot Password
-- **Farmer**: Home, Diagnosis (Camera/Gallery), Results, History, Ask Expert, My Questions, Farm Management (Crops & Tasks), Market Prices, Community Forum, Crop Encyclopedia, Disease Encyclopedia
+- **Farmer**: Home, Diagnosis (Camera/Gallery), DSS Advisory, Results, History, Disease Outbreak Map, Ask Expert, My Questions, Farm Management (Crops & Tasks), Market Prices, Community Forum (with category/expert filters), Crop Encyclopedia, Disease Encyclopedia, Pest Encyclopedia
 - **Expert**: Dashboard, Open Questions, Answer Question, My Answers, Statistics, Community, Knowledge Base
-- **Admin** (Web Dashboard): Overview Metrics, User Management, Expert Approval, Diagnosis Viewer, System Logs, Agronomy Management
+- **Admin** (Web Dashboard): Overview Metrics, User Management, Expert Approval, Diagnosis Viewer, System Logs, Agronomy Management, Encyclopedia (Crops, Diseases, Pests)
 - **Common**: Profile, Settings
 
 ---
