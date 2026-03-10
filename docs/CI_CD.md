@@ -9,7 +9,7 @@ This project uses **GitHub Actions** for Continuous Integration (CI). The workfl
 ## What Happens When You Push?
 
 ```
-git push → GitHub Actions Triggers → 3 Parallel Jobs Run → ✅ or ❌
+git push → GitHub Actions Triggers → 4 Parallel Jobs Run → ✅ or ❌
 ```
 
 ---
@@ -21,6 +21,7 @@ git push → GitHub Actions Triggers → 3 Parallel Jobs Run → ✅ or ❌
 | `backend` | Python | Linting + Tests |
 | `flutter` | Dart | Static Analysis + Tests |
 | `admin` | TypeScript | Linting + Tests + Build |
+| `e2e` | TypeScript | End-to-End (Playwright) |
 
 ---
 
@@ -97,6 +98,45 @@ git push → GitHub Actions Triggers → 3 Parallel Jobs Run → ✅ or ❌
 
 ---
 
+## E2E Job (Playwright)
+
+### Tools Used
+
+| Tool | Purpose | Why? |
+|------|---------|------|
+| **Node.js 20** | Runtime | LTS version |
+| **Playwright** | E2E testing | Cross-browser, full user-journey tests |
+| **Chromium** | Browser | Default browser for CI runs |
+
+### Steps
+```yaml
+1. Checkout code
+2. Setup Node.js 20
+3. Install dependencies: npm ci
+4. Install Playwright browsers: npx playwright install --with-deps chromium
+5. Run: npx playwright test   # E2E tests
+6. Upload test report as artifact (on failure)
+```
+
+### What It Tests
+- Admin login and dashboard load
+- User management (list, suspend, activate)
+- Expert approval workflow
+- Diagnosis history pagination
+- Community posts and comments flow
+- Market prices page rendering
+
+### Test Files
+| File | Covers |
+|------|--------|
+| `e2e/auth.spec.ts` | Login, logout, invalid credentials |
+| `e2e/dashboard.spec.ts` | Metrics cards, charts, daily stats |
+| `e2e/users.spec.ts` | User list, role filter, suspend/activate |
+| `e2e/experts.spec.ts` | Pending experts, approve/reject flow |
+| `e2e/diagnoses.spec.ts` | Diagnosis list, pagination |
+
+---
+
 ## Why These Specific Tools?
 
 ### Ruff (not Flake8/Black)
@@ -113,10 +153,16 @@ git push → GitHub Actions Triggers → 3 Parallel Jobs Run → ✅ or ❌
 - **UUID support**: Your models use PostgreSQL's native UUID type
 - **Realistic**: Tests run against the same DB engine as production
 
+### Playwright (not Cypress/Selenium)
+- **Speed**: Runs tests in parallel across browsers natively
+- **Reliability**: Auto-waits for elements, fewer flaky tests than Selenium
+- **TypeScript-first**: Full type support, integrates with the Next.js codebase
+- **Headless CI**: Works out of the box in GitHub Actions with `--with-deps`
+
 ### GitHub Actions (not Jenkins/CircleCI)
 - **Free**: 2000 mins/month on free tier
 - **Integrated**: No external service to manage
-- **Parallel jobs**: Runs all 3 checks simultaneously
+- **Parallel jobs**: Runs all 4 checks simultaneously
 
 ---
 
@@ -147,4 +193,11 @@ cd frontend/admin_dashboard
 npm run lint                     # Lint
 npm test                         # Test (Vitest)
 npm run build                    # Build
+
+# E2E (requires running backend + admin dashboard)
+cd frontend/admin_dashboard
+npx playwright install chromium  # First-time setup
+npx playwright test              # Run all E2E tests
+npx playwright test --ui         # Interactive UI mode
+npx playwright show-report       # View last HTML report
 ```

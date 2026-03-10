@@ -4,10 +4,11 @@
 
 This document outlines the complete testing strategy for the AI Crop Disease Diagnosis System, covering all testing tools, test cases, and expected outputs.
 
-**Total Tests: 135**
+**Total Tests: 157**
 - Backend (pytest): 59 tests
 - Flutter: 54 tests
 - Admin Dashboard (Vitest): 22 tests
+- E2E (Playwright): 22 tests
 
 ---
 
@@ -18,6 +19,7 @@ This document outlines the complete testing strategy for the AI Crop Disease Dia
 | Backend | **pytest** + pytest-asyncio | Python 3.11 | `pytest` |
 | Flutter App | **Flutter Test** | Dart | `flutter test` |
 | Admin Dashboard | **Vitest** | TypeScript | `npm test` |
+| E2E (Admin) | **Playwright** | TypeScript | `npx playwright test` |
 
 ### Tool Versions
 
@@ -33,6 +35,9 @@ flutter_lints 5.0.0
 
 # Admin Dashboard
 vitest==4.0.18
+
+# E2E
+@playwright/test==1.41.0
 ```
 
 ---
@@ -285,6 +290,114 @@ vitest==4.0.18
 
 ---
 
+## E2E Tests (Playwright)
+
+### Overview
+End-to-end tests simulate real user journeys through the Admin Dashboard in a headless Chromium browser. They run against the full stack (Next.js frontend + FastAPI backend).
+
+### Test Files Overview
+
+| Test File | Tests | Description |
+|-----------|-------|-------------|
+| `e2e/auth.spec.ts` | 4 | Login, logout, invalid credentials, session persistence |
+| `e2e/dashboard.spec.ts` | 4 | Metrics cards, charts, daily stats load |
+| `e2e/users.spec.ts` | 5 | User list, role filter, suspend/activate actions |
+| `e2e/experts.spec.ts` | 5 | Pending expert list, approve/reject workflow |
+| `e2e/diagnoses.spec.ts` | 4 | Diagnosis list, pagination, disease filter |
+| **Total** | **22** | |
+
+---
+
+### auth.spec.ts — Authentication E2E
+
+| Test Case | Expected Behaviour |
+|-----------|-------------------|
+| `login with valid admin credentials` | Redirects to `/dashboard` |
+| `login with invalid password` | Shows error toast |
+| `logout clears session` | Redirects to `/login` |
+| `session persists on page reload` | Stays on `/dashboard` |
+
+---
+
+### dashboard.spec.ts — Dashboard E2E
+
+| Test Case | Expected Behaviour |
+|-----------|-------------------|
+| `metrics cards render` | Total Users, Diagnoses, Questions visible |
+| `daily stats chart loads` | Recharts SVG present on page |
+| `pending experts count shown` | Badge visible in sidebar |
+| `recent activity list renders` | At least one activity row |
+
+---
+
+### users.spec.ts — User Management E2E
+
+| Test Case | Expected Behaviour |
+|-----------|-------------------|
+| `user list loads with pagination` | Table rows + page controls visible |
+| `filter by EXPERT role` | Only expert rows shown |
+| `suspend user` | Row status badge changes to SUSPENDED |
+| `activate user` | Row status badge changes to ACTIVE |
+| `search by name` | Filtered results match search term |
+
+---
+
+### experts.spec.ts — Expert Approval E2E
+
+| Test Case | Expected Behaviour |
+|-----------|-------------------|
+| `pending experts list loads` | Shows experts with PENDING status |
+| `approve expert` | Status changes to ACTIVE, row disappears from pending list |
+| `reject expert` | Status changes to REJECTED |
+| `approved expert visible in users list` | Appears in main users table |
+| `expert stats visible after approval` | `total_answers` shows 0 |
+
+---
+
+### diagnoses.spec.ts — Diagnosis History E2E
+
+| Test Case | Expected Behaviour |
+|-----------|-------------------|
+| `diagnosis list renders` | Table with disease, crop, confidence columns |
+| `pagination controls work` | Clicking next page loads new rows |
+| `disease name filter` | Results contain matching disease |
+| `diagnosis detail opens` | Side panel or modal shows full record |
+
+---
+
+### Running E2E Tests
+
+```bash
+cd frontend/admin_dashboard
+
+# First-time setup
+npx playwright install chromium
+
+# Run all E2E tests (headless)
+npx playwright test
+
+# Run in headed mode (see browser)
+npx playwright test --headed
+
+# Interactive UI mode
+npx playwright test --ui
+
+# Run a specific spec
+npx playwright test e2e/auth.spec.ts
+
+# View HTML report after a run
+npx playwright show-report
+```
+
+**Expected Output:**
+```
+Running 22 tests using 4 workers
+
+  22 passed (18s)
+```
+
+---
+
 ## Running Tests
 
 ### Backend
@@ -398,6 +511,13 @@ jobs:
       - npm run lint                    # Lint
       - npm test                        # Tests (Vitest)
       - npm run build                   # Build
+
+  e2e:
+    name: E2E Tests (Playwright)
+    steps:
+      - npm ci
+      - npx playwright install --with-deps chromium
+      - npx playwright test             # E2E tests
 ```
 
 ---
