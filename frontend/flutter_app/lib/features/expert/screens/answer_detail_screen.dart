@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../config/theme.dart';
 import '../../../core/api/api_config.dart';
 
 /// Detail screen for a question previously answered by the expert
@@ -10,6 +9,13 @@ class AnswerDetailScreen extends StatelessWidget {
     super.key,
     required this.answerData,
   });
+
+  String _resolveImageUrl(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    return '${ApiConfig.baseUrl}$path';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +29,6 @@ class AnswerDetailScreen extends StatelessWidget {
     final String timeStr = _formatTime(answerData['answered_at']);
     
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -40,11 +45,11 @@ class AnswerDetailScreen extends StatelessWidget {
             // Image Header (if exists)
             if (mediaPath != null)
               GestureDetector(
-                onTap: () => _showFullScreenImage(context, '${ApiConfig.baseUrl}$mediaPath'),
+                onTap: () => _showFullScreenImage(context, _resolveImageUrl(mediaPath)),
                 child: Stack(
                   children: [
                     Image.network(
-                      '${ApiConfig.baseUrl}$mediaPath',
+                      _resolveImageUrl(mediaPath),
                       height: 250,
                       width: double.infinity,
                       fit: BoxFit.cover,

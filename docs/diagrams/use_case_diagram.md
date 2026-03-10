@@ -16,6 +16,8 @@ graph TB
         M[📊 Market Prices]
         EN[📚 Encyclopedia]
         R[⭐ Rate Answers]
+        MAP[🗺️ Disease Outbreak Map]
+        DSS[🧠 DSS Advisory]
     end
     
     subgraph "Expert Features"
@@ -41,6 +43,8 @@ graph TB
     F --> M
     F --> EN
     F --> R
+    F --> MAP
+    F --> DSS
     
     E --> ANS
     E --> DASH
@@ -83,6 +87,8 @@ graph LR
         F --> UC15[Rate AI Diagnosis]
         F --> UC16[View Diagnosis History]
         F --> UC17[Share Diagnosis]
+        F --> UC18[Get DSS Advisory]
+        F --> UC19[View Disease Outbreak Map]
     end
     
     subgraph "Expert Consultation"
@@ -103,6 +109,8 @@ graph LR
         F --> UC34[Like Post]
         F --> UC35[Comment on Post]
         F --> UC36[Delete Own Post]
+        F --> UC37[Filter by Category]
+        F --> UC38[Browse Expert Posts]
     end
     
     subgraph "Farm Management"
@@ -123,6 +131,7 @@ graph LR
         F --> UC53[Browse Crop Encyclopedia]
         F --> UC54[Browse Disease Encyclopedia]
         F --> UC55[Search Encyclopedia]
+        F --> UC56[Browse Pest Encyclopedia]
     end
 ```
 
@@ -221,6 +230,8 @@ graph LR
         A --> AU50[View All Diagnoses]
         A --> AU51[View All Questions]
         A --> AU52[Manage Encyclopedia Entries]
+        A --> AU53[Manage Pest Entries]
+        A --> AU54[View Disease Outbreak Map]
     end
 ```
 
@@ -236,15 +247,19 @@ graph LR
 | UC3 | Login | Authenticate with email/password | Verified |
 | UC10 | Capture Image | Use device camera to take crop photo | Logged in |
 | UC12 | Submit for Analysis | Send image to AI for disease detection | Image selected |
-| UC13 | View Diagnosis Result | See disease name, confidence, severity | Analysis complete |
+| UC13 | View Diagnosis Result | See disease name, confidence, severity, DSS advisory | Analysis complete |
 | UC14 | View Treatment Plan | See chemical and organic treatment options | Diagnosis complete |
 | UC15 | Rate AI Diagnosis | Give 1-5 star rating to diagnosis quality | Diagnosis complete |
+| UC18 | Get DSS Advisory | Post disease label + weather, get risk-scored advisory | Diagnosis complete |
+| UC19 | View Disease Outbreak Map | Map of geo-tagged disease reports (public) | None |
 | UC20 | Ask Question | Submit text question to experts | Logged in |
 | UC25 | Rate Expert Answer | Give 1-5 star rating to answer | Answer received |
 | UC30 | Browse Posts | Scroll through community feed | Logged in |
 | UC34 | Like Post | Toggle like on a post | Viewing post |
+| UC37 | Filter by Category | Filter community posts by topic category | Logged in |
 | UC40 | Add Farm Crop | Register new crop with sow date, area | Logged in |
 | UC46 | Mark Task Complete | Complete a farm task | Task exists |
+| UC56 | Browse Pest Encyclopedia | View pests with symptoms, controls, severity | Logged in |
 
 ### Expert Use Cases
 | ID | Use Case | Description | Precondition |

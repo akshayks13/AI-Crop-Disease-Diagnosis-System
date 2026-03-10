@@ -99,7 +99,7 @@ static const String baseUrl = 'https://random-name.ngrok-free.dev';
 cd frontend/flutter_app
 flutter clean
 flutter pub get
-flutter run
+flutter run --dart-define=BASE_URL= < update url from ngrok > 
 ```
 
 Select your connected Android device.

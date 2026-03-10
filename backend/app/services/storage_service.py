@@ -1,15 +1,17 @@
 """
 Storage Service - File Upload and Management
 """
-import os
 import uuid
-import aiofiles
+import io
 from datetime import datetime
 from typing import Optional, Tuple
 from pathlib import Path
 import logging
 
+import cloudinary
+import cloudinary.uploader
 from fastapi import UploadFile, HTTPException, status
+from starlette.concurrency import run_in_threadpool
 
 from app.config import get_settings
 
@@ -29,7 +31,21 @@ class StorageService:
         """Initialize storage service."""
         self.upload_dir = Path(settings.upload_dir)
         self.max_size_bytes = settings.max_file_size_mb * 1024 * 1024
-        self._ensure_directories()
+        self._cloudinary_enabled = all([
+            settings.cloudinary_cloud_name,
+            settings.cloudinary_api_key,
+            settings.cloudinary_api_secret,
+        ])
+
+        if self._cloudinary_enabled:
+            cloudinary.config(
+                cloud_name=settings.cloudinary_cloud_name,
+                api_key=settings.cloudinary_api_key,
+                api_secret=settings.cloudinary_api_secret,
+                secure=settings.cloudinary_secure,
+            )
+        else:
+            self._ensure_directories()
     
     def _ensure_directories(self) -> None:
         """Ensure upload directories exist."""
@@ -93,13 +109,6 @@ class StorageService:
         unique_name = f"{user_id}_{timestamp}_{uuid.uuid4().hex[:8]}{file_ext}"
         
         # Determine save path
-        if category == "question":
-            save_dir = self.upload_dir / "questions"
-        else:
-            save_dir = self.upload_dir / subdir
-        
-        save_path = save_dir / unique_name
-        
         # Read and validate file size
         content = await file.read()
         if len(content) > self.max_size_bytes:
@@ -107,14 +116,51 @@ class StorageService:
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail=f"File too large. Maximum size: {settings.max_file_size_mb}MB"
             )
-        
-        # Save file
-        async with aiofiles.open(save_path, "wb") as f:
-            await f.write(content)
-        
-        logger.info(f"Saved file: {save_path} ({len(content)} bytes)")
-        
-        # Return URL-friendly path for database storage
+
+        if self._cloudinary_enabled:
+            folder = f"{settings.cloudinary_folder}/{category}/{subdir}"
+            resource_type = "video" if media_type == "video" else "image"
+            upload_stream = io.BytesIO(content)
+
+            try:
+                result = await run_in_threadpool(
+                    cloudinary.uploader.upload,
+                    upload_stream,
+                    folder=folder,
+                    public_id=Path(unique_name).stem,
+                    resource_type=resource_type,
+                    overwrite=False,
+                )
+            except Exception as exc:
+                logger.exception("Cloudinary upload failed")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to upload media to cloud storage"
+                ) from exc
+
+            secure_url = result.get("secure_url")
+            if not secure_url:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Cloud upload failed to return media URL"
+                )
+
+            logger.info(f"Uploaded file to Cloudinary: {secure_url}")
+            return secure_url, media_type
+
+        # Fallback local save when Cloudinary is not configured
+        if category == "question":
+            save_dir = self.upload_dir / "questions"
+        else:
+            save_dir = self.upload_dir / subdir
+
+        save_path = save_dir / unique_name
+
+        save_dir.mkdir(parents=True, exist_ok=True)
+        with open(save_path, "wb") as f:
+            f.write(content)
+
+        logger.info(f"Saved file locally: {save_path} ({len(content)} bytes)")
         url_path = f"/uploads/{save_path.relative_to(self.upload_dir)}"
         return url_path, media_type
     

@@ -175,7 +175,7 @@ class _WeatherScreenState extends State<WeatherScreen> with SingleTickerProvider
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.blue.withOpacity(0.3),
+                  color: Colors.blue.withValues(alpha: 0.3),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -210,7 +210,7 @@ class _WeatherScreenState extends State<WeatherScreen> with SingleTickerProvider
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Row(
@@ -248,7 +248,7 @@ class _WeatherScreenState extends State<WeatherScreen> with SingleTickerProvider
                         Text(
                           _currentWeather!.description.toUpperCase(),
                           style: theme.textTheme.titleMedium?.copyWith(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                           ),
                         ),
                       ],
@@ -274,9 +274,9 @@ class _WeatherScreenState extends State<WeatherScreen> with SingleTickerProvider
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.secondaryGreen.withOpacity(0.1),
+              color: AppTheme.secondaryGreen.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.2)),
+              border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.2)),
             ),
             child: Row(
               children: [
@@ -287,7 +287,7 @@ class _WeatherScreenState extends State<WeatherScreen> with SingleTickerProvider
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryGreen.withOpacity(0.1),
+                        color: AppTheme.primaryGreen.withValues(alpha: 0.1),
                         blurRadius: 4,
                       ),
                     ],
@@ -446,7 +446,7 @@ class _WeatherScreenState extends State<WeatherScreen> with SingleTickerProvider
         border: isSelected ? null : Border.all(color: Colors.grey.shade200),
         boxShadow: isSelected ? [
           BoxShadow(
-            color: AppTheme.primaryGreen.withOpacity(0.3),
+            color: AppTheme.primaryGreen.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           )

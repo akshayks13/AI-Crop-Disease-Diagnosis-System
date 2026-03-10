@@ -12,6 +12,13 @@ class CommunityScreen extends ConsumerStatefulWidget {
 }
 
 class _CommunityScreenState extends ConsumerState<CommunityScreen> {
+  String _resolveImageUrl(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    return '${ApiConfig.baseUrl}$path';
+  }
+
   @override
   Widget build(BuildContext context) {
     final communityState = ref.watch(communityProvider);
@@ -121,7 +128,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
             const SizedBox(height: 12),
             ClipRRect(
               child: Image.network(
-                '${ApiConfig.baseUrl}${post.imagePath}',
+                _resolveImageUrl(post.imagePath!),
                 height: 200,
                 width: double.infinity,
                 fit: BoxFit.cover,

@@ -32,7 +32,10 @@ erDiagram
         varchar media_type
         varchar crop_type
         varchar location
+        float latitude
+        float longitude
         varchar disease
+        varchar disease_id "TFLite label e.g. apple_apple_scab"
         varchar severity
         float confidence
         json treatment
@@ -40,6 +43,7 @@ erDiagram
         text warnings
         int rating
         json additional_diseases
+        json dss_advisory "DSS advisory snapshot"
         timestamp created_at
     }
 

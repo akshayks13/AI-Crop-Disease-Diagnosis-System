@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
+      // Local development
       {
         protocol: "http",
         hostname: "localhost",
@@ -12,9 +13,21 @@ const nextConfig: NextConfig = {
       {
         protocol: "http",
         hostname: "localhost",
-        port: "3000", // Just in case
+        port: "3000",
         pathname: "/**",
-      }
+      },
+      // Cloudinary (production image storage)
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
+      // Render backend (in case of local-storage fallback)
+      {
+        protocol: "https",
+        hostname: "*.onrender.com",
+        pathname: "/uploads/**",
+      },
     ],
   },
 };

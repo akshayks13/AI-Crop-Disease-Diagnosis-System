@@ -43,6 +43,7 @@ flowchart TD
         NAV_CHOICE -->|Market| MARKET_FLOW
         NAV_CHOICE -->|Encyclopedia| ENC_FLOW
         NAV_CHOICE -->|Profile| PROFILE_FLOW
+        NAV_CHOICE -->|Disease Map| MAP_FLOW
     end
     
     %% ==================== DISEASE DIAGNOSIS ====================
@@ -57,28 +58,28 @@ flowchart TD
         
         D_PREVIEW --> D_QUALITY{Quality OK?}
         D_QUALITY -->|No| D_SOURCE
-        D_QUALITY -->|Yes| D_ADD_INFO[Add Crop Type & Location]
+        D_QUALITY -->|Yes| D_ADD_INFO[Add Crop Type, Location & GPS]
         
         D_ADD_INFO --> D_UPLOAD[Upload Image]
-        D_UPLOAD --> D_PROCESS[AI Processing...]
+        D_UPLOAD --> D_PROCESS[POST /diagnosis/predict → AI Processing...]
         
-        %% Dual ML Model Processing
-        D_PROCESS --> D_ML1[🧠 Disease Classification Model]
-        D_ML1 --> D_ML1_RESULT[Disease + Confidence + Severity]
-        D_ML1_RESULT --> D_ML2[🧠 Treatment Recommendation Model]
-        D_ML2 --> D_ML2_RESULT[Chemical + Organic Treatments]
+        %% Server-Side ML Inference
+        D_PROCESS --> D_TFLITE[🖥️ Server: Keras / TFLite Model]
+        D_TFLITE --> D_LABEL[Disease Label e.g. apple_apple_scab]
+        D_LABEL --> D_DSS[🧠 DSSService: Advisory]
+        D_DSS --> D_WEATHER[Weather + Farmer Inputs]
+        D_WEATHER --> D_RISK[Compute Risk Score]
+        D_RISK --> D_ADVISORY[DSS Advisory + Treatments]
         
-        %% Agronomy Validation
-        D_ML2_RESULT --> D_AGRO[📋 Agronomy Validation]
-        D_AGRO --> D_RULES[Apply Diagnostic Rules]
-        D_RULES --> D_CONSTRAINTS[Check Treatment Constraints]
-        D_CONSTRAINTS --> D_SEASONAL[Apply Seasonal Patterns]
-        D_SEASONAL --> D_RESULT{Disease Found?}
+        %% Stored in single response
+        D_ADVISORY --> D_SAVE_BACKEND[Saved to DB with GPS + DSS snapshot]
+        D_SAVE_BACKEND --> D_ML2_RESULT[Chemical + Organic + Risk Level]
+        D_ML2_RESULT --> D_RESULT{Disease Found?}
         
         D_RESULT -->|Yes| D_SHOW_DISEASE[Show Disease Info]
         D_RESULT -->|No| D_HEALTHY[Show Healthy Status]
         
-        D_SHOW_DISEASE --> D_TREATMENT[View Treatment Plan]
+        D_SHOW_DISEASE --> D_TREATMENT[View Treatment Plan + DSS Advisory]
         D_TREATMENT --> D_ACTIONS{Action?}
         D_ACTIONS -->|Ask Expert| QA_FLOW
         D_ACTIONS -->|Share| D_SHARE[Share Result]
@@ -127,9 +128,11 @@ flowchart TD
         C_ACTION -->|Browse| C_SCROLL[Scroll Posts]
         C_ACTION -->|Search| C_SEARCH[Search Posts]
         C_ACTION -->|Create| C_NEW_POST[Create New Post]
+        C_ACTION -->|Filter| C_FILTER[Filter by Category / Expert Only]
         
         C_SCROLL --> C_SELECT_POST[Select Post]
         C_SEARCH --> C_RESULTS[View Results]
+        C_FILTER --> C_RESULTS
         C_RESULTS --> C_SELECT_POST
         
         C_SELECT_POST --> C_VIEW_POST[View Post Detail]
@@ -225,6 +228,7 @@ flowchart TD
         
         E_TABS -->|Crops| E_CROP_LIST[Browse Crops]
         E_TABS -->|Diseases| E_DISEASE_LIST[Browse Diseases]
+        E_TABS -->|Pests| E_PEST_LIST[Browse Pests]
         
         E_CROP_LIST --> E_CROP_ACTION{Action?}
         E_CROP_ACTION -->|Search| E_SEARCH_CROP[Search Crop]
@@ -252,6 +256,37 @@ flowchart TD
         E_VIEW_SYMPTOMS --> E_VIEW_TREATMENT[View Treatment]
         E_VIEW_TREATMENT --> E_VIEW_PREVENTION[View Prevention]
         E_VIEW_PREVENTION --> E_DISEASE_LIST
+        
+        E_PEST_LIST --> E_PEST_ACTION{Action?}
+        E_PEST_ACTION -->|Search| E_SEARCH_PEST[Search Pest]
+        E_PEST_ACTION -->|Filter Severity| E_FILTER_SEVERITY[Filter by Severity]
+        E_PEST_ACTION -->|View| E_PEST_DETAIL[View Pest Info]
+        E_PEST_ACTION -->|Back| HOME
+        
+        E_SEARCH_PEST --> E_PEST_RESULTS[Show Results]
+        E_FILTER_SEVERITY --> E_PEST_RESULTS
+        E_PEST_RESULTS --> E_PEST_DETAIL
+        
+        E_PEST_DETAIL --> E_VIEW_APPEARANCE[View Appearance]
+        E_VIEW_APPEARANCE --> E_VIEW_CONTROLS[View Control Methods]
+        E_VIEW_CONTROLS --> E_PEST_LIST
+    end
+    
+    %% ==================== DISEASE OUTBREAK MAP ====================
+    subgraph MAP_FLOW["🗺️ Disease Outbreak Map"]
+        MAP_START[Open Disease Map] --> MAP_LOAD[Load Geo-tagged Diagnoses]
+        MAP_LOAD --> MAP_DISPLAY[Display Pins on Map]
+        
+        MAP_DISPLAY --> MAP_ACTION{Action?}
+        MAP_ACTION -->|Filter Disease| MAP_FILTER[Select Disease Filter]
+        MAP_ACTION -->|Filter Days| MAP_DAYS[Set Lookback Period]
+        MAP_ACTION -->|Tap Pin| MAP_PIN[View Outbreak Detail]
+        MAP_ACTION -->|Back| HOME
+        
+        MAP_FILTER --> MAP_LOAD
+        MAP_DAYS --> MAP_LOAD
+        MAP_PIN --> MAP_DETAIL[Disease / Severity / Crop / Date]
+        MAP_DETAIL --> MAP_DISPLAY
     end
     
     %% ==================== PROFILE ====================

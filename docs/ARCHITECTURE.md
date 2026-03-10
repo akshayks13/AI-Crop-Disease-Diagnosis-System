@@ -1,7 +1,7 @@
 # System Architecture
 
 ## Overview
-AI-powered crop disease diagnosis platform for farmers with expert consultation, featuring dual ML models for disease classification and treatment recommendation.
+AI-powered crop disease diagnosis platform for farmers with expert consultation, featuring server-side Keras/TFLite inference, a CSV-based Decision Support System (DSS), disease outbreak mapping, pest encyclopedia, and real-time market prices via Agmarknet.
 
 ## High-Level Architecture
 ```
@@ -14,43 +14,68 @@ AI-powered crop disease diagnosis platform for farmers with expert consultation,
 ┌─────────────────────────────────────────────┐
 │           BACKEND (FastAPI)                 │
 │  Auth │ Routes │ Services │ Agronomy       │
+│  Rate Limiting (slowapi 60 req/min)        │
 └─────────────────────────────────────────────┘
                     │
        ┌────────────┼────────────┐
        ▼            ▼            ▼
 ┌──────────────┐ ┌──────────┐ ┌─────────────────┐
-│ ML MODELS    │ │  REDIS   │ │   DATA LAYER    │
-│ • Disease    │ │  Cache   │ │  PostgreSQL     │
-│ • Treatment  │ │  Port    │ │  File Storage   │
-└──────────────┘ │  6379    │ └─────────────────┘
-                 └──────────┘
+│ ML / DSS     │ │  REDIS   │ │   DATA LAYER    │
+│ • Keras /    │ │  Cache   │ │  PostgreSQL     │
+│   TFLite     │ │  Port    │ │  File Storage   │
+│   (server)   │ │  6379    │ │  (Cloudinary /  │
+│ • DSS Engine │ │          │ │   local)        │
+│   (CSV-based)│ │          │ │                 │
+└──────────────┘ └──────────┘ └─────────────────┘
+                    │
+                    ▼
+           ┌──────────────────┐
+           │ Agmarknet API    │
+           │ (OGD Platform)   │
+           │ Real-time market │
+           │ prices           │
+           └──────────────────┘
 ```
 
 ## ML Model Architecture
 
-The system employs two specialized TensorFlow Lite models:
+The system uses **server-side Keras/TFLite inference** — the Flutter mobile app uploads the image to the backend, which runs the ML model and returns the full diagnosis. The backend also hosts a **DSS (Decision Support System)** for actionable advisories.
 
-### 1. Disease Classification Model
-- **Input**: Crop leaf/plant images (224x224 RGB)
-- **Output**: Disease predictions with confidence scores
-- **Model**: MobileNetV2-based CNN, TFLite format
-- **Accuracy**: ~92% on test dataset
+### 1. Server-Side Disease Classification (Keras / TFLite)
+- **Primary model**: `Disease_Classification_v2.keras` (full Keras model, preferred)
+- **Fallback**: `Disease_Classification_v2_compressed.tflite` (TFLite, used if Keras unavailable)
+- **Runtime**: FastAPI backend with TensorFlow installed
+- **Input**: Crop leaf/plant images uploaded via `POST /diagnosis/predict` (224×224 RGB)
+- **Output**: Disease label (e.g., `apple_apple_scab`) + confidence score
+- **Classes**: 19 crops, 38+ disease categories including healthy states
+- **Web fallback**: Flutter Web cannot run TFLite in a browser — uses local label simulation
 
-### 2. Treatment Recommendation Model  
-- **Input**: Disease name, crop type, severity, environmental context
-- **Output**: Ranked chemical and organic treatment options
-- **Model**: Ensemble model (Random Forest + BERT), TFLite format
-- **Integration**: Provides personalized treatment plans based on diagnosis
+### 2. Backend DSS Advisory Engine
+- **Location**: `backend/app/services/dss_service.py`
+- **Data**: CSV tables (`crop_table.csv`, `disease_table.csv`, `advisory_table.csv`)
+- **Input**: Disease label from server ML model + weather data + farmer contextual inputs
+- **Processing**:
+  - Parses label → crop name + disease name
+  - Detects current Indian agricultural season (Kharif / Rabi / Zaid)
+  - Computes weighted risk score from temperature, humidity, irrigation status, etc.
+  - Looks up treatment options and cultural practices from advisory CSV
+- **Output**: `{risk_score, risk_level, risk_justification, treatment_options, irrigation_advice, crop_rotation_advice}`
 
 ```mermaid
 flowchart LR
-    A[User Image] --> B[Disease Model]
-    B --> C[Disease Prediction]
-    C --> D[Treatment Model]
-    D --> E[Treatment Plan]
-    E --> F[Backend API]
-    F --> G[User Diagnosis]
+    A[User Image] --> B[POST /diagnosis/predict]
+    B --> C[MLService: Keras / TFLite]
+    C --> D[Disease Label + Confidence]
+    D --> E[DSSService: Risk Score + Advisory]
+    E --> F[Diagnosis Record in DB]
+    F --> G[User Views Full Report]
 ```
+
+### 3. Agronomy Intelligence Layer
+Supplements the DSS with database-driven expert knowledge:
+- **Diagnostic Rules**: Context-aware validation of disease predictions
+- **Treatment Constraints**: Safety checks (weather, growth stage restrictions)
+- **Seasonal Patterns**: Regional disease prevalence data
 
 ## Core Models
 
@@ -73,11 +98,13 @@ classDiagram
         -UUID id
         -UUID user_id
         -String disease
+        -String disease_id
         -Float confidence
         -String severity
         -Float latitude
         -Float longitude
         -JSON treatment
+        -JSON dss_advisory
         -Integer rating
         +to_response_dict() dict
         +update_rating(rating) void
@@ -207,3 +234,17 @@ The platform includes an intelligent agronomy system that enhances ML prediction
 - **Treatment Constraints**: Safety checks for treatment recommendations
 - **Seasonal Patterns**: Regional disease prevalence data
 - **Expert Knowledge**: Community-driven agronomy database
+
+## New Features (v1.1+)
+
+| Feature | Description |
+|---------|-------------|
+| 🗺️ Disease Outbreak Map | Public `GET /diagnosis/disease-map` endpoint returns geo-tagged reports for an interactive map |
+| 🧠 DSS Advisory Engine | CSV-based decision support system; computes risk score + treatment + cultural advice |
+| 🧠 Server-Side ML | Image uploaded to backend; Keras (primary) or TFLite (fallback) runs inference server-side |
+| 🐛 Pest Encyclopedia | New `PestInfo` model + `/encyclopedia/pests` endpoints with appearance, life cycle, and control methods |
+| 🌐 Agmarknet Integration | Real-time market prices via OGD Platform API, with Redis + in-memory fallback and rate-limit backoff |
+| ⚡ Redis Caching | Admin dashboard (5 min), encyclopedia (24 h), market prices (1 h), daily metrics (1 min) |
+| 🚦 Rate Limiting | SlowAPI middleware — 60 req/min per IP, returns HTTP 429 on exceed |
+| 📍 GPS Geolocation | `latitude` / `longitude` stored on `Diagnosis`; supports disease map pins |
+| 💾 DSS Advisory Snapshot | `dss_advisory` JSON column on `Diagnosis` stores advisory at diagnosis time |

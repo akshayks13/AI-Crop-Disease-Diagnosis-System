@@ -48,45 +48,46 @@ sequenceDiagram
 
     %% ====================DISEASE DIAGNOSIS ====================
     rect rgb(255, 240, 230)
-        Note over App,AI: 🔬 Disease Diagnosis (Dual ML Models)
+        Note over App,AI: 🔬 Disease Diagnosis (Server-Side Keras/TFLite + DSS)
         
-        App->>API: POST /diagnosis/predict (multipart: image, crop_type)
+        App->>API: POST /diagnosis/predict (multipart: image, crop_type, latitude?, longitude?)
         API->>Auth: Validate JWT
         API->>Storage: Save uploaded image
         Storage-->>API: file_path
         
-        Note over API,AI: 1. Disease Classification Model
-        API->>AI: Process image (Disease Model)
-        AI->>AI: Load disease classification TFLite model
-        AI->>AI: Preprocess image (resize to 224x224)
-        AI->>AI: Run inference (MobileNetV2 CNN)
-        AI-->>API: {disease, confidence, severity}
+        Note over API,AI: 1. Server-Side ML Inference
+        API->>AI: MLService.predict(image_path, crop_type)
+        AI->>AI: Load Keras model (fallback: TFLite)
+        AI->>AI: Preprocess image (resize 224x224, normalize)
+        AI->>AI: Run inference → disease_label e.g. apple_apple_scab
+        AI-->>API: {disease, disease_id, confidence, severity, additional_predictions}
         
-        Note over API,AI: 2. Treatment Recommendation Model
-        API->>AI: Get treatments (Treatment Model)
-        AI->>AI: Load treatment recommendation model
-        AI->>AI: Encode features (disease, crop, severity, context)
-        AI->>AI: Run inference (Ensemble: RF + BERT)
-        AI-->>API: {chemical_treatments[], organic_treatments[]}
+        Note over API,AI: 2. DSS Advisory (Backend)
+        API->>AI: DSSService.generate_recommendation(disease_label, weather)
+        AI->>AI: parse_label → crop + disease name
+        AI->>AI: compute_risk(disease_type, weather, farmer_answers)
+        AI-->>API: {risk_score, risk_level, treatment_options, irrigation_advice, crop_rotation_advice}
         
-        Note over API,DB: 3. Agronomy Intelligence Validation
-        API->>DB: Fetch diagnostic rules for disease
-        API->>API: Apply context validation rules
-        API->>DB: Fetch treatment constraints
-        API->>API: Apply safety checks (block/warn)
-        API->>DB: Check seasonal patterns
-        API->>API: Adjust confidence based on season/region
-        
-        API->>DB: Save diagnosis record (disease + treatments)
-        API-->>App: 200 {disease, confidence, severity, treatment, prevention}
+        API->>DB: INSERT diagnoses (disease, severity, treatment, dss_advisory, gps)
+        API-->>App: Full diagnosis result {id, disease, confidence, severity, treatment, dss_advisory}
         
         App->>API: GET /diagnosis/history?page=1
         API->>DB: Fetch user's diagnoses
         API-->>App: {diagnoses[], total, page}
         
         App->>API: GET /diagnosis/{id}
-        API->>DB: Fetch diagnosis detail
-        API-->>App: {diagnosis with full details}
+        API->>DB: Fetch diagnosis detail with dss_advisory
+        API-->>App: {diagnosis with full details + dss_advisory}
+    end
+
+    %% ==================== DISEASE OUTBREAK MAP ====================
+    rect rgb(255, 235, 235)
+        Note over App,DB: 🗺️ Disease Outbreak Map (Public)
+        
+        App->>API: GET /diagnosis/disease-map?days=30&disease=Leaf%20Blight
+        Note over API: No auth required — public endpoint
+        API->>DB: Fetch diagnoses WHERE latitude IS NOT NULL AND created_at >= cutoff
+        API-->>App: {outbreaks: [{disease, severity, latitude, longitude, crop_type, date}], total, diseases[]}
     end
 
     %% ==================== RATING SYSTEM ====================
@@ -200,24 +201,32 @@ sequenceDiagram
         Note over App,DB: 📊 Market & Encyclopedia
         
         App->>API: GET /market/prices?commodity=&location=
-        API->>API: Check Cache
-        alt Cache Hit
-            API-->>App: {prices[], total} (Cached)
-        else Cache Miss
-            API->>API: Check Agmarknet Config
-            alt Configured
-                API->>External(Agmarknet): Fetch real-time prices
-                alt Success
-                    External(Agmarknet)-->>API: JSON Data
-                    API->>API: Update Cache
-                    API-->>App: {prices[], total} (Live)
-                else Failed
-                    API->>DB: Fallback to Database
+        API->>API: Check Redis (key: market_cache:...)
+        alt Redis Cache Hit
+            API-->>App: {prices[], total} (Redis Cached)
+        else Redis Miss — check in-memory fallback
+            alt In-Memory Cache Hit
+                API-->>App: {prices[], total} (In-Memory)
+            else All Caches Miss
+                API->>API: Check Agmarknet Config
+                alt Configured & not rate-limited
+                    API->>External(Agmarknet): Fetch real-time prices
+                    alt Success
+                        External(Agmarknet)-->>API: JSON Data
+                        API->>API: Set Redis cache (1h TTL)
+                        API-->>App: {prices[], total} (Live)
+                    else 429 Rate Limited
+                        API->>API: Set rate-limit backoff in Redis (1h)
+                        API->>DB: Fallback to Database
+                        API-->>App: {prices[], total} (DB Fallback)
+                    else Other Error
+                        API->>DB: Fallback to Database
+                        API-->>App: {prices[], total} (DB)
+                    end
+                else Not Configured
+                    API->>DB: Fetch from Database
                     API-->>App: {prices[], total} (DB)
                 end
-            else Not Configured
-                API->>DB: Fetch from Database
-                API-->>App: {prices[], total} (DB)
             end
         end
         
@@ -228,6 +237,20 @@ sequenceDiagram
         App->>API: GET /encyclopedia/diseases?crop=
         API->>DB: Fetch diseases for crop
         API-->>App: {diseases[]}
+        
+        App->>API: GET /encyclopedia/pests?search=&severity=&crop=
+        API->>API: Check Redis cache
+        alt Cache Hit
+            API-->>App: {pests[], total} (Cached)
+        else Cache Miss
+            API->>DB: Fetch pests with optional filters
+            API->>API: Set Redis cache (24h TTL)
+            API-->>App: {pests[], total}
+        end
+        
+        App->>API: GET /encyclopedia/pests/{id}
+        API->>DB: Fetch pest detail
+        API-->>App: {name, symptoms, appearance, control_methods, organic_control, chemical_control}
     end
 
     %% ==================== ADMIN ====================
@@ -236,8 +259,24 @@ sequenceDiagram
         
         App->>API: GET /admin/dashboard
         API->>Auth: Validate JWT (Admin only)
-        API->>DB: Aggregate stats
-        API-->>App: {users_count, diagnoses_today, questions_open, ...}
+        API->>API: Check Redis cache (key: admin:dashboard, TTL 5min)
+        alt Cache Hit
+            API-->>App: {metrics, trends, system_health} (Cached)
+        else Cache Miss
+            API->>DB: Aggregate stats (users, diagnoses, questions, storage)
+            API->>API: Set Redis cache
+            API-->>App: {metrics: {total_users, total_farmers, total_experts, pending_experts, total_diagnoses, storage_used_mb, ...}, trends, system_health}
+        end
+        
+        App->>API: GET /admin/metrics/daily?days=7
+        API->>API: Check Redis cache (key: admin:daily_metrics:7)
+        alt Cache Hit
+            API-->>App: {metrics[]} (Cached)
+        else Cache Miss
+            API->>DB: Aggregate per-day stats
+            API->>API: Set Redis cache (1min TTL)
+            API-->>App: {metrics: [{date, diagnoses, questions, new_users}]}
+        end
         
         App->>API: GET /admin/users?role=EXPERT&status=PENDING
         API->>DB: Fetch filtered users

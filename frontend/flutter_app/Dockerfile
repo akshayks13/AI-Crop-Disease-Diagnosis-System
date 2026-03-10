@@ -26,8 +26,10 @@ RUN cp lib/core/services/ml_service_stub.dart lib/core/services/ml_service_mobil
 # But user said they have assets/.env now.
 
 # Build for web
+# BASE_URL is injected at build time via --dart-define so String.fromEnvironment works.
+ARG BASE_URL=http://localhost:8000
 RUN flutter config --enable-web
-RUN flutter build web --release
+RUN flutter build web --release --dart-define=BASE_URL=$BASE_URL
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine

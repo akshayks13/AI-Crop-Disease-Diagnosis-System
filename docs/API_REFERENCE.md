@@ -106,36 +106,102 @@ All endpoints are rate-limited to **60 requests per minute per IP address**.
 
 ## Diagnosis Endpoints
 
-### Create Diagnosis
+### Create Diagnosis (Image Upload)
 
 `POST /diagnosis/predict` (multipart/form-data)
 
-| Field | Type | Required |
-|-------|------|----------|
-| `image` | File | Yes |
-| `crop_type` | string | Yes |
-| `location` | string | No |
-| `farmer_symptoms` | string | No — voice/text description of symptoms |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | File | Yes | JPEG/PNG/WebP crop image |
+| `crop_type` | string | No | Crop name |
+| `location` | string | No | Text location |
+| `latitude` | float | No | GPS latitude for disease map |
+| `longitude` | float | No | GPS longitude for disease map |
 
 ```json
 // Response 200
 {
   "id": "uuid",
-  "disease_name": "Leaf Blight",
+  "disease": "Apple Scab",
+  "disease_id": "apple_apple_scab",
   "confidence": 0.92,
   "severity": "moderate",
-  "symptoms": ["yellowing", "spots"],
-  "treatment_plan": {
-    "chemical": [...],
-    "organic": [...]
-  },
-  "prevention_tips": [...]
+  "crop_type": "Apple",
+  "treatment_steps": [...],
+  "chemical_options": [...],
+  "organic_options": [...],
+  "warnings": "...",
+  "prevention": "...",
+  "dss_advisory": null,
+  "created_at": "2026-03-09T10:00:00"
+}
+```
+
+### Save DSS Advisory to Diagnosis
+
+`POST /diagnosis/{id}/save-advisory`
+
+> Stores a DSS advisory snapshot and GPS coordinates into an existing diagnosis record.
+
+```json
+// Request body
+{
+  "disease_id": "apple_apple_scab",
+  "disease": "Apple Scab",
+  "confidence": 0.92,
+  "severity": "moderate",
+  "plant": "Apple",
+  "latitude": 12.9716,
+  "longitude": 77.5946,
+  "dss_advisory": {
+    "risk_score": 7.5,
+    "risk_level": "High",
+    "treatment_options": [...],
+    "irrigation_advice": "...",
+    "crop_rotation_advice": "..."
+  }
+}
+
+// Response 200
+{ "status": "ok", "updated_fields": ["disease_id", "dss_advisory", "latitude", "longitude"] }
+```
+
+### Get DSS Advisory
+
+`POST /diagnosis/dss-advisory`
+
+> Accepts a disease label (e.g. from the server's ML response) and optional weather/farmer inputs, returns risk-scored advisory from the DSS engine.
+
+```json
+// Request body
+{
+  "disease_label": "apple_apple_scab",
+  "temperature": 28,
+  "humidity": 75,
+  "irrigation": "Moderate",
+  "waterlogged": false,
+  "fertilizer_recent": false,
+  "first_cycle": false
+}
+
+// Response 200
+{
+  "crop": "apple",
+  "disease": "apple_scab",
+  "season": "Rabi",
+  "disease_type": "Fungal",
+  "risk_score": 7.5,
+  "risk_level": "High",
+  "risk_justification": "High humidity (75%) increases fungal spread risk.",
+  "treatment_options": ["Mancozeb 75% WP", "Captan 50% WP"],
+  "irrigation_advice": "Avoid overhead irrigation to reduce leaf wetness.",
+  "crop_rotation_advice": "Rotate with non-host crops for 1-2 seasons."
 }
 ```
 
 ### Get Diagnosis History
 
-`GET /diagnosis/history?page=1&limit=10`
+`GET /diagnosis/history?page=1&page_size=20`
 
 ```json
 // Response 200
@@ -148,39 +214,41 @@ All endpoints are rate-limited to **60 requests per minute per IP address**.
 
 ### Get Disease Outbreak Map Data
 
-`GET /diagnosis/disease-map?days=30&disease_name=Leaf%20Blight`
+`GET /diagnosis/disease-map?days=30&disease=Leaf%20Blight`
 
-> Returns geo-tagged diagnoses for the interactive outbreak map. Publicly accessible.
+> Returns geo-tagged diagnoses for the interactive outbreak map. **No authentication required.**
 
-| Query Param | Type | Required | Description |
-|---|---|---|---|
-| `days` | int | No | Defaults to 30. Filters for recent reports. |
-| `disease_name` | string | No | Filters by specific disease |
+| Query Param | Type | Default | Description |
+|-------------|------|---------|-------------|
+| `days` | int | 30 | Lookback window in days |
+| `disease` | string | — | Optional filter by disease name (case-insensitive) |
 
 ```json
 // Response 200
-[
-  {
-    "id": "uuid",
-    "disease": "Leaf Blight",
-    "severity": "severe",
-    "latitude": 12.9716,
-    "longitude": 77.5946,
-    "created_at": "2024-03-24T10:00:00Z"
-  }
-]
+{
+  "outbreaks": [
+    {
+      "disease": "Leaf Blight",
+      "severity": "severe",
+      "latitude": 12.9716,
+      "longitude": 77.5946,
+      "crop_type": "Tomato",
+      "date": "2026-03-09T10:00:00"
+    }
+  ],
+  "total": 42,
+  "diseases": ["Leaf Blight", "Apple Scab", "Early Blight"],
+  "days": 30
+}
 ```
 
 ### Rate Diagnosis
 
-`POST /diagnosis/{id}/rate`
+`POST /diagnosis/{id}/rate?rating=5`
 
 ```json
-// Request
-{ "rating": 5 }
-
 // Response 200
-{ "message": "Rating updated" }
+{ "message": "Rating submitted", "rating": 5 }
 ```
 
 ---

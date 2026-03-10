@@ -96,7 +96,7 @@ class DiagnosisService:
                 treatment=treatment_json,
                 prevention=treatment_plan.prevention,
                 warnings=treatment_plan.warnings,
-                disease_id=disease_id,
+                disease_id=disease_id or prediction.disease_id,
                 dss_advisory=dss_advisory,
                 additional_diseases={
                     "predictions": prediction.additional_predictions
@@ -108,13 +108,20 @@ class DiagnosisService:
             diagnosis_id = str(diagnosis.id)
         
         # Build final response
+        if self.ml_service.interpreter is not None:
+            model_used = f"TFLite-v{self.ml_service._model_version}"
+        elif self.ml_service.keras_model is not None:
+            model_used = f"Keras-v{self.ml_service._model_version}"
+        else:
+            model_used = "none"
+
         response = {
             "id": diagnosis_id,
             "disease": prediction.disease,
             "severity": prediction.severity,
             "confidence": prediction.confidence,
             "crop_type": crop_type,
-            "disease_id": disease_id,
+            "disease_id": disease_id or prediction.disease_id,
             "treatment_steps": treatment_plan.treatment_steps,
             "chemical_options": treatment_plan.chemical_options,
             "organic_options": treatment_plan.organic_options,
@@ -123,6 +130,7 @@ class DiagnosisService:
             "additional_predictions": prediction.additional_predictions,
             "media_path": image_path,
             "dss_advisory": dss_advisory,
+            "model_used": model_used,
         }
         
         # Add validation warning if applicable

@@ -37,6 +37,11 @@ from app.routes.encyclopedia import router as encyclopedia_router
 from app.middleware.logging import SystemLoggingMiddleware
 
 settings = get_settings()
+cloudinary_enabled = all([
+    settings.cloudinary_cloud_name,
+    settings.cloudinary_api_key,
+    settings.cloudinary_api_secret,
+])
 
 # ── Rate Limiter ──────────────────────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
@@ -50,12 +55,13 @@ async def lifespan(app: FastAPI):
     """
     logger.info("Starting up AI Crop Disease Diagnosis System...")
 
-    # Create upload directories
-    upload_dir = Path(settings.upload_dir)
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    (upload_dir / "images").mkdir(exist_ok=True)
-    (upload_dir / "videos").mkdir(exist_ok=True)
-    (upload_dir / "questions").mkdir(exist_ok=True)
+    # Create local upload directories only when Cloudinary is not configured
+    if not cloudinary_enabled:
+        upload_dir = Path(settings.upload_dir)
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        (upload_dir / "images").mkdir(exist_ok=True)
+        (upload_dir / "videos").mkdir(exist_ok=True)
+        (upload_dir / "questions").mkdir(exist_ok=True)
 
     # Initialize database
     await init_db()
@@ -64,9 +70,35 @@ async def lifespan(app: FastAPI):
     # Initialize default data
     await init_data()
 
+    # ── Render keep-alive: self-ping every 10 min to prevent spin-down ────────
+    import asyncio
+    import httpx
+
+    keep_alive_task = None
+    ping_url = (settings.render_external_url or "").rstrip("/")
+    if ping_url:
+        async def _keep_alive():
+            # Wait a bit after startup before first ping
+            await asyncio.sleep(60)
+            while True:
+                try:
+                    async with httpx.AsyncClient(timeout=10) as client:
+                        resp = await client.get(f"{ping_url}/health")
+                        logger.info(f"Keep-alive ping → {resp.status_code}")
+                except Exception as exc:
+                    logger.warning(f"Keep-alive ping failed: {exc}")
+                await asyncio.sleep(10 * 60)  # 10 minutes
+
+        keep_alive_task = asyncio.create_task(_keep_alive())
+        logger.info(f"Keep-alive task started → pinging {ping_url}/health every 14 min")
+    else:
+        logger.info("Keep-alive disabled (RENDER_EXTERNAL_URL not set)")
+
     yield
 
     # Shutdown
+    if keep_alive_task:
+        keep_alive_task.cancel()
     logger.info("Shutting down...")
     await close_db()
 
@@ -124,9 +156,11 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.exception(
         f"Unhandled exception on {request.method} {request.url.path}: {exc}"
     )
+    settings = get_settings()
+    detail = str(exc) if settings.debug else "An unexpected error occurred. Please try again later."
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "An unexpected error occurred. Please try again later."}
+        content={"detail": detail}
     )
 
 
@@ -135,10 +169,19 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/health", tags=["Health"])
 async def health_check():
     """Health check endpoint."""
+    from app.services.ml_service import get_ml_service
+    ml = get_ml_service()
+    if ml.interpreter is not None:
+        model_used = f"TFLite-v{ml._model_version} (Disease_Classification_v2_compressed.tflite)"
+    elif ml.keras_model is not None:
+        model_used = f"Keras-v{ml._model_version}"
+    else:
+        model_used = "none (load failed)"
     return {
         "status": "healthy",
         "service": settings.app_name,
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "model_used": model_used,
     }
 
 
@@ -160,7 +203,7 @@ app.include_router(agronomy_router)
 
 # Mount static files for uploads
 uploads_path = Path(settings.upload_dir)
-if uploads_path.exists():
+if not cloudinary_enabled and uploads_path.exists():
     app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
 

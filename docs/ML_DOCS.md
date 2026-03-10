@@ -2,52 +2,120 @@
 
 ## Overview
 
-The AI Crop Disease Diagnosis System employs **two specialized ML models** working in tandem to provide comprehensive plant disease diagnosis and treatment recommendations:
+The AI Crop Disease Diagnosis System uses **server-side Keras/TFLite inference** combined with a **backend Decision Support System (DSS)** to provide comprehensive plant disease diagnosis and actionable treatment advisories.
 
-1. **Disease Classification Model**: Analyzes crop images to detect diseases
-2. **Treatment Recommendation Model**: Suggests optimal chemical and organic treatments
+The mobile app uploads the image to the server; the backend runs the Keras model (falling back to TFLite if needed) and returns the full diagnosis + treatment. The web app uses a local label simulation (TFLite cannot run in a browser) before calling the DSS.
 
-Both models are designed as modular services within the backend application, ensuring easy maintenance and upgrades.
+| Component | Where it runs | Purpose |
+|-----------|--------------|--------|
+| Disease Classification (Keras / TFLite) | FastAPI backend (server) | Detect disease from uploaded image |
+| DSS Advisory Engine (CSV-based) | FastAPI backend | Risk scoring + treatment advice |
+| Agronomy Intelligence | FastAPI backend (PostgreSQL) | Context validation + safety checks |
+| Web simulation | Flutter Web (browser) | Label simulation when TFLite unavailable |
 
 ---
 
 ## Model Architecture
 
-### 1. Disease Classification Model
+### 1. Disease Classification Model (Server-Side)
 
-**Purpose**: Detect plant diseases from leaf/plant images with high accuracy.
+**Purpose**: Detect plant diseases from leaf/plant images with high accuracy, running on the FastAPI server.
 
 #### Technical Specifications
-- **Framework**: TensorFlow Lite (TFLite)
+- **Primary framework**: Keras (TensorFlow 2.x) — preferred when available
+- **Fallback framework**: TFLite (`Disease_Classification_v2_compressed.tflite`)
+- **Model files** (searched in order): `Disease_Classification_v2.keras` → `Disease_Classification_v1.keras` → TFLite
 - **Base Architecture**: MobileNetV2-based CNN
-- **Input**: 224x224 RGB images
-- **Output**: Disease predictions with confidence scores
+- **Input**: 224×224 RGB images
+- **Output**: Disease label (e.g., `apple_apple_scab`) + confidence score
 - **Accuracy**: ~92% on validation dataset
-- **Classes**: 20+ disease categories across 5 major crops
+- **Classes**: 38+ disease/healthy states across 19 crops
+- **Inference trigger**: `POST /diagnosis/predict` — Flutter mobile uploads the image; backend runs the model server-side
 
-#### Implementation
-Located in `backend/app/services/ml_service.py`:
+#### Supported Crops & Diseases
+| Crop | Example Diseases |
+|------|-----------------|
+| Apple | Apple Scab, Black Rot, Cedar Rust |
+| Bean | Angular Leaf Spot, Rust |
+| Bell Pepper | Bacterial Spot |
+| Cherry | Powdery Mildew |
+| Corn | Northern Leaf Blight, Gray Leaf Spot, Common Rust |
+| Cotton | Bacterial Blight, Leaf Curl |
+| Cucumber | Anthracnose, Downy Mildew |
+| Grape | Black Rot, Esca, Leaf Blight |
+| Groundnut | Early Leaf Spot, Rust |
+| Guava | Fruit Canker, Wilt |
+| Lemon | Citrus Canker, Greening |
+| Peach | Bacterial Spot |
+| Potato | Early Blight, Late Blight |
+| Pumpkin | Powdery Mildew, Downy Mildew |
+| Rice | Bacterial Blight, Blast, Brown Spot |
+| Strawberry | Leaf Scorch |
+| Sugarcane | Red Rot, Smut |
+| Tomato | Early Blight, Late Blight, Leaf Mold, Septoria Spot, etc. |
+| Wheat | Leaf Rust, Powdery Mildew, Yellow Rust |
 
-```python
-class MLService:
-    def predict(self, image_path: str, crop_type: str) -> MLPrediction:
-        # 1. Load and preprocess image
-        # 2. Run inference through TFLite model
-        # 3. Return top predictions with confidence
-```
+#### Label Format
+Labels follow the pattern: `<crop>_<disease_name>` (e.g., `tomato_early_blight`, `apple_apple_scab`).
+Special cases:
+- `healthy_<crop>` → plant is healthy
+- `diseased_<crop>` → generic disease detected
 
-#### Supported Crops
-- **Tomato**: Early Blight, Late Blight, Leaf Mold, Septoria Leaf Spot, etc.
-- **Potato**: Early Blight, Late Blight, Black Leg, etc.
-- **Corn**: Northern Leaf Blight, Gray Leaf Spot, Rust, etc.
-- **Wheat**: Leaf Rust, Powdery Mildew, Fusarium Head Blight, etc.
-- **Rice**: Bacterial Blight, Brown Spot, Blast, etc.
+Labels are stored in `ml_models/labels.txt` and loaded by `MLService` at startup.
 
 ---
 
-### 2. Treatment Recommendation Model
+### 2. DSS Advisory Engine (Backend)
 
-**Purpose**: Generate personalized treatment plans based on diagnosis and environmental context.
+**Purpose**: Convert a disease label into a risk-scored, actionable advisory using agronomic rules.
+
+#### Location
+`backend/app/services/dss_service.py` + `backend/app/services/dss_data/*.csv`
+
+#### Data Sources
+| File | Contents |
+|------|----------|
+| `crop_table.csv` | Crop IDs and names |
+| `disease_table.csv` | Disease types per crop (Fungal / Bacterial / Viral / Pest) |
+| `advisory_table.csv` | Treatment options, irrigation + rotation advice per disease type |
+
+#### Processing Pipeline
+```python
+DSSService.generate_recommendation(disease_label, weather, farmer_answers)
+# 1. parse_label(disease_label)         → (crop_name, disease_name)
+# 2. get_current_season()               → "Kharif" | "Rabi" | "Zaid"
+# 3. get_disease_type(crop, disease)    → e.g., "Fungal"
+# 4. compute_risk(disease_type, weather, farmer_answers) → (score, level, justification)
+# 5. _get_advisory_row(disease_type)   → treatment + cultural advice
+# Returns: {risk_score, risk_level, treatment_options, irrigation_advice, crop_rotation_advice}
+```
+
+#### Risk Factors
+| Input | Weight |
+|-------|--------|
+| Temperature (optimal for disease) | High |
+| Humidity (>70% boosts fungal risk) | High |
+| Waterlogged conditions | Medium |
+| Recent fertilizer application | Medium |
+| First growth cycle | Low |
+
+#### Output Schema
+```json
+{
+  "crop": "apple",
+  "disease": "apple_scab",
+  "season": "Rabi",
+  "disease_type": "Fungal",
+  "risk_score": 7.5,
+  "risk_level": "High",
+  "risk_justification": "High humidity increases fungal spread risk.",
+  "treatment_options": ["Mancozeb 75% WP", "Captan 50% WP"],
+  "irrigation_advice": "Avoid overhead irrigation.",
+  "crop_rotation_advice": "Rotate with non-host crops for 1-2 seasons."
+}
+```
+
+---
 
 #### Technical Specifications
 - **Framework**: TensorFlow Lite (TFLite)
@@ -91,99 +159,6 @@ treatment_plan = treatment_service.get_recommendations(
 
 ---
 
-## Current Implementation (Simulation Mode)
-
-Both models currently run in **simulation mode** for development purposes. This allows frontend and backend teams to work in parallel without requiring fully trained production models.
-
-### Features of Simulation Mode
-
-#### Disease Classification
-*   **Simulated Knowledge Base**: `CROP_DISEASES` dictionary with diseases and severity ranges
-*   **Randomized Inference**:
-    *   Weighted disease selection
-    *   Confidence scores: 0.75 - 0.98
-    *   Severity mapping: Mild (<0.3), Moderate (0.3-0.6), Severe (≥0.6)
-*   **Top-3 Predictions**: Simulates alternative diagnoses
-
-#### Treatment Recommendations
-*   **Rule-based System**: Generates treatments based on disease type
-*   **Treatment Database**: Predefined chemical and organic options
-*   **Context-aware**: Adjusts recommendations based on severity and season
-
----
-
-## Production ML Integration (Future)
-
-### Disease Model Deployment
-
-1. **Model Loading**:
-   ```python
-   import tensorflow as tf
-   self.model = tf.lite.Interpreter(model_path="disease_classifier.tflite")
-   self.model.allocate_tensors()
-   ```
-
-2. **Preprocessing**:
-   ```python
-   img = cv2.imread(image_path)
-   img = cv2.resize(img, (224, 224))
-   img = img / 255.0  # Normalization
-   img = np.expand_dims(img, axis=0)
-   ```
-
-3. **Inference**:
-   ```python
-   self.model.set_tensor(input_index, img)
-   self.model.invoke()
-   predictions = self.model.get_tensor(output_index)
-   ```
-
-### Treatment Model Deployment
-
-1. **Feature Engineering**:
-   ```python
-   features = encode_features({
-       'disease': disease_name,
-       'crop': crop_type,
-       'severity': severity_score,
-       'temp': temperature,
-       'humidity': humidity,
-       'season': current_season
-   })
-   ```
-
-2. **Inference**:
-   ```python
-   treatment_scores = treatment_model.predict(features)
-   ranked_treatments = rank_by_score(treatment_scores)
-   ```
-
----
-
-## Data Models
-
-### MLPrediction (Disease Model Output)
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `disease` | `str` | Detected disease name |
-| `confidence` | `float` | Probability score (0.0 - 1.0) |
-| `severity` | `str` | Label (mild, moderate, severe) |
-| `severity_score` | `float` | Numerical severity (0.0 - 1.0) |
-| `additional_predictions` | `List[Dict]` | Alternative diagnoses |
-
-### TreatmentPlan (Treatment Model Output)
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `chemical_options` | `List[str]` | Recommended chemical treatments |
-| `organic_options` | `List[str]` | Organic/natural alternatives |
-| `application_timing` | `str` | When to apply treatments |
-| `dosage_info` | `Dict` | Application rates |
-| `warnings` | `List[str]` | Safety precautions |
-
----
-
 ## Agronomy Intelligence Integration
 
 The platform includes an **Agronomy Intelligence Layer** that enhances both ML models:
@@ -214,78 +189,89 @@ Historical disease data to improve predictions:
 sequenceDiagram
     participant F as Farmer (Flutter)
     participant B as Backend API
-    participant DM as Disease Model
-    participant TM as Treatment Model
+    participant ML as MLService (Keras/TFLite)
+    participant DSS as DSS Engine
     participant DB as Database
-    
-    F->>B: Upload crop image
-    B->>DM: Classify disease
-    DM->>B: Disease + Confidence
-    B->>TM: Get treatment plan
-    TM->>B: Treatments (chemical + organic)
-    B->>DB: Store diagnosis + plan
-    B->>F: Complete diagnosis result
+
+    F->>B: POST /diagnosis/predict (image upload)
+    B->>ML: predict(image_path, crop_type)
+    ML->>ML: Preprocess image (224x224, normalise)
+    ML-->>B: {disease_label, confidence, severity}
+    B->>DSS: generate_recommendation(disease_label, weather)
+    DSS-->>B: {risk_score, risk_level, treatment_options}
+    B->>DB: INSERT diagnoses (disease, severity, treatment, dss_advisory, gps)
+    B-->>F: Full diagnosis result
 ```
 
-1. Farmer uploads crop image via Flutter app
-2. Backend stores image and initiates ML pipeline
-3. Disease Classification Model analyzes image
-4. Treatment Recommendation Model generates personalized plan
-5. Agronomy rules validate outputs
-6. Complete diagnosis saved to database
-7. Results returned to farmer with actionable recommendations
+## Data Models
+
+### Server-Side Prediction Output
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `disease_label` | `str` | Raw label e.g. `apple_apple_scab` |
+| `confidence` | `float` | Probability (0.0 – 1.0) |
+| `severity` | `str` | mild / moderate / severe |
+| `additional_predictions` | `List[Dict]` | Top-3 alternative predictions |
+
+### DSS Advisory (Backend Output)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `crop` | `str` | Parsed crop name |
+| `disease` | `str` | Parsed disease name |
+| `season` | `str` | Kharif / Rabi / Zaid |
+| `disease_type` | `str` | Fungal / Bacterial / Viral / Pest |
+| `risk_score` | `float` | 0–10 composite risk score |
+| `risk_level` | `str` | Low / Moderate / High / Critical |
+| `risk_justification` | `str` | Human-readable explanation |
+| `treatment_options` | `List[str]` | Recommended treatments |
+| `irrigation_advice` | `str` | Irrigation guidance |
+| `crop_rotation_advice` | `str` | Rotation recommendation |
 
 ---
 
-## API Integration
+## Agronomy Intelligence Integration
 
-### Request Format
-```json
-{
-  "image": "base64_encoded_image",
-  "crop_type": "tomato",
-  "location": "Maharashtra",
-  "temperature": 28,
-  "humidity": 75
-}
-```
+The platform includes an **Agronomy Intelligence Layer** (database-driven) that supplements the DSS:
 
-### Response Format
-```json
-{
-  "disease": "Early Blight",
-  "confidence": 0.94,
-  "severity": "moderate",
-  "treatment": {
-    "chemical": ["Mancozeb 75% WP", "Chlorothalonil"],
-    "organic": ["Neem oil spray", "Copper fungicide"],
-    "steps": ["Remove infected leaves", "Apply treatment at sunset"],
-    "warnings": ["Do not spray during rain", "Wear protective gear"]
-  }
-}
-```
+### Diagnostic Rules
+Context-aware validation stored in `agronomy_diagnostic_rules` table:
+- Temperature/humidity threshold checks
+- Seasonal likelihood adjustments
+- Regional disease prevalence validation
+
+### Treatment Constraints
+Safety validation stored in `agronomy_treatment_constraints` table:
+- Weather restrictions (e.g., no spraying during rain)
+- Growth stage limitations
+- Residue management rules
+
+### Seasonal Patterns
+Historical disease data in `agronomy_seasonal_patterns` table:
+- Region-specific disease calendars
+- Crop-disease associations per season
+- Climate-based risk factors
 
 ---
 
 ## Error Handling
 
-Both models include robust error handling:
-
-- **Model Loading Failure** → Fallback to simulation mode
-- **Low Confidence Prediction** → Warning included in response
-- **Invalid Input** → Controlled error message
-- **Treatment Unavailable** → Generic recommendations provided
-
-This ensures the system always provides useful feedback to farmers.
+| Scenario | Behaviour |
+|----------|-----------|
+| Unknown disease label in DSS | `ValueError` → HTTP 500 with detail |
+| Missing `disease_label` in request | HTTP 400 Bad Request |
+| Low TFLite confidence | Warning included in advisory |
+| DSS CSV file not found | Service fails to initialise at startup |
 
 ---
 
 ## Scalability & Future Enhancements
 
 ### Immediate Roadmap
-- Deploy production TFLite models
-- GPU acceleration for faster inference
-- Model versioning and A/B testing
+- Expand DSS CSV data to cover all 38+ disease categories
+- Add server-side TFLite inference fallback
+- GPU acceleration for batch inference
 
 ### Advanced Features
 - Multi-disease detection in single image

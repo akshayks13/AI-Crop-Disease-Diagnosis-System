@@ -51,7 +51,7 @@ backend/
 │   ├── app.log             # All logs (JSON, rotating 10MB, 7-day retention)
 │   └── errors.log          # Errors only (JSON, rotating 5MB, 30-day retention)
 ├── backups/                # DB backup dumps (gitignored)
-├── tests/                  # Pytest test suite (58 tests)
+├── tests/                  # Pytest test suite (59 tests)
 ├── requirements.txt        # Python dependencies
 └── alembic.ini             # Alembic configuration
 ```
@@ -90,7 +90,12 @@ Structured file logging using **loguru** (completely separate from admin DB logs
 ### 4. **Services (`app/services/`)**
 Business logic layer.
 *   **Why?**: Keeps routes thin and testable
-*   **Example**: `DiagnosisService` handles ML model interaction and data persistence
+*   **`DiagnosisService`**: Handles diagnosis history, pagination, and advisory storage
+*   **`DSSService`**: CSV-based Decision Support System — parses disease label, computes risk score, returns advisory with treatment options and cultural advice
+*   **`MLService`**: Loads the Keras model (fallback: TFLite) at startup and runs server-side inference via `predict(image_path, crop_type)`
+*   **`StorageService`**: Dual-backend file storage — saves uploads to **Cloudinary** in production (when `CLOUDINARY_CLOUD_NAME` is set) or local disk (`uploads/`) otherwise
+*   **`RedisService`**: Cache helper — admin dashboard (5 min TTL), encyclopedia (24 h), market prices (1 h), daily metrics (1 min)
+*   **`AgmarknetService`** (via `market.py`): Fetches real-time mandi prices from OGD Platform API with Redis → in-memory → API → DB fallback chain and 429 rate-limit backoff
 
 ### 5. **Dependencies (`app/core/deps.py` or `app/api/deps.py`)**
 Reusable dependency injection.
@@ -114,7 +119,7 @@ Reusable dependency injection.
 ## 🧪 Testing
 
 **Framework**: Pytest with async support
-**Total Tests**: 58 (across 10 test files)
+**Total Tests**: 59 (across 10 test files)
 
 ### Running Tests
 ```bash
@@ -150,7 +155,7 @@ pytest --cov=app --cov-report=html
 | `test_market.py` | 4 | Prices, Filters, Pagination |
 | `test_encyclopedia.py` | 5 | Crops, Diseases, Search |
 | `test_admin.py` | 9 | Dashboard, User Management |
-| `test_expert.py` | 9 | Questions, Answers, Stats |
+| `test_expert.py` | 10 | Questions, Answers, Stats |
 | `test_agronomy.py` | 4 | Rules, Constraints, Patterns |
 
 ---
@@ -224,6 +229,54 @@ Create `.env` in `backend/`:
 DATABASE_URL=postgresql+asyncpg://user:pass@localhost/dbname
 SECRET_KEY=your-secret-key-here
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+CLOUDINARY_CLOUD_NAME=your-cloud
+CLOUDINARY_API_KEY=your-key
+CLOUDINARY_API_SECRET=your-secret
+REDIS_URL=redis://localhost:6379/0
+AGMARKNET_API_KEY=your-api-key
+```
+
+### Production Deployment — Render
+The backend is deployed on **Render** as a Web Service.
+- **Root directory**: `backend`
+- **Build command**: `pip install -r requirements.txt`
+- **Start command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- Render auto-deploys on every push to `main`.
+- PostgreSQL and Redis are provisioned as managed Render services.
+
+---
+
+## 🗄️ Backup Scripts
+
+Three scripts in `backend/scripts/` handle PostgreSQL backups:
+
+| Script | Platform | Purpose |
+|--------|----------|---------|
+| `backup_db.py` | All platforms | Cross-platform backup — reads `.env`, creates `.sql.gz`, prunes >7 days old |
+| `backup_db.sh` | Linux/macOS | Shell equivalent, ideal for cron |
+| `restore_db.sh` | Linux/macOS | Restore from a `.sql.gz` file |
+
+```bash
+cd backend
+
+# Run a backup (Python — works everywhere)
+python scripts/backup_db.py
+
+# List existing backups
+python scripts/backup_db.py --list
+
+# Dry run (shows what would happen, no writes)
+python scripts/backup_db.py --dry-run
+
+# Restore (⚠️ DESTRUCTIVE — drops and recreates DB)
+bash scripts/restore_db.sh backups/cropdiag_20260309_020000.sql.gz
+```
+
+Backups are saved to `backend/backups/cropdiag_YYYYMMDD_HHMMSS.sql.gz` and activity is logged to `backend/logs/backup.log`. Files older than 7 days are deleted automatically.
+
+**Cron (daily at 2 AM):**
+```bash
+0 2 * * * /path/to/backend/scripts/backup_db.sh >> /path/to/backend/logs/backup.log 2>&1
 ```
 
 ---

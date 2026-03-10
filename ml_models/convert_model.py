@@ -5,7 +5,12 @@ import keras
 # Define paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "Disease_Classification_v1.keras")
+MODEL_PATH_V2 = os.path.join(BASE_DIR, "Disease_Classification_v2.keras")
 TFLITE_PATH = os.path.join(BASE_DIR, "disease_model.tflite")
+OUTPUT_PATH_V2 = os.path.join(
+    BASE_DIR, "..", "backend", "app", "ml_models",
+    "Disease_Classification_v2_noflex.tflite"
+)
 LABELS_PATH = os.path.join(BASE_DIR, "labels.txt")
 
 # Disease labels (86 classes)
@@ -85,5 +90,108 @@ def convert_model():
             f.write(label + "\n")
     print(f"Labels saved to {LABELS_PATH}")
 
+def _force_float32(layer):
+    """Recursively set every layer's dtype policy to float32."""
+    try:
+        layer.dtype_policy = "float32"
+    except Exception:
+        pass
+    if hasattr(layer, "layers"):
+        for sub in layer.layers:
+            _force_float32(sub)
+
+
+def convert_v2_no_flex():
+    """
+    Convert Disease_Classification_v2.keras → a flex-free TFLite.
+
+    Root cause of FlexPad in the existing compressed TFLite:
+      The v2 model bakes resnet50.preprocess_input as a Sequential layer
+      (index 1), which emits FlexPad ops.  ml_service already applies the
+      same preprocessing externally, so we can skip that layer entirely.
+
+    Root cause of tf.MatMul / tf.AddV2 in previous conversion attempts:
+      Every internal layer was saved with dtype_policy='mixed_float16'.
+      mixed_float16 causes Keras 3 to trace matmuls/adds as TF-dialect f16
+      ops instead of native tfl.fully_connected / tfl.add.
+      Fix: recursively reset all dtype_policies to float32 BEFORE building
+      the new model so every op traces as float32 → native TFLite.
+
+    Output: backend/app/ml_models/Disease_Classification_v2_noflex.tflite
+    """
+    import tempfile, shutil
+
+    print(f"TensorFlow Version: {tf.__version__}")
+    print(f"Loading {MODEL_PATH_V2} ...")
+    model = tf.keras.models.load_model(MODEL_PATH_V2, compile=False)
+    # Model layers: [0=Input, 1=Sequential(preprocess)←SKIP, 2=ResNet50, 3..=head]
+
+    # ------------------------------------------------------------------
+    # Force float32 on every layer (including deep inside ResNet50).
+    # The model was trained with mixed_float16; without this step Keras 3
+    # traces all ops as tf.MatMul(f16) / tf.AddV2(f16) — all Flex ops.
+    # ------------------------------------------------------------------
+    print("Forcing float32 dtype policy on all layers ...")
+    for layer in model.layers:
+        _force_float32(layer)
+
+    # Rebuild: Input → ResNet50 (layer 2) → head (layers 3+), skipping layer 1
+    print("Rebuilding model without preprocess layer ...")
+    inp = tf.keras.Input(shape=(224, 224, 3), dtype=tf.float32, name="input_image")
+    x   = model.layers[2](inp)
+    # ResNet50 may return multiple outputs (feature map + aux); take the first
+    if isinstance(x, (list, tuple)):
+        x = x[0]
+    for layer in model.layers[3:]:
+        x = layer(x)
+        if isinstance(x, (list, tuple)):
+            x = x[0]
+
+    new_model = tf.keras.Model(inputs=inp, outputs=x)
+    print(f"Rebuilt model output shape: {new_model.output_shape}")
+
+    tflite = None
+
+    tmpdir = tempfile.mkdtemp()
+    try:
+        print("Exporting to SavedModel ...")
+        saved_path = os.path.join(tmpdir, "saved_model")
+        new_model.export(saved_path)
+        converter = tf.lite.TFLiteConverter.from_saved_model(saved_path)
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS]
+        tflite = converter.convert()
+        print("SavedModel → TFLite succeeded.")
+    except Exception as e:
+        print(f"SavedModel route failed: {e}")
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+    if tflite is None:
+        try:
+            print("Trying from_keras_model fallback ...")
+            converter2 = tf.lite.TFLiteConverter.from_keras_model(new_model)
+            converter2.optimizations = [tf.lite.Optimize.DEFAULT]
+            converter2.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS]
+            tflite = converter2.convert()
+            print("from_keras_model succeeded.")
+        except Exception as e2:
+            print(f"from_keras_model also failed: {e2}")
+
+    if tflite is None:
+        print("\nAll conversion routes failed — see errors above.")
+        return
+
+    out = os.path.abspath(OUTPUT_PATH_V2)
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, "wb") as f:
+        f.write(tflite)
+    print(f"\nSUCCESS: {out}  ({len(tflite)/1024/1024:.1f} MB)")
+    print("\nNext steps:")
+    print("  git add backend/app/ml_models/Disease_Classification_v2_noflex.tflite")
+    print("  git commit -m 'feat: add flex-free TFLite v2'")
+    print("  git push")
+
+
 if __name__ == "__main__":
-    convert_model()
+    convert_v2_no_flex()

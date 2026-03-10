@@ -50,10 +50,11 @@ Here are the major packages used and **why**:
     *   *Why?* Supports interceptors (for JWT headers), global configuration, and file uploads better than the basic `http` package.
 *   **`connectivity_plus`**: Checks for internet connection.
 
-### 3. On-Device ML & Artificial Intelligence
-*   **`tflite_flutter_plus`**: Runs TensorFlow Lite models ensuring offline capability.
-    *   *Why?* Allows the app to run the disease detection model directly on the phone's CPU/GPU without needing internet (Hybrid approach).
-*   **`image`**: Used for resizing and preprocessing images before sending them to the model.
+### 3. ML & AI (Backend-Driven)
+*   **No on-device ML library** — `tflite_flutter_plus` / `tflite` are **not** dependencies. The TFLite model file is bundled as an asset (`assets/models/`) but inference runs server-side.
+*   **Mobile** (`ml_service_mobile.dart`): uploads image → `POST /diagnosis/predict` → backend Keras/TFLite returns result.
+*   **Web** (`ml_service_web.dart`): TFLite cannot run in a browser, so uses a local label simulation with real disease labels, then calls the DSS advisory endpoint.
+*   **`image`**: Used for resizing and preprocessing images before upload.
 
 ### 4. Hardware & Mapping
 *   **`camera`** (v0.10.5): Accesses the device camera for taking crop photos.
@@ -91,7 +92,8 @@ Here are the major packages used and **why**:
 1.  **Splash Screen**: Checks if a valid Token exists in Secure Storage.
 2.  **Auth**: If no token, user logs in or registers (via API).
 3.  **Home**:
-    *   **Diagnosis**: User takes a photo → App crops/resizes → Sends to API/Local Model → Shows Result.
+    *   **Diagnosis**: User takes a photo → uploads to `POST /diagnosis/predict` → server runs Keras/TFLite model → returns disease label, confidence, severity + DSS advisory → app shows full result with treatment plan.
+    *   **Disease Outbreak Map**: `GET /diagnosis/disease-map` → Flutter renders geo-tagged markers on OSM map via `flutter_map`.
     *   **Community**: Fetches posts using Riverpod Providers.
     *   **Farm**: Manage crops and tasks locally/synced.
 
@@ -238,11 +240,29 @@ Copy `.env.example` to `.env` in `assets/`:
 API_BASE_URL=http://localhost:8000
 ```
 
+### Production Deployment — Firebase Hosting
+Flutter Web is deployed on **Firebase Hosting**.
+
+| Setting | Value |
+|---------|-------|
+| Platform | Firebase Hosting |
+| Build command | `flutter build web --release` |
+| Public directory | `build/web` |
+| Config file | `firebase.json` |
+
+```bash
+# Build and deploy
+flutter build web --release
+firebase deploy --only hosting
+```
+
+The `firebase.json` at the project root configures the hosting target. Rewrites route all paths to `index.html` for Flutter's single-page routing.
+
 ---
 
 ## 📚 Key Features
 
-1.  **AI Diagnosis**: Camera → ML Model → Treatment Plan
+1.  **AI Diagnosis**: Camera/Gallery → Upload to Backend → Server Keras/TFLite Inference → DSS Advisory → Treatment Plan
 2.  **Disease Outbreak Map**: Interactive OSM map showing geo-tagged disease markers in the user's region
 3.  **Voice Input**: Describe symptoms by voice on the Diagnosis screen (`speech_to_text`, `en_IN` locale)
 4.  **Expert Q&A**: Ask questions, rate answers

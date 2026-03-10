@@ -125,6 +125,24 @@ npm run build         # Creates .next/ optimized bundle
 npm start             # Serves production build
 ```
 
+### Production Deployment — Vercel
+The Admin Dashboard is deployed on **Vercel**.
+
+| Setting | Value |
+|---------|-------|
+| Platform | Vercel |
+| Framework preset | Next.js |
+| Root directory | `frontend/admin_dashboard` |
+| Build command | `npm run build` |
+| Output | `.next/` |
+
+Required environment variables in Vercel dashboard:
+```
+NEXT_PUBLIC_API_URL=https://<your-render-backend>.onrender.com
+```
+
+Deploys automatically on every push to `main`.
+
 ### Build Validation
 CI runs `npm run build` to ensure:
 - No TypeScript errors
@@ -139,6 +157,7 @@ CI runs `npm run build` to ensure:
 - Total users, diagnoses, questions
 - Daily/weekly trends
 - Charts using Recharts
+- **Redis-cached** — dashboard stats: 5 min TTL, daily metrics: 1 min TTL (via `GET /admin/dashboard` + `GET /admin/metrics/daily`)
 
 ### 2. User Management
 - View all users (farmers, experts, admins)
@@ -159,6 +178,11 @@ CI runs `npm run build` to ensure:
 - CRUD for Diagnostic Rules
 - CRUD for Treatment Constraints
 - CRUD for Seasonal Patterns
+
+### 6. Content & Encyclopedia Management
+- Manage Crop entries
+- Manage Disease entries
+- Manage **Pest** entries (PestInfo — damage type, life cycle, IPM controls)
 
 ---
 

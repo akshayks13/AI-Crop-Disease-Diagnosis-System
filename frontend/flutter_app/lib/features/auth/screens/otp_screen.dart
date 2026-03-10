@@ -108,14 +108,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.orange.shade50,
+                color: Colors.blue.shade50,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade200),
+                border: Border.all(color: Colors.blue.shade200),
               ),
               child: const Text(
-                'Development Mode: Check your backend console/terminal for the code.',
+                'Enter the OTP from your email inbox. Check spam/promotions if needed.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.orange),
+                style: TextStyle(fontSize: 12, color: Colors.blue),
               ),
             ),
             const SizedBox(height: 32),
