@@ -104,7 +104,10 @@ async def create_rule(
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://cropdiag.example.com"],
+    allow_origins=[
+        "https://ai-crop-disease-diagnosis-system.vercel.app",
+        "https://ai-crop-disease-7c811.web.app",
+    ],
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )

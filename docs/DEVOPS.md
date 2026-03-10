@@ -174,7 +174,7 @@ uvicorn app.main:app --reload --port 8000
 | `JWT_SECRET_KEY` | Secret key for JWT tokens | Random 32+ char string |
 | `JWT_ALGORITHM` | JWT algorithm | `HS256` |
 | `DEBUG` | Runtime mode | `false` |
-| `ALLOWED_ORIGINS` | CORS allowed origins | `https://your-admin.vercel.app,https://your-app.web.app` |
+| `ALLOWED_ORIGINS` | CORS allowed origins | `https://ai-crop-disease-diagnosis-system.vercel.app,https://ai-crop-disease-7c811.web.app` |
 | `REDIS_URL` | Redis connection string | `redis://redis:6379/0` |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name | `your-cloud` |
 | `CLOUDINARY_API_KEY` | Cloudinary API key | from dashboard |
@@ -190,21 +190,27 @@ uvicorn app.main:app --reload --port 8000
 
 Each component is deployed to a different platform:
 
-| Component | Platform | Notes |
-|-----------|----------|-------|
-| **Backend (FastAPI)** | [Render](https://render.com) | Free-tier web service, auto-deploy on `main` push |
-| **Admin Dashboard (Next.js)** | [Vercel](https://vercel.com) | Root dir: `frontend/admin_dashboard`, auto-deploy |
-| **Flutter Web** | [Firebase Hosting](https://firebase.google.com/docs/hosting) | `flutter build web --release` → `firebase deploy` |
-| **PostgreSQL** | Render Managed DB | Provisioned alongside the backend web service |
-| **Redis** | Render Redis (or Upstash) | Set `REDIS_URL` env var on Render |
+| Component | Platform | Live URL | Notes |
+|-----------|----------|----------|-------|
+| **Backend (FastAPI)** | [Render](https://render.com) | [ai-crop-disease-diagnosis-system-aumh.onrender.com](https://ai-crop-disease-diagnosis-system-aumh.onrender.com) | Free-tier web service, auto-deploy on `main` push |
+| **Admin Dashboard (Next.js)** | [Vercel](https://vercel.com) | [ai-crop-disease-diagnosis-system.vercel.app](https://ai-crop-disease-diagnosis-system.vercel.app) | Root dir: `frontend/admin_dashboard`, auto-deploy |
+| **Flutter Web** | [Firebase Hosting](https://firebase.google.com) | [ai-crop-disease-7c811.web.app](https://ai-crop-disease-7c811.web.app) | Firebase project: `ai-crop-disease-7c811`, manual deploy |
+| **PostgreSQL** | Render Managed DB | *(internal connection string)* | Provisioned alongside the backend web service |
+| **Redis** | Render Redis (or Upstash) | *(internal connection string)* | Set `REDIS_URL` env var on Render |
 
 ### Backend — Render
+
+**Live URL**: `https://ai-crop-disease-diagnosis-system-aumh.onrender.com`
 
 1. Create a new **Web Service** on Render.
 2. Connect the GitHub repo; set **Root Directory** to `backend`.
 3. **Build command**: `pip install -r requirements.txt`
 4. **Start command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 5. Add environment variables (see table below).
+
+> **Note (Free Tier)**: The service spins down after 15 minutes of inactivity. A keep-alive ping is built into the app — set `RENDER_EXTERNAL_URL=https://ai-crop-disease-diagnosis-system-aumh.onrender.com` to enable it (pings `/health` every 14 minutes).
+
+> **ML Model on Render**: Due to the 512 MB RAM limit, the app automatically falls back to `Disease_Classification_v2_noflex.tflite` (23 MB, Flex-op free). The larger `Disease_Classification_v2_compressed.tflite` (46 MB) works locally but triggers a `FlexPad` error on Render's standard TensorFlow build.
 
 Required environment variables on Render:
 
@@ -222,14 +228,19 @@ Required environment variables on Render:
 
 ### Admin Dashboard — Vercel
 
+**Live URL**: `https://ai-crop-disease-diagnosis-system.vercel.app`
+
 1. Import the GitHub repo on Vercel.
 2. Set **Root Directory** to `frontend/admin_dashboard`.
 3. Framework preset: **Next.js** (auto-detected).
-4. Add `NEXT_PUBLIC_API_URL=https://<your-render-app>.onrender.com`.
+4. Add `NEXT_PUBLIC_API_URL=https://ai-crop-disease-diagnosis-system-aumh.onrender.com`.
 
 Deploys automatically on every push to `main`.
 
 ### Flutter Web — Firebase Hosting
+
+**Live URL**: `https://ai-crop-disease-7c811.web.app`  
+**Firebase project**: `ai-crop-disease-7c811`
 
 ```bash
 # One-time setup
@@ -241,7 +252,7 @@ flutter build web --release
 firebase deploy --only hosting
 ```
 
-Config is in `firebase.json` at the repo root.
+Config is in `firebase.json` inside `frontend/flutter_app/`.
 
 ---
 
@@ -360,8 +371,16 @@ Response:
 {
   "status": "healthy",
   "database": "connected",
+  "model_used": "TFLite-v2 (Disease_Classification_v2_noflex.tflite)",
   "version": "1.0.0"
 }
+```
+
+The `model_used` field reflects whichever ML model file was actually loaded at startup (varies between local and Render environments).
+
+```bash
+# Quick health check against the live Render deployment
+curl -s https://ai-crop-disease-diagnosis-system-aumh.onrender.com/health | python3 -m json.tool
 ```
 
 ### Metrics

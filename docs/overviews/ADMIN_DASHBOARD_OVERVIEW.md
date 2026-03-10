@@ -138,7 +138,7 @@ The Admin Dashboard is deployed on **Vercel**.
 
 Required environment variables in Vercel dashboard:
 ```
-NEXT_PUBLIC_API_URL=https://<your-render-backend>.onrender.com
+NEXT_PUBLIC_API_URL=https://ai-crop-disease-diagnosis-system-aumh.onrender.com
 ```
 
 Deploys automatically on every push to `main`.
