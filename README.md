@@ -417,8 +417,6 @@ See [DEVOPS.md](docs/DEVOPS.md) for full restore instructions and troubleshootin
 | Expert (Approved) | expert1@example.com | expert123 |
 | Expert (Pending) | expert2@example.com | expert123 |
 
-> ⚠️ Change these credentials in production!
-
 ---
 
 ## Environment Variables
