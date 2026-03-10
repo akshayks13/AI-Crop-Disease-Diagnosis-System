@@ -43,6 +43,9 @@ class MLService:
         self.output_details = None
         self.keras_model = None
         self.labels = []
+        # 'v1' = simple CNN trained on raw [0,255] RGB pixels
+        # 'v2' = ResNet50 backbone trained with resnet50.preprocess_input
+        self._model_version: str = "v2"  # default; updated in _load_model
         self._load_model()
 
     def _resolve_model_assets(
@@ -84,39 +87,38 @@ class MLService:
         """
         Load the ML model for disease inference.
 
-        Strategy (server has full TensorFlow installed):
-          1. Keras v2  — most accurate, large file (only present if committed/LFS)
-          2. Keras v1  — smaller (2.9 MB), committed to backend/app/ml_models
-          3. TFLite    — last resort; may fail on Flex ops (SELECT_TF_OPS models)
+        Priority order (optimised for Render deployment):
+          1. Keras v2  — 322 MB, only present if available via Git LFS / paid tier
+          2. TFLite v2 — 46 MB, committed to backend/app/ml_models, ResNet50 v2 preprocessing
+                         Works fine with full TensorFlow installed (no Flex-ops restriction)
+          3. Keras v1  — 2.9 MB, last resort; simpler CNN, lower accuracy
         """
         import traceback
         candidate_dirs = self._candidate_dirs()
 
-        # ── 1. Try Keras models (preferred on server with full TF) ──────────
-        for keras_filename in (
-            "Disease_Classification_v2.keras",
-            "Disease_Classification_v1.keras",
-        ):
-            try:
-                import tensorflow as tf
-                _, keras_path, labels_path = self._resolve_model_assets(
-                    candidate_dirs=candidate_dirs,
-                    model_filename=keras_filename,
-                    labels_filename="labels.txt",
-                )
-                with open(labels_path, "r") as f:
-                    self.labels = [line.strip() for line in f if line.strip()]
-                self.keras_model = tf.keras.models.load_model(keras_path, compile=False)
-                logger.info(f"SUCCESS: Loaded Keras model '{keras_filename}'. Labels: {len(self.labels)}")
-                return
-            except FileNotFoundError:
-                continue  # not available in any candidate dir, try next
-            except Exception as e:
-                logger.warning(f"Keras load failed for '{keras_filename}': {e}")
-                logger.debug(traceback.format_exc())
-                continue
+        # ── 1. Try Keras v2 (best quality, large – only on paid/LFS deployments) ──
+        try:
+            import tensorflow as tf
+            _, keras_path, labels_path = self._resolve_model_assets(
+                candidate_dirs=candidate_dirs,
+                model_filename="Disease_Classification_v2.keras",
+                labels_filename="labels.txt",
+            )
+            with open(labels_path, "r") as f:
+                self.labels = [line.strip() for line in f if line.strip()]
+            self.keras_model = tf.keras.models.load_model(keras_path, compile=False)
+            self._model_version = "v2"
+            logger.info(f"SUCCESS: Loaded Keras v2 model (version=v2). Labels: {len(self.labels)}")
+            return
+        except FileNotFoundError:
+            logger.info("Keras v2 not found in candidate dirs, trying TFLite v2...")
+        except Exception as e:
+            logger.warning(f"Keras v2 load failed: {e}")
+            logger.debug(traceback.format_exc())
 
-        # ── 2. Fallback: TFLite (may fail on Flex/SELECT_TF_OPS models) ─────
+        # ── 2. TFLite v2 compressed — 46 MB, already committed to backend/app/ml_models ──
+        # This IS the v2 ResNet50 model; uses the same preprocessing as Keras v2.
+        # Full TensorFlow is installed on Render so Flex/SELECT_TF_OPS ops work fine.
         try:
             import tensorflow as tf
             _, model_path, labels_path = self._resolve_model_assets(
@@ -126,15 +128,41 @@ class MLService:
             )
             with open(labels_path, "r") as f:
                 self.labels = [line.strip() for line in f if line.strip()]
-            logger.info(f"Attempting TFLite load from: {model_path}")
+            logger.info(f"Attempting TFLite v2 load from: {model_path}")
             self.interpreter = tf.lite.Interpreter(model_path=model_path)
             self.interpreter.allocate_tensors()
             self.input_details = self.interpreter.get_input_details()
             self.output_details = self.interpreter.get_output_details()
-            logger.info(f"SUCCESS: Loaded TFLite model. Labels: {len(self.labels)}")
+            self._model_version = "v2"
+            logger.info(f"SUCCESS: Loaded TFLite v2 model (version=v2). Labels: {len(self.labels)}")
+            return
+        except FileNotFoundError:
+            logger.warning("TFLite v2 not found, falling back to Keras v1...")
         except Exception as e:
-            logger.error(f"CRITICAL: All model loading strategies failed. Last error: {e}")
-            logger.error(traceback.format_exc())
+            logger.warning(f"TFLite v2 load failed: {e}")
+            logger.debug(traceback.format_exc())
+
+        # ── 3. Keras v1 — 2.9 MB last resort, lower accuracy ────────────────
+        try:
+            import tensorflow as tf
+            _, keras_path, labels_path = self._resolve_model_assets(
+                candidate_dirs=candidate_dirs,
+                model_filename="Disease_Classification_v1.keras",
+                labels_filename="labels.txt",
+            )
+            with open(labels_path, "r") as f:
+                self.labels = [line.strip() for line in f if line.strip()]
+            self.keras_model = tf.keras.models.load_model(keras_path, compile=False)
+            self._model_version = "v1"
+            logger.info(f"SUCCESS: Loaded Keras v1 model (version=v1). Labels: {len(self.labels)}")
+            return
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            logger.warning(f"Keras v1 load failed: {e}")
+            logger.debug(traceback.format_exc())
+
+        logger.error("CRITICAL: All model loading strategies failed. Check model files in backend/app/ml_models/")
 
     def _load_keras_fallback(self) -> None:
         """Kept for compatibility — logic now lives in _load_model."""
@@ -179,13 +207,20 @@ class MLService:
             img = Image.open(local_path).convert("RGB")
 
         img = img.resize((224, 224))
-        # Convert to numpy and apply ResNet50 preprocessing
-        # RGB to BGR then subtract ImageNet mean
         img_array = np.array(img, dtype=np.float32)
-        img_array = img_array[..., ::-1]
-        img_array[..., 0] -= 103.939  # B
-        img_array[..., 1] -= 116.779  # G
-        img_array[..., 2] -= 123.68   # R
+
+        if self._model_version == "v1":
+            # V1 is a simple custom CNN trained on raw [0, 255] RGB pixels
+            # (tf.keras.utils.image_dataset_from_directory default, no Rescaling layer)
+            pass  # img_array already in [0, 255] RGB — correct for v1
+        else:
+            # V2 / TFLite use ResNet50 backbone: apply resnet50.preprocess_input
+            # (RGB → BGR, subtract ImageNet channel means)
+            img_array = img_array[..., ::-1]   # RGB to BGR
+            img_array[..., 0] -= 103.939       # B
+            img_array[..., 1] -= 116.779       # G
+            img_array[..., 2] -= 123.68        # R
+
         img_array = np.expand_dims(img_array, axis=0)
         return img_array
     

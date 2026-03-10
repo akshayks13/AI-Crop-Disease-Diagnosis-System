@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     smtp_from_name: str = "AI Crop Disease Diagnosis"
     smtp_use_tls: bool = True
     smtp_use_ssl: bool = False
+
+    # Render keep-alive
+    # Set to your Render service URL, e.g. https://your-app.onrender.com
+    # Leave empty locally — the ping task will simply not start.
+    render_external_url: str = ""
     
     @property
     def cors_origins(self) -> List[str]:

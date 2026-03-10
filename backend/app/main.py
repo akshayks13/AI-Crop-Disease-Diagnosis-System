@@ -70,9 +70,35 @@ async def lifespan(app: FastAPI):
     # Initialize default data
     await init_data()
 
+    # ── Render keep-alive: self-ping every 10 min to prevent spin-down ────────
+    import asyncio
+    import httpx
+
+    keep_alive_task = None
+    ping_url = (settings.render_external_url or "").rstrip("/")
+    if ping_url:
+        async def _keep_alive():
+            # Wait a bit after startup before first ping
+            await asyncio.sleep(60)
+            while True:
+                try:
+                    async with httpx.AsyncClient(timeout=10) as client:
+                        resp = await client.get(f"{ping_url}/health")
+                        logger.info(f"Keep-alive ping → {resp.status_code}")
+                except Exception as exc:
+                    logger.warning(f"Keep-alive ping failed: {exc}")
+                await asyncio.sleep(10 * 60)  # 10 minutes
+
+        keep_alive_task = asyncio.create_task(_keep_alive())
+        logger.info(f"Keep-alive task started → pinging {ping_url}/health every 14 min")
+    else:
+        logger.info("Keep-alive disabled (RENDER_EXTERNAL_URL not set)")
+
     yield
 
     # Shutdown
+    if keep_alive_task:
+        keep_alive_task.cancel()
     logger.info("Shutting down...")
     await close_db()
 
@@ -143,10 +169,19 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/health", tags=["Health"])
 async def health_check():
     """Health check endpoint."""
+    from app.services.ml_service import get_ml_service
+    ml = get_ml_service()
+    if ml.interpreter is not None:
+        model_used = f"TFLite-v{ml._model_version} (Disease_Classification_v2_compressed.tflite)"
+    elif ml.keras_model is not None:
+        model_used = f"Keras-v{ml._model_version}"
+    else:
+        model_used = "none (load failed)"
     return {
         "status": "healthy",
         "service": settings.app_name,
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "model_used": model_used,
     }
 
 

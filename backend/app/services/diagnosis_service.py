@@ -108,6 +108,13 @@ class DiagnosisService:
             diagnosis_id = str(diagnosis.id)
         
         # Build final response
+        if self.ml_service.interpreter is not None:
+            model_used = f"TFLite-v{self.ml_service._model_version}"
+        elif self.ml_service.keras_model is not None:
+            model_used = f"Keras-v{self.ml_service._model_version}"
+        else:
+            model_used = "none"
+
         response = {
             "id": diagnosis_id,
             "disease": prediction.disease,
@@ -123,6 +130,7 @@ class DiagnosisService:
             "additional_predictions": prediction.additional_predictions,
             "media_path": image_path,
             "dss_advisory": dss_advisory,
+            "model_used": model_used,
         }
         
         # Add validation warning if applicable
