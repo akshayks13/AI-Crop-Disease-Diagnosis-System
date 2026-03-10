@@ -23,9 +23,13 @@ The mobile app uploads the image to the server; the backend runs the Keras model
 
 #### Technical Specifications
 - **Primary framework**: Keras (TensorFlow 2.x) — preferred when available
-- **Fallback framework**: TFLite (`Disease_Classification_v2_compressed.tflite`)
-- **Model files** (searched in order): `Disease_Classification_v2.keras` → `Disease_Classification_v1.keras` → TFLite
-- **Base Architecture**: MobileNetV2-based CNN
+- **Fallback framework**: TFLite (noflex or compressed variant, see load order below)
+- **Model files** (searched in order):
+  1. `Disease_Classification_v2.keras` — 322 MB, full quality, preferred
+  2. `Disease_Classification_v2_compressed.tflite` — 46 MB, works locally; fails on Render (FlexPad)
+  3. `Disease_Classification_v2_noflex.tflite` — 23 MB, Flex-op free, works everywhere
+  4. `Disease_Classification_v1.keras` — 2.9 MB, last resort; lower accuracy
+- **Base Architecture**: ResNet50-based CNN (v2); simpler CNN (v1)
 - **Input**: 224×224 RGB images
 - **Output**: Disease label (e.g., `apple_apple_scab`) + confidence score
 - **Accuracy**: ~92% on validation dataset

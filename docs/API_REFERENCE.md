@@ -3,7 +3,7 @@
 ## Base URL
 
 - **Development**: `http://localhost:8000`
-- **Production**: `https://api.cropdiag.example.com`
+- **Production**: `https://ai-crop-disease-diagnosis-system-aumh.onrender.com`
 
 ## Authentication
 

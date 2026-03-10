@@ -161,11 +161,11 @@ Based on our isolated latency benchmark (`tests/test_redis_latency.py`):
 
 ## Production Deployment
 
-| Component | Platform | Auto-deploys on `main` push |
-|-----------|----------|-----------------------------|
-| **Backend (FastAPI)** | [Render](https://render.com) | ✅ |
-| **Admin Dashboard (Next.js)** | [Vercel](https://vercel.com) | ✅ |
-| **Flutter Web** | [Firebase Hosting](https://firebase.google.com/docs/hosting) | Manual (`firebase deploy`) |
+| Component | Platform | Live URL | Auto-deploys on `main` push |
+|-----------|----------|----------|-----------------------------|
+| **Backend (FastAPI)** | [Render](https://render.com) | [ai-crop-disease-diagnosis-system-aumh.onrender.com](https://ai-crop-disease-diagnosis-system-aumh.onrender.com) | ✅ |
+| **Admin Dashboard (Next.js)** | [Vercel](https://vercel.com) | [ai-crop-disease-diagnosis-system.vercel.app](https://ai-crop-disease-diagnosis-system.vercel.app) | ✅ |
+| **Flutter Web** | [Firebase Hosting](https://firebase.google.com/docs/hosting) | [ai-crop-disease-7c811.web.app](https://ai-crop-disease-7c811.web.app) | ✅ (via `deploy-flutter.yml`) |
 
 See [DEVOPS.md](docs/DEVOPS.md) for environment variable setup and step-by-step deployment instructions.
 
