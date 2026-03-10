@@ -4,8 +4,8 @@
 
 This document outlines the complete testing strategy for the AI Crop Disease Diagnosis System, covering all testing tools, test cases, and expected outputs.
 
-**Total Tests: 157**
-- Backend (pytest): 59 tests
+**Total Tests: 156**
+- Backend (pytest): 58 tests
 - Flutter: 54 tests
 - Admin Dashboard (Vitest): 22 tests
 - E2E (Playwright): 22 tests
@@ -55,10 +55,10 @@ vitest==4.0.18
 | `test_farm.py` | 5 | Farm crops & tasks |
 | `test_market.py` | 4 | Market prices |
 | `test_encyclopedia.py` | 5 | Crop & disease encyclopedia |
-| `test_expert.py` | 10 | Expert functionality |
+| `test_expert.py` | 9 | Expert functionality |
 | `test_admin.py` | 9 | Admin dashboard & management |
 | `test_agronomy.py` | 4 | Agronomy knowledge base |
-| **Total** | **59** | |
+| **Total** | **58** | |
 
 ---
 

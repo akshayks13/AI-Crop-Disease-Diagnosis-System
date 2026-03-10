@@ -113,7 +113,7 @@ docs(api): update diagnosis endpoint documentation
 
 ### Before Submitting
 
-- [ ] Tests pass locally (`pytest`, `flutter test`)
+- [ ] Tests pass locally (`pytest`, `flutter test`, `npx playwright test`)
 - [ ] Code is formatted (`ruff format .`, `dart format .`)
 - [ ] No linting errors
 - [ ] Documentation updated if needed

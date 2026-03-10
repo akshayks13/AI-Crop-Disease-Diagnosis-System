@@ -194,7 +194,7 @@ Each component is deployed to a different platform:
 |-----------|----------|----------|-------|
 | **Backend (FastAPI)** | [Render](https://render.com) | [ai-crop-disease-diagnosis-system-aumh.onrender.com](https://ai-crop-disease-diagnosis-system-aumh.onrender.com) | Free-tier web service, auto-deploy on `main` push |
 | **Admin Dashboard (Next.js)** | [Vercel](https://vercel.com) | [ai-crop-disease-diagnosis-system.vercel.app](https://ai-crop-disease-diagnosis-system.vercel.app) | Root dir: `frontend/admin_dashboard`, auto-deploy |
-| **Flutter Web** | [Firebase Hosting](https://firebase.google.com) | [ai-crop-disease-7c811.web.app](https://ai-crop-disease-7c811.web.app) | Firebase project: `ai-crop-disease-7c811`, manual deploy |
+| **Flutter Web** | [Firebase Hosting](https://firebase.google.com) | [ai-crop-disease-7c811.web.app](https://ai-crop-disease-7c811.web.app) | Firebase project: `ai-crop-disease-7c811`, auto-deploy via GitHub Actions (`deploy-flutter.yml`) on `frontend/flutter_app/**` changes |
 | **PostgreSQL** | Render Managed DB | *(internal connection string)* | Provisioned alongside the backend web service |
 | **Redis** | Render Redis (or Upstash) | *(internal connection string)* | Set `REDIS_URL` env var on Render |
 
@@ -242,13 +242,42 @@ Deploys automatically on every push to `main`.
 **Live URL**: `https://ai-crop-disease-7c811.web.app`  
 **Firebase project**: `ai-crop-disease-7c811`
 
+#### Auto-Deploy (Primary)
+
+Pushing to `main` with changes inside `frontend/flutter_app/**` automatically triggers the `deploy-flutter.yml` GitHub Actions workflow:
+
+```
+git push origin main
+  └─► deploy-flutter.yml triggered
+        ├─ flutter pub get
+        ├─ flutter gen-l10n           (generate localization files)
+        ├─ flutter build web --release --dart-define=BASE_URL=<RENDER_URL>
+        └─ FirebaseExtended/action-hosting-deploy@v0  → live in ~3 min
+```
+
+Required GitHub Secrets for the workflow:
+
+| Secret | Description |
+|--------|-------------|
+| `BACKEND_BASE_URL` | Render backend URL |
+| `OPENWEATHER_API_KEY` | OpenWeather API key |
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `FIREBASE_SERVICE_ACCOUNT` | Firebase service account JSON |
+| `FIREBASE_PROJECT_ID` | `ai-crop-disease-7c811` |
+
+See [CI_CD.md](CI_CD.md) for full workflow details.
+
+#### Manual Deploy (One-time Setup / Emergency)
+
 ```bash
 # One-time setup
 firebase login
 firebase init hosting   # public dir: build/web, rewrite all to index.html
 
-# Build and deploy
-flutter build web --release
+# Build and deploy manually
+flutter pub get
+flutter gen-l10n
+flutter build web --release --dart-define=BASE_URL=https://ai-crop-disease-diagnosis-system-aumh.onrender.com
 firebase deploy --only hosting
 ```
 
@@ -278,34 +307,62 @@ When `CLOUDINARY_CLOUD_NAME` is empty, files are saved locally under `backend/up
 
 ## Deployment Pipeline
 
-### GitHub Actions CI/CD
+This project uses **two GitHub Actions workflows** to automate all deployments:
+
+| Workflow file | Trigger | What it deploys |
+|--------------|---------|----------------|
+| `.github/workflows/ci.yml` | Push / PR to `main` or `master` | Runs all tests (no deploy) |
+| `.github/workflows/deploy-flutter.yml` | Push to `main` (`frontend/flutter_app/**` changed) + manual | Flutter Web → Firebase Hosting |
+
+### How Each Platform Auto-Deploys
+
+#### Backend — Render
+Render watches the connected GitHub repo. On every push to `main`, it:
+1. Pulls the latest code from `backend/`
+2. Runs the build command: `pip install -r requirements.txt`
+3. Restarts the service with: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+
+> No GitHub Actions step needed — Render's GitHub integration handles this natively.
+
+#### Admin Dashboard — Vercel
+Vercel's GitHub integration watches the repo. On every push to `main`, it:
+1. Detects changes in `frontend/admin_dashboard/`
+2. Runs `npm run build` (Next.js)
+3. Deploys the output to the Vercel CDN globally
+
+> No GitHub Actions step needed — Vercel's GitHub integration handles this natively.
+
+#### Flutter Web — Firebase Hosting (`deploy-flutter.yml`)
+The `deploy-flutter.yml` workflow runs when `frontend/flutter_app/**` files change:
 
 ```yaml
-# .github/workflows/deploy.yml
-name: Deploy
+# Simplified view of .github/workflows/deploy-flutter.yml
+steps:
+  - Setup Flutter 3.38.1
+  - Create assets/.env from secrets        # OPENWEATHER_API_KEY, GEMINI_API_KEY
+  - flutter pub get
+  - flutter gen-l10n                        # Localization
+  - flutter build web --release \
+      --dart-define=BASE_URL=${{ secrets.BACKEND_BASE_URL }}
+  - FirebaseExtended/action-hosting-deploy@v0   # Deploy to Firebase
+```
 
-on:
-  push:
-    branches: [main]
+### Full Deployment Flow Diagram
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Deploy backend to Render
-        run: echo "Render auto-deploys from GitHub — no manual step needed"
-
-      - name: Deploy admin dashboard to Vercel
-        run: echo "Vercel auto-deploys from GitHub — no manual step needed"
-
-      - name: Build Flutter Web & deploy to Firebase
-        run: |
-          flutter pub get
-          flutter build web --release
-          firebase deploy --only hosting --token ${{ secrets.FIREBASE_TOKEN }}
-        working-directory: frontend/flutter_app
+```
+git push origin main
+       │
+       ├──► Render detects push ──────────────────────► Backend live (auto)
+       │
+       ├──► Vercel detects push ──────────────────────► Admin Dashboard live (auto)
+       │
+       ├──► GitHub Actions: ci.yml ──────────────────► Tests pass/fail
+       │       ├─ backend job  (pytest)
+       │       ├─ flutter job  (flutter test)
+       │       └─ admin job    (vitest + next build)
+       │
+       └──► GitHub Actions: deploy-flutter.yml ───────► Flutter Web live (auto)
+               (only if frontend/flutter_app/** changed)
 ```
 
 ---
@@ -504,5 +561,140 @@ docker exec crop_diagnosis_redis redis-cli FLUSHALL
 curl -X POST http://localhost:8000/market/cache/clear \
   -H "Authorization: Bearer <admin_token>"
 ```
+
+---
+
+## Version Control & Branching Strategy
+
+**Platform**: Git + GitHub (`akshayks13/AI-Crop-Disease-Diagnosis-System`)
+
+### Branching Convention
+
+| Branch prefix | Use case |
+|--------------|----------|
+| `main` | Production-ready, protected — all auto-deploys originate here |
+| `feature/` | New features (e.g., `feature/market-prices`) |
+| `bugfix/` | Bug fixes (e.g., `bugfix/login-error`) |
+| `hotfix/` | Urgent production fixes |
+| `docs/` | Documentation updates |
+| `refactor/` | Code refactoring |
+
+### Commit Standard
+
+Conventional Commits format: `<type>(<scope>): <description>`
+
+Examples: `feat(auth): add OTP email verification`, `fix(ml): fallback to noflex model on Render`
+
+Full conventions and PR checklist: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Protected Main Branch
+
+Every push to `main`:
+- Triggers GitHub Actions CI (lint + test all three components)
+- Triggers Render backend auto-deploy
+- Triggers Vercel admin dashboard auto-deploy
+- Triggers `deploy-flutter.yml` if `frontend/flutter_app/**` changed
+
+---
+
+## Code Quality & Security Scanning
+
+### Automated Quality Tools in CI
+
+| Tool | Language | What It Checks | Runs In CI |
+|------|----------|----------------|------------|
+| **Ruff** | Python | Linting + style (replaces Flake8/Black/isort) | ✅ |
+| **ESLint** | TypeScript | React/Next.js code quality | ✅ |
+| **flutter analyze** | Dart | Static analysis, type errors, unused code | ✅ |
+| **Pytest** | Python | Unit & integration tests | ✅ |
+| **Vitest** | TypeScript | Unit tests for admin utilities | ✅ |
+| **flutter test** | Dart | Widget & unit tests | ✅ |
+| **Playwright** | TypeScript | E2E browser tests (local; CI job planned) | Planned |
+
+### Security Hardening in Application Code
+
+- **Parameterized queries**: SQLAlchemy ORM prevents SQL injection at the ORM level
+- **bcrypt** password hashing (no plaintext passwords stored)
+- **JWT** with short-lived access tokens (30 min) + refresh tokens (7 days)
+- **CORS** restricted to known production origins (Vercel + Firebase URLs only)
+- **Rate limiting**: slowapi — 60 req/min per IP on all endpoints; returns `HTTP 429`
+- **RBAC**: Three-role system (FARMER / EXPERT / ADMIN) enforced on every protected route
+- **Secrets**: All sensitive credentials stored in GitHub Actions Secrets — never committed to code
+
+### Vulnerability Scanning — Current Status
+
+| Tool | Status | Notes |
+|------|--------|-------|
+| **Ruff** | Active in CI | Python code quality |
+| **ESLint** | Active in CI | TypeScript code quality |
+| **npm audit** | Manual | `npm audit` in `frontend/admin_dashboard/` |
+| **pip-audit** | Manual | `pip-audit -r backend/requirements.txt` |
+| **Trivy / Snyk** | Planned | Container image + dependency CVE scanning |
+| **SonarQube** | Planned | Deep static analysis and code smell detection |
+
+```bash
+# Run dependency vulnerability checks manually
+npm audit --audit-level=moderate                       # Admin dashboard
+pip install pip-audit && pip-audit -r backend/requirements.txt  # Python deps
+```
+
+## Rollback Strategy
+
+### Per-Platform Rollback
+
+| Component | Platform | Rollback Method | Time to Rollback |
+|-----------|----------|----------------|-----------------|
+| **Backend** | Render | Dashboard → Deploys → select old deploy → **Rollback** | ~2 min |
+| **Admin Dashboard** | Vercel | Dashboard → Deployments → select old → **Promote to Production** | ~1 min |
+| **Flutter Web** | Firebase | `firebase hosting:rollback` (keeps last 25 releases) | ~1 min |
+| **Database** | Render | Restore from `.sql.gz` backup (see below) | ~5–15 min |
+
+### Backend — Render Rollback
+
+```bash
+# Option A: Render Dashboard
+# Render → your service → "Deploys" tab → click old deploy → "Rollback to this deploy"
+
+# Option B: Revert git commit and push (triggers new deploy with old code)
+git revert HEAD
+git push origin main
+```
+
+### Admin Dashboard — Vercel Rollback
+
+```bash
+# Option A: Vercel Dashboard
+# Deployments → select a previous deployment → "..." → "Promote to Production"
+
+# Option B: Revert and push
+git revert HEAD
+git push origin main
+```
+
+### Flutter Web — Firebase Rollback
+
+Firebase Hosting keeps the last 25 releases automatically.
+
+```bash
+# List recent releases
+firebase hosting:releases:list
+
+# Roll back to the previous release immediately
+firebase hosting:rollback
+
+# Or clone a specific release ID
+firebase hosting:clone <VERSION_ID>:live <PROJECT_ID>:live
+```
+
+### Database Rollback
+
+See [Backup & Recovery](#backup--recovery). Restore a backup with:
+
+```bash
+cd backend
+bash scripts/restore_db.sh backups/cropdiag_YYYYMMDD_HHMMSS.sql.gz
+```
+
+> ⚠️ Database restore is **destructive** — always take a fresh backup immediately before restoring.
 
 ---

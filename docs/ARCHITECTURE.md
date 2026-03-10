@@ -42,8 +42,11 @@ AI-powered crop disease diagnosis platform for farmers with expert consultation,
 The system uses **server-side Keras/TFLite inference** — the Flutter mobile app uploads the image to the backend, which runs the ML model and returns the full diagnosis. The backend also hosts a **DSS (Decision Support System)** for actionable advisories.
 
 ### 1. Server-Side Disease Classification (Keras / TFLite)
-- **Primary model**: `Disease_Classification_v2.keras` (full Keras model, preferred)
-- **Fallback**: `Disease_Classification_v2_compressed.tflite` (TFLite, used if Keras unavailable)
+- **Primary model**: `Disease_Classification_v2.keras` (322 MB, ResNet50-based, preferred)
+- **Fallback order**:
+  1. `Disease_Classification_v2_compressed.tflite` (46 MB) — works locally; fails on Render (FlexPad ops)
+  2. `Disease_Classification_v2_noflex.tflite` (23 MB) — Flex-op free, works everywhere ✅
+  3. `Disease_Classification_v1.keras` (2.9 MB) — last resort; simpler CNN, lower accuracy
 - **Runtime**: FastAPI backend with TensorFlow installed
 - **Input**: Crop leaf/plant images uploaded via `POST /diagnosis/predict` (224×224 RGB)
 - **Output**: Disease label (e.g., `apple_apple_scab`) + confidence score

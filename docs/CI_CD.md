@@ -2,7 +2,13 @@
 
 ## Overview
 
-This project uses **GitHub Actions** for Continuous Integration (CI). The workflow runs automatically on every push or pull request to `main`/`master` branches.
+This project uses **GitHub Actions** for Continuous Integration (CI) and Continuous Deployment (CD). Workflows run automatically on push or pull request to `main`/`master` branches.
+
+**Workflow files:**
+| File | Trigger | Purpose |
+|------|---------|--------|
+| `.github/workflows/ci.yml` | Push / PR to `main` or `master` | Lint, test, and build all components |
+| `.github/workflows/deploy-flutter.yml` | Push to `main` (flutter changes) + manual | Build Flutter Web and deploy to Firebase Hosting |
 
 ---
 
@@ -40,9 +46,9 @@ git push → GitHub Actions Triggers → 4 Parallel Jobs Run → ✅ or ❌
 ```yaml
 1. Checkout code
 2. Setup Python 3.11 with pip caching
-3. Install dependencies from requirements.txt
-4. Run: ruff check .  # Lint
-5. Run: pytest -v    # Test
+3. Install dependencies from requirements.txt + ruff
+4. Run: ruff check . --output-format=github  # Lint (GitHub-annotated output)
+5. Run: pytest -v --tb=short                 # Test
 ```
 
 ### Database Handling
@@ -65,11 +71,11 @@ git push → GitHub Actions Triggers → 4 Parallel Jobs Run → ✅ or ❌
 ### Steps
 ```yaml
 1. Checkout code
-2. Setup Flutter with caching
-3. Copy .env.example to .env       # Create env file
-4. Run: flutter pub get            # Install deps
-5. Run: flutter analyze            # Lint (warnings allowed)
-6. Run: flutter test               # Test
+2. Setup Flutter 3.38.1 (stable channel, cached)
+3. Copy assets/.env.example to assets/.env   # Create env file from example
+4. Run: flutter pub get                       # Install deps
+5. Run: flutter analyze --no-fatal-infos --no-fatal-warnings  # Lint
+6. Run: flutter test                          # Test
 ```
 
 ---
@@ -99,6 +105,8 @@ git push → GitHub Actions Triggers → 4 Parallel Jobs Run → ✅ or ❌
 ---
 
 ## E2E Job (Playwright)
+
+> **Status**: Run locally; CI job to be added.
 
 ### Tools Used
 
@@ -162,16 +170,50 @@ git push → GitHub Actions Triggers → 4 Parallel Jobs Run → ✅ or ❌
 ### GitHub Actions (not Jenkins/CircleCI)
 - **Free**: 2000 mins/month on free tier
 - **Integrated**: No external service to manage
-- **Parallel jobs**: Runs all 4 checks simultaneously
+- **Parallel jobs**: Runs all CI checks simultaneously
+
+---
+
+## CD Workflow — Flutter Web Deploy (`deploy-flutter.yml`)
+
+### Trigger
+- **Auto**: Push to `main` that changes any file under `frontend/flutter_app/**`
+- **Manual**: Workflow can be triggered from the GitHub Actions tab (`workflow_dispatch`)
+
+### Steps
+```yaml
+1. Checkout code
+2. Setup Flutter 3.38.1 (stable channel, cached)
+3. Create assets/.env from GitHub secrets  # OPENWEATHER_API_KEY, GEMINI_API_KEY
+4. Run: flutter pub get
+5. Run: flutter gen-l10n                   # Generate localization files
+6. Run: flutter build web --release \
+       --dart-define=BASE_URL=${{ secrets.BACKEND_BASE_URL }}
+7. Deploy to Firebase Hosting via FirebaseExtended/action-hosting-deploy@v0
+```
+
+### Required GitHub Secrets
+
+Set these in **GitHub → Repository Settings → Secrets and Variables → Actions**:
+
+| Secret | Description |
+|--------|-------------|
+| `BACKEND_BASE_URL` | Live backend URL: `https://ai-crop-disease-diagnosis-system-aumh.onrender.com` |
+| `OPENWEATHER_API_KEY` | OpenWeather API key (injected into `assets/.env`) |
+| `GEMINI_API_KEY` | Google Gemini API key (injected into `assets/.env`) |
+| `FIREBASE_SERVICE_ACCOUNT` | Firebase service account JSON (from Firebase console) |
+| `FIREBASE_PROJECT_ID` | Firebase project ID: `ai-crop-disease-7c811` |
+| `GITHUB_TOKEN` | Auto-provided by GitHub Actions (no setup needed) |
 
 ---
 
 ## How to Check CI Status
 
 1. Push your code: `git push`
-2. Go to GitHub → **Actions** tab
-3. Click the running workflow
-4. Green ✅ = All passed | Red ❌ = Click to see error
+2. Go to **GitHub → Actions** tab
+3. You'll see two workflows: **CI** (`ci.yml`) and **Deploy Flutter Web** (`deploy-flutter.yml`)
+4. Click a workflow run to see each job
+5. Green ✅ = All passed | Red ❌ = Click the failed job to see the error log
 
 ---
 
@@ -180,24 +222,29 @@ git push → GitHub Actions Triggers → 4 Parallel Jobs Run → ✅ or ❌
 ```bash
 # Backend
 cd backend
-ruff check .                     # Lint
-DATABASE_URL="..." pytest -v     # Test
+ruff check . --output-format=github   # Lint (same flags as CI)
+DATABASE_URL="..." pytest -v --tb=short  # Test
 
 # Flutter
 cd frontend/flutter_app
-flutter analyze                  # Lint
-flutter test                     # Test
+flutter analyze --no-fatal-infos --no-fatal-warnings  # Lint
+flutter test                           # Test
 
 # Admin
 cd frontend/admin_dashboard
-npm run lint                     # Lint
-npm test                         # Test (Vitest)
-npm run build                    # Build
+npm run lint                           # Lint
+npm test                               # Test (Vitest)
+npm run build                          # Build
 
 # E2E (requires running backend + admin dashboard)
 cd frontend/admin_dashboard
-npx playwright install chromium  # First-time setup
-npx playwright test              # Run all E2E tests
-npx playwright test --ui         # Interactive UI mode
-npx playwright show-report       # View last HTML report
+npx playwright install chromium        # First-time setup
+npx playwright test                    # Run all E2E tests
+npx playwright test --ui               # Interactive UI mode
+npx playwright show-report             # View last HTML report
+
+# Flutter Web build (local simulation of deploy)
+cd frontend/flutter_app
+flutter gen-l10n
+flutter build web --release --dart-define=BASE_URL=http://localhost:8000
 ```
