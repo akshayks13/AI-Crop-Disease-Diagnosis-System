@@ -87,11 +87,11 @@ class MLService:
         """
         Load the ML model for disease inference.
 
-        Priority order (optimised for Render deployment):
-          1. Keras v2  — 322 MB, only present if available via Git LFS / paid tier
-          2. TFLite v2 — 46 MB, committed to backend/app/ml_models, ResNet50 v2 preprocessing
-                         Works fine with full TensorFlow installed (no Flex-ops restriction)
-          3. Keras v1  — 2.9 MB, last resort; simpler CNN, lower accuracy
+        Priority order:
+          1. Keras v2            — 322 MB, only on paid/LFS deployments
+          2. TFLite v2 compressed — 46 MB, works locally (full TF); fails on Render (FlexPad)
+          3. TFLite v2 noflex    — 23 MB, works everywhere (no Flex ops)
+          4. Keras v1            — 2.9 MB, last resort; simpler CNN, lower accuracy
         """
         import traceback
         candidate_dirs = self._candidate_dirs()
@@ -116,32 +116,7 @@ class MLService:
             logger.warning(f"Keras v2 load failed: {e}")
             logger.debug(traceback.format_exc())
 
-        # ── 2. TFLite v2 compressed — 46 MB, already committed to backend/app/ml_models ──
-        # This IS the v2 ResNet50 model; uses the same preprocessing as Keras v2.
-        # Full TensorFlow is installed on Render so Flex/SELECT_TF_OPS ops work fine.
-        try:
-            import tensorflow as tf
-            _, model_path, labels_path = self._resolve_model_assets(
-                candidate_dirs=candidate_dirs,
-                model_filename="Disease_Classification_v2_noflex.tflite",
-                labels_filename="labels.txt",
-            )
-            with open(labels_path, "r") as f:
-                self.labels = [line.strip() for line in f if line.strip()]
-            logger.info(f"Attempting TFLite v2 (noflex) load from: {model_path}")
-            self.interpreter = tf.lite.Interpreter(model_path=model_path)
-            self.interpreter.allocate_tensors()
-            self.input_details = self.interpreter.get_input_details()
-            self.output_details = self.interpreter.get_output_details()
-            self._model_version = "v2"
-            logger.info(f"SUCCESS: Loaded TFLite v2 noflex model. Labels: {len(self.labels)}")
-            return
-        except FileNotFoundError:
-            logger.warning("TFLite v2 noflex not found, trying compressed...")
-        except Exception as e:
-            logger.warning(f"TFLite v2 noflex load failed: {e}")
-            logger.debug(traceback.format_exc())
-
+        # ── 2. TFLite v2 compressed — 46 MB (loads locally with full TF; fails on Render due to FlexPad) ──
         try:
             import tensorflow as tf
             _, model_path, labels_path = self._resolve_model_assets(
@@ -160,9 +135,33 @@ class MLService:
             logger.info(f"SUCCESS: Loaded TFLite v2 compressed model. Labels: {len(self.labels)}")
             return
         except FileNotFoundError:
-            logger.warning("TFLite v2 compressed not found, falling back to Keras v1...")
+            logger.warning("TFLite v2 compressed not found, trying noflex...")
         except Exception as e:
             logger.warning(f"TFLite v2 compressed load failed: {e}")
+            logger.debug(traceback.format_exc())
+
+        # ── 3. TFLite v2 noflex — 23 MB (no Flex ops, works everywhere) ──
+        try:
+            import tensorflow as tf
+            _, model_path, labels_path = self._resolve_model_assets(
+                candidate_dirs=candidate_dirs,
+                model_filename="Disease_Classification_v2_noflex.tflite",
+                labels_filename="labels.txt",
+            )
+            with open(labels_path, "r") as f:
+                self.labels = [line.strip() for line in f if line.strip()]
+            logger.info(f"Attempting TFLite v2 (noflex) load from: {model_path}")
+            self.interpreter = tf.lite.Interpreter(model_path=model_path)
+            self.interpreter.allocate_tensors()
+            self.input_details = self.interpreter.get_input_details()
+            self.output_details = self.interpreter.get_output_details()
+            self._model_version = "v2"
+            logger.info(f"SUCCESS: Loaded TFLite v2 noflex model. Labels: {len(self.labels)}")
+            return
+        except FileNotFoundError:
+            logger.warning("TFLite v2 noflex not found, falling back to Keras v1...")
+        except Exception as e:
+            logger.warning(f"TFLite v2 noflex load failed: {e}")
             logger.debug(traceback.format_exc())
 
         # ── 3. Keras v1 — 2.9 MB last resort, lower accuracy ────────────────
