@@ -1,4 +1,4 @@
-# AI-Based Crop Disease Diagnosis System
+# AgriMitra - An AI-Based Crop Disease Diagnosis System
 
 An AI-powered agricultural solution that helps farmers diagnose crop diseases using image analysis and provides treatment recommendations with expert consultation.
 
